@@ -1,4363 +1,2620 @@
-"""
-ASHES OF THE DEAD
-Advanced 2D WW2 Zombie Survival Game Prototype
-Single-file Pygame application.
+from flask import Flask, render_template_string
 
-Features:
-- Main menu / pause / game-over screens
-- Side-view platform movement
-- Camera and parallax world
-- Multiple zones
-- Procedural environmental decoration
-- Zombies with multiple AI archetypes
-- Boss encounter
-- Weapons, reloads, melee, grenades
-- Inventory and loot
-- Chests and interactables
-- Health/stamina/hunger
-- XP, levels and skill points
-- Quest system
-- Dialogue
-- Safehouse
-- Crafting
-- Save/load
-- Minimap
-- Day/night cycle
-- Weather
-- Particles
-- Damage numbers
-- Screen shake
-- Sound hooks
-- Settings
-- Debug overlay
-- Respawn/checkpoint
-- Story progression
+app = Flask(__name__)
 
-Controls:
-A/D or arrows  - move
-W/Space        - jump
-Left mouse     - shoot
-Right mouse    - aim/flashlight
-R              - reload
-F              - flashlight
-E              - interact
-G              - grenade
-Q              - melee
-1/2/3/4        - weapon slot
-I              - inventory
-K              - skills
-J              - quests
-M              - map
-C              - crafting
-P/ESC          - pause
-F5             - save
-F9             - load
-"""
+HTML = r"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Ashes of the Dead</title>
 
-from __future__ import annotations
-
-import json
-import math
-import os
-import random
-import sys
-import time
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-
-import pygame
-
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
-pygame.init()
-try:
-    pygame.mixer.init()
-except pygame.error:
-    pass
-
-WIDTH = 1280
-HEIGHT = 720
-FPS = 60
-
-WORLD_WIDTH = 18000
-GROUND_Y = 600
-GRAVITY = 1550.0
-PLAYER_SPEED = 290.0
-JUMP_SPEED = -650.0
-
-TITLE = "Ashes of the Dead"
-VERSION = "0.9.0 Advanced Prototype"
-
-ROOT = Path(__file__).resolve().parent
-ASSET_DIR = ROOT / "assets"
-SAVE_DIR = ROOT / "saves"
-SAVE_DIR.mkdir(exist_ok=True)
-
-SAVE_FILE = SAVE_DIR / "savegame.json"
-
-# ============================================================
-# COLORS
-# ============================================================
-
-BLACK = (8, 9, 9)
-WHITE = (240, 240, 232)
-OFFWHITE = (218, 216, 204)
-RED = (190, 55, 55)
-DARK_RED = (105, 30, 30)
-GREEN = (78, 170, 95)
-YELLOW = (220, 185, 70)
-BLUE = (80, 130, 200)
-GREY = (105, 108, 105)
-DARK_GREY = (43, 45, 43)
-BROWN = (100, 72, 47)
-DARK_BROWN = (57, 42, 30)
-METAL = (82, 89, 88)
-PURPLE = (130, 80, 160)
-ORANGE = (205, 125, 45)
-
-# ============================================================
-# DISPLAY / FONTS
-# ============================================================
-
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption(f"{TITLE} - {VERSION}")
-clock = pygame.time.Clock()
-
-FONT_TINY = pygame.font.Font(None, 18)
-FONT_SMALL = pygame.font.Font(None, 24)
-FONT = pygame.font.Font(None, 30)
-FONT_MED = pygame.font.Font(None, 38)
-FONT_BIG = pygame.font.Font(None, 58)
-FONT_TITLE = pygame.font.Font(None, 86)
-
-# ============================================================
-# UTILITIES
-# ============================================================
-
-def clamp(v, lo, hi):
-    return max(lo, min(hi, v))
-
-
-def lerp(a, b, t):
-    return a + (b - a) * t
-
-
-def dist(a, b):
-    return math.hypot(a[0] - b[0], a[1] - b[1])
-
-
-def sign(v):
-    if v < 0:
-        return -1
-    if v > 0:
-        return 1
-    return 0
-
-
-def world_to_screen(x, camera_x):
-    return int(x - camera_x)
-
-
-def draw_text(surface, value, x, y, font=FONT, color=WHITE, center=False):
-    img = font.render(str(value), True, color)
-    rect = img.get_rect()
-    if center:
-        rect.center = (int(x), int(y))
-    else:
-        rect.topleft = (int(x), int(y))
-    surface.blit(img, rect)
-    return rect
-
-
-def draw_panel(surface, rect, alpha=210, border=True):
-    panel = pygame.Surface(rect.size, pygame.SRCALPHA)
-    panel.fill((12, 15, 14, alpha))
-    surface.blit(panel, rect.topleft)
-    if border:
-        pygame.draw.rect(surface, (105, 110, 101), rect, 2, border_radius=8)
-
-
-def draw_bar(surface, rect, value, maximum, fill_color, back=(28, 30, 28)):
-    pygame.draw.rect(surface, back, rect, border_radius=5)
-    ratio = 0 if maximum <= 0 else clamp(value / maximum, 0, 1)
-    inner = rect.copy()
-    inner.width = int((rect.width - 4) * ratio)
-    inner.x += 2
-    inner.y += 2
-    inner.height -= 4
-    if inner.width > 0:
-        pygame.draw.rect(surface, fill_color, inner, border_radius=4)
-
-
-def safe_load_image(path: Path, size=None):
-    if not path.exists():
-        return None
-    try:
-        image = pygame.image.load(path).convert_alpha()
-        if size:
-            image = pygame.transform.smoothscale(image, size)
-        return image
-    except pygame.error:
-        return None
-
-
-# ============================================================
-# ENUM-LIKE CONSTANTS
-# ============================================================
-
-GAME_MENU = "menu"
-GAME_PLAYING = "playing"
-GAME_PAUSED = "paused"
-GAME_INVENTORY = "inventory"
-GAME_SKILLS = "skills"
-GAME_QUESTS = "quests"
-GAME_MAP = "map"
-GAME_CRAFTING = "crafting"
-GAME_DIALOGUE = "dialogue"
-GAME_GAMEOVER = "gameover"
-GAME_VICTORY = "victory"
-
-WEAPON_PISTOL = "pistol"
-WEAPON_RIFLE = "rifle"
-WEAPON_SMG = "smg"
-WEAPON_SHOTGUN = "shotgun"
-WEAPON_AXE = "axe"
-WEAPON_GRENADE = "grenade"
-
-# ============================================================
-# DATA DEFINITIONS
-# ============================================================
-
-@dataclass
-class WeaponDefinition:
-    name: str
-    slot: int
-    damage: float
-    fire_rate: float
-    magazine: int
-    reload_time: float
-    spread: float
-    pellets: int = 1
-    automatic: bool = False
-    ammo_type: str = "9mm"
-    range: float = 1100.0
-    melee: bool = False
-
-
-WEAPONS: Dict[str, WeaponDefinition] = {
-    WEAPON_PISTOL: WeaponDefinition(
-        "M1935 Pistol", 1, 30, 0.22, 8, 1.05, 0.035, ammo_type="9mm"
-    ),
-    WEAPON_RIFLE: WeaponDefinition(
-        "Bolt Rifle", 2, 78, 0.95, 5, 1.55, 0.012, ammo_type="rifle"
-    ),
-    WEAPON_SMG: WeaponDefinition(
-        "WW2 SMG", 3, 24, 0.085, 32, 1.75, 0.075, automatic=True, ammo_type="9mm"
-    ),
-    WEAPON_SHOTGUN: WeaponDefinition(
-        "Trench Shotgun", 4, 28, 0.85, 5, 1.8, 0.12, pellets=7, ammo_type="shell"
-    ),
-    WEAPON_AXE: WeaponDefinition(
-        "Field Axe", 5, 70, 0.65, 1, 0.0, 0.0, melee=True
-    ),
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-
-@dataclass
-class Item:
-    item_id: str
-    name: str
-    amount: int = 1
-
-
-ITEM_NAMES = {
-    "bandage": "Bandage",
-    "medkit": "Medical Kit",
-    "food": "Canned Food",
-    "scrap": "Scrap Metal",
-    "cloth": "Cloth",
-    "wood": "Wood",
-    "fuel": "Fuel",
-    "gunpowder": "Gunpowder",
-    "ammo_9mm": "9mm Ammunition",
-    "ammo_rifle": "Rifle Ammunition",
-    "ammo_shell": "Shotgun Shells",
-    "key": "Rusty Key",
-    "eclipse": "Eclipse Fragment",
-    "flare": "Signal Flare",
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #080b09;
+    font-family: Arial, sans-serif;
+    color: white;
 }
 
-
-@dataclass
-class Quest:
-    quest_id: str
-    title: str
-    description: str
-    target: str
-    required: int
-    progress: int = 0
-    reward_xp: int = 100
-    reward_items: Dict[str, int] = field(default_factory=dict)
-    completed: bool = False
-    claimed: bool = False
-
-    def update(self, target, amount=1):
-        if self.completed:
-            return
-        if self.target == target:
-            self.progress += amount
-            if self.progress >= self.required:
-                self.progress = self.required
-                self.completed = True
-
-
-@dataclass
-class Skill:
-    skill_id: str
-    name: str
-    description: str
-    level: int = 0
-    maximum: int = 5
-
-
-SKILLS = {
-    "survivor": Skill(
-        "survivor", "Survivor", "+5 maximum health per level."
-    ),
-    "marksman": Skill(
-        "marksman", "Marksman", "+6% firearm damage per level."
-    ),
-    "scavenger": Skill(
-        "scavenger", "Scavenger", "Improves chest and loot rewards."
-    ),
-    "runner": Skill(
-        "runner", "Runner", "+4% movement speed per level."
-    ),
-    "medic": Skill(
-        "medic", "Field Medic", "+8% healing effectiveness per level."
-    ),
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
+#game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #182018;
+}
 
-@dataclass
-class WeatherState:
-    kind: str = "clear"
-    timer: float = 45.0
+canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: auto;
+}
 
+#hud {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    width: 290px;
+    pointer-events: none;
+    text-shadow: 2px 2px 3px #000;
+}
 
-@dataclass
-class Message:
-    text: str
-    timer: float
-    color: Tuple[int, int, int] = WHITE
+.stat {
+    margin-bottom: 8px;
+}
 
+.label {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
 
-# ============================================================
-# PARTICLES
-# ============================================================
+.bar {
+    width: 260px;
+    height: 16px;
+    background: #171917;
+    border: 2px solid #777;
+    border-radius: 5px;
+    overflow: hidden;
+}
 
-class Particle:
-    def __init__(
-        self,
-        x,
-        y,
-        vx,
-        vy,
-        color,
-        life=0.7,
-        size=4,
-        gravity=0.0,
-    ):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
-        self.color = color
-        self.life = life
-        self.max_life = life
-        self.size = size
-        self.gravity = gravity
+.fill {
+    height: 100%;
+    width: 100%;
+}
 
-    def update(self, dt):
-        self.life -= dt
-        self.vy += self.gravity * dt
-        self.x += self.vx * dt
-        self.y += self.vy * dt
+#healthFill {
+    background: #bd3737;
+}
 
-    def draw(self, surface, camera_x):
-        if self.life <= 0:
-            return
-        alpha = int(255 * clamp(self.life / self.max_life, 0, 1))
-        radius = max(1, int(self.size * self.life / self.max_life))
-        layer = pygame.Surface((radius * 4, radius * 4), pygame.SRCALPHA)
-        pygame.draw.circle(
-            layer,
-            (*self.color, alpha),
-            (radius * 2, radius * 2),
-            radius,
-        )
-        surface.blit(
-            layer,
-            (
-                int(self.x - camera_x - radius * 2),
-                int(self.y - radius * 2),
-            ),
-        )
+#staminaFill {
+    background: #c8a936;
+}
 
+#xpFill {
+    background: #5685c5;
+}
 
-class ParticleSystem:
-    def __init__(self):
-        self.particles: List[Particle] = []
+#info {
+    margin-top: 12px;
+    font-size: 15px;
+    line-height: 1.5;
+}
 
-    def burst(self, x, y, color, count=12, speed=150, life=0.7):
-        for _ in range(count):
-            angle = random.random() * math.tau
-            velocity = random.uniform(speed * 0.3, speed)
-            self.particles.append(
-                Particle(
-                    x,
-                    y,
-                    math.cos(angle) * velocity,
-                    math.sin(angle) * velocity,
-                    color,
-                    random.uniform(life * 0.5, life),
-                    random.randint(2, 5),
-                    150,
-                )
-            )
+#crosshair {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
 
-    def blood(self, x, y):
-        self.burst(x, y, (165, 35, 35), 10, 130, 0.55)
+#crosshair::before,
+#crosshair::after {
+    content: "";
+    position: absolute;
+    background: white;
+    box-shadow: 0 0 4px black;
+}
 
-    def dust(self, x, y):
-        self.burst(x, y, (130, 120, 100), 8, 75, 0.8)
+#crosshair::before {
+    width: 22px;
+    height: 2px;
+    top: 10px;
+    left: 0;
+}
 
-    def update(self, dt):
-        for particle in self.particles[:]:
-            particle.update(dt)
-            if particle.life <= 0:
-                self.particles.remove(particle)
+#crosshair::after {
+    width: 2px;
+    height: 22px;
+    left: 10px;
+    top: 0;
+}
 
-    def draw(self, surface, camera_x):
-        for particle in self.particles:
-            particle.draw(surface, camera_x)
+#message {
+    position: absolute;
+    left: 50%;
+    bottom: 45px;
+    transform: translateX(-50%);
+    min-width: 300px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px #000;
+}
 
+#menu,
+#gameOver,
+#victory {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background:
+        radial-gradient(circle at center, rgba(60,65,48,.65), rgba(0,0,0,.95));
+    z-index: 20;
+    text-align: center;
+}
 
-# ============================================================
-# DAMAGE NUMBERS
-# ============================================================
+.hidden {
+    display: none !important;
+}
 
-class FloatingText:
-    def __init__(self, x, y, value, color=WHITE):
-        self.x = x
-        self.y = y
-        self.value = value
-        self.color = color
-        self.life = 0.85
+.title {
+    font-size: clamp(45px, 8vw, 100px);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    font-weight: 900;
+    color: #d4c59a;
+    text-shadow:
+        4px 4px 0 #29251b,
+        0 0 20px #000;
+}
 
-    def update(self, dt):
-        self.life -= dt
-        self.y -= 38 * dt
+.subtitle {
+    margin-top: 10px;
+    color: #bbb8a7;
+    font-size: 18px;
+}
 
-    def draw(self, surface, camera_x):
-        if self.life <= 0:
-            return
-        draw_text(
-            surface,
-            self.value,
-            self.x - camera_x,
-            self.y,
-            FONT_SMALL,
-            self.color,
-            True,
-        )
+button {
+    margin-top: 30px;
+    padding: 15px 45px;
+    border: 2px solid #b7aa7b;
+    background: #282a23;
+    color: white;
+    font-size: 19px;
+    cursor: pointer;
+    border-radius: 5px;
+}
 
+button:hover {
+    background: #494b3d;
+}
 
-# ============================================================
-# PROJECTILES
-# ============================================================
+.controls {
+    margin-top: 25px;
+    color: #aaa;
+    line-height: 1.8;
+}
 
-class Projectile:
-    def __init__(self, x, y, dx, dy, damage, owner, speed=1200, color=YELLOW):
-        self.x = x
-        self.y = y
-        self.dx = dx
-        self.dy = dy
-        self.damage = damage
-        self.owner = owner
-        self.speed = speed
-        self.life = 1.8
-        self.color = color
-        self.radius = 3
+#mobileControls {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
 
-    def rect(self):
-        return pygame.Rect(
-            int(self.x - self.radius),
-            int(self.y - self.radius),
-            self.radius * 2,
-            self.radius * 2,
-        )
+.touch {
+    position: absolute;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.35);
+    background: rgba(0,0,0,.3);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    pointer-events: auto;
+    user-select: none;
+}
 
-    def update(self, dt):
-        self.x += self.dx * self.speed * dt
-        self.y += self.dy * self.speed * dt
-        self.life -= dt
+#left {
+    left: 25px;
+    bottom: 30px;
+}
 
-    def draw(self, surface, camera_x):
-        pygame.draw.circle(
-            surface,
-            self.color,
-            (int(self.x - camera_x), int(self.y)),
-            self.radius,
-        )
+#right {
+    left: 105px;
+    bottom: 30px;
+}
 
+#jump {
+    right: 170px;
+    bottom: 30px;
+}
 
-# ============================================================
-# WORLD OBJECTS
-# ============================================================
+#shoot {
+    right: 90px;
+    bottom: 30px;
+}
 
-class WorldObject:
-    def __init__(self, x, y, w, h, kind):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-        self.kind = kind
-        self.solid = True
+#grenade {
+    right: 10px;
+    bottom: 105px;
+}
 
-    @property
-    def rect(self):
-        return pygame.Rect(int(self.x), int(self.y), int(self.w), int(self.h))
+#reload {
+    right: 10px;
+    bottom: 30px;
+}
 
-    def draw(self, surface, camera_x):
-        r = self.rect.move(-int(camera_x), 0)
-        if self.kind == "crate":
-            pygame.draw.rect(surface, BROWN, r)
-            pygame.draw.rect(surface, DARK_BROWN, r, 3)
-            pygame.draw.line(surface, DARK_BROWN, r.topleft, r.bottomright, 3)
-            pygame.draw.line(surface, DARK_BROWN, r.topright, r.bottomleft, 3)
-        elif self.kind == "barrel":
-            pygame.draw.ellipse(surface, METAL, r)
-            pygame.draw.rect(surface, DARK_GREY, (r.x, r.y + 8, r.w, r.h - 16))
-            pygame.draw.line(surface, BLACK, (r.x, r.centery), (r.right, r.centery), 3)
-        elif self.kind == "sandbags":
-            for row in range(2):
-                for i in range(4):
-                    bx = r.x + i * 32 + (row * 12)
-                    by = r.bottom - 30 - row * 22
-                    pygame.draw.ellipse(surface, (135, 118, 84), (bx, by, 45, 28))
-        elif self.kind == "wreck":
-            pygame.draw.polygon(
-                surface,
-                (65, 70, 67),
-                [
-                    (r.left, r.bottom),
-                    (r.left + 18, r.top + 25),
-                    (r.centerx, r.top),
-                    (r.right - 15, r.top + 18),
-                    (r.right, r.bottom),
-                ],
-            )
-            pygame.draw.circle(surface, BLACK, (r.left + 30, r.bottom - 6), 18)
-            pygame.draw.circle(surface, BLACK, (r.right - 30, r.bottom - 6), 18)
+@media (min-width: 900px) {
+    #mobileControls {
+        display: none;
+    }
+}
+</style>
+</head>
 
+<body>
 
-class Chest(WorldObject):
-    def __init__(self, x, rare=False):
-        super().__init__(x, GROUND_Y - 45, 68, 45, "chest")
-        self.rare = rare
-        self.opened = False
+<div id="game">
 
-    def interact(self, game):
-        if self.opened:
-            game.notify("This chest has already been searched.", GREY)
-            return
+<canvas id="canvas"></canvas>
 
-        self.opened = True
-        game.quest_event("open_chest")
+<div id="hud">
 
-        bonus = 1 + game.player.skills["scavenger"].level * 0.12
-        ammo = int((20 if self.rare else 9) * bonus)
+    <div class="stat">
+        <div class="label">HEALTH</div>
+        <div class="bar">
+            <div id="healthFill" class="fill"></div>
+        </div>
+    </div>
 
-        game.player.add_item("ammo_9mm", ammo)
-        game.player.add_item("bandage", 2 if self.rare else 1)
-        game.player.add_item("scrap", 5 if self.rare else 2)
+    <div class="stat">
+        <div class="label">STAMINA</div>
+        <div class="bar">
+            <div id="staminaFill" class="fill"></div>
+        </div>
+    </div>
 
-        if self.rare:
-            game.player.add_item("medkit", 1)
-            game.player.xp += 75
-            game.notify("RARE MILITARY CACHE: supplies recovered!", YELLOW)
-        else:
-            game.player.xp += 25
-            game.notify("Supply chest searched.", GREEN)
+    <div class="stat">
+        <div class="label">XP</div>
+        <div class="bar">
+            <div id="xpFill" class="fill"></div>
+        </div>
+    </div>
 
-    def draw(self, surface, camera_x):
-        r = self.rect.move(-int(camera_x), 0)
-        color = PURPLE if self.rare else BROWN
-        pygame.draw.rect(surface, color, r, border_radius=5)
-        pygame.draw.rect(surface, DARK_BROWN, r, 3, border_radius=5)
+    <div id="info"></div>
 
-        if self.opened:
-            pygame.draw.line(surface, DARK_BROWN, (r.left, r.top), (r.right, r.bottom), 3)
-        else:
-            pygame.draw.rect(
-                surface,
-                YELLOW,
-                (r.centerx - 4, r.centery - 4, 8, 8),
-            )
+</div>
 
+<div id="crosshair"></div>
+<div id="message"></div>
 
-# ============================================================
-# PLAYER
-# ============================================================
+<div id="menu">
 
-class Player:
-    def __init__(self):
-        self.w = 58
-        self.h = 108
-        self.x = 230.0
-        self.y = GROUND_Y - self.h
-        self.vx = 0
-        self.vy = 0
-        self.facing = 1
-        self.on_ground = True
+    <div class="title">Ashes of the Dead</div>
 
-        self.max_hp = 100
-        self.hp = 100
-        self.stamina = 100
-        self.max_stamina = 100
-        self.hunger = 100
+    <div class="subtitle">
+        WWII • ZOMBIE SURVIVAL
+    </div>
 
-        self.level = 1
-        self.xp = 0
-        self.next_xp = 250
-        self.skill_points = 0
+    <button id="startButton">
+        START GAME
+    </button>
 
-        self.inventory: Dict[str, int] = {
-            "bandage": 2,
-            "food": 2,
-            "scrap": 8,
-            "cloth": 4,
-            "wood": 5,
-            "ammo_9mm": 40,
-            "ammo_rifle": 15,
-            "ammo_shell": 8,
-            "fuel": 2,
+    <div class="controls">
+        A / D — Move<br>
+        W / SPACE — Jump<br>
+        Mouse — Aim<br>
+        Left Click — Shoot<br>
+        R — Reload<br>
+        G — Grenade<br>
+        E — Search Chest<br>
+        SHIFT — Sprint
+    </div>
+
+</div>
+
+<div id="gameOver" class="hidden">
+
+    <div class="title">YOU DIED</div>
+
+    <div class="subtitle" id="deathText"></div>
+
+    <button onclick="restartGame()">
+        TRY AGAIN
+    </button>
+
+</div>
+
+<div id="victory" class="hidden">
+
+    <div class="title">VICTORY</div>
+
+    <div class="subtitle">
+        The Warden has been defeated.
+    </div>
+
+    <button onclick="restartGame()">
+        PLAY AGAIN
+    </button>
+
+</div>
+
+<div id="mobileControls">
+
+    <div class="touch" id="left">◀</div>
+    <div class="touch" id="right">▶</div>
+    <div class="touch" id="jump">JUMP</div>
+    <div class="touch" id="shoot">FIRE</div>
+    <div class="touch" id="grenade">G</div>
+    <div class="touch" id="reload">R</div>
+
+</div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let W = 1280;
+let H = 720;
+
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+}
+
+window.addEventListener("resize", resize);
+resize();
+
+const keys = {};
+
+window.addEventListener("keydown", e => {
+    keys[e.code] = true;
+
+    if (e.code === "KeyR") reload();
+    if (e.code === "KeyG") grenade();
+    if (e.code === "KeyE") interact();
+});
+
+window.addEventListener("keyup", e => {
+    keys[e.code] = false;
+});
+
+const mouse = {
+    x: W / 2,
+    y: H / 2,
+    down: false
+};
+
+canvas.addEventListener("mousemove", e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+
+    updateCrosshair();
+});
+
+canvas.addEventListener("mousedown", e => {
+    if (e.button === 0) mouse.down = true;
+});
+
+window.addEventListener("mouseup", e => {
+    if (e.button === 0) mouse.down = false;
+});
+
+function updateCrosshair() {
+    const c = document.getElementById("crosshair");
+    c.style.left = mouse.x + "px";
+    c.style.top = mouse.y + "px";
+}
+
+updateCrosshair();
+
+const WORLD_WIDTH = 18000;
+const GROUND = 560;
+
+let gameRunning = false;
+let gameTime = 0;
+let cameraX = 0;
+let wave = 1;
+let zombiesKilled = 0;
+let screenShake = 0;
+
+let message = "";
+let messageTimer = 0;
+
+const player = {
+    x: 500,
+    y: 400,
+    w: 44,
+    h: 100,
+
+    vx: 0,
+    vy: 0,
+
+    speed: 260,
+    sprintSpeed: 390,
+    jump: -620,
+
+    health: 100,
+    maxHealth: 100,
+
+    stamina: 100,
+    maxStamina: 100,
+
+    hunger: 100,
+
+    level: 1,
+    xp: 0,
+    nextXP: 250,
+
+    ammo: 8,
+    magazine: 8,
+
+    reserveAmmo: 80,
+
+    grenades: 3,
+
+    fireCooldown: 0,
+    reloadTimer: 0,
+
+    invincible: 0,
+
+    facing: 1,
+
+    weapon: "M1935 Pistol",
+
+    score: 0
+};
+
+const zombies = [];
+const bullets = [];
+const grenades = [];
+const particles = [];
+const chests = [];
+const crates = [];
+const wrecks = [];
+
+let boss = null;
+
+const zones = [
+    { start: 0, end: 3000, name: "ABANDONED ASYLUM" },
+    { start: 3000, end: 6500, name: "WAR-TORN VILLAGE" },
+    { start: 6500, end: 10000, name: "MILITARY OUTPOST" },
+    { start: 10000, end: 14000, name: "DEAD FOREST" },
+    { start: 14000, end: 18000, name: "THE FINAL BUNKER" }
+];
+
+function zoneName() {
+
+    for (const z of zones) {
+        if (player.x >= z.start && player.x < z.end) {
+            return z.name;
         }
-
-        self.weapons = {
-            WEAPON_PISTOL: {"owned": True, "ammo": 8},
-            WEAPON_RIFLE: {"owned": False, "ammo": 0},
-            WEAPON_SMG: {"owned": False, "ammo": 0},
-            WEAPON_SHOTGUN: {"owned": False, "ammo": 0},
-            WEAPON_AXE: {"owned": True, "ammo": 1},
-        }
-
-        self.weapon = WEAPON_PISTOL
-        self.fire_timer = 0
-        self.reload_timer = 0
-        self.invulnerability = 0
-        self.attack_timer = 0
-        self.grenades = 2
-
-        self.flashlight = False
-        self.aiming = False
-
-        self.sprite = safe_load_image(ASSET_DIR / "player.png")
-
-        if self.sprite:
-            ratio = self.h / max(1, self.sprite.get_height())
-            self.sprite = pygame.transform.smoothscale(
-                self.sprite,
-                (
-                    max(1, int(self.sprite.get_width() * ratio)),
-                    self.h,
-                ),
-            )
-            self.w = self.sprite.get_width()
-
-        self.skills = {
-            key: Skill(
-                skill.skill_id,
-                skill.name,
-                skill.description,
-                skill.level,
-                skill.maximum,
-            )
-            for key, skill in SKILLS.items()
-        }
-
-    @property
-    def rect(self):
-        return pygame.Rect(
-            int(self.x),
-            int(self.y),
-            int(self.w),
-            int(self.h),
-        )
-
-    @property
-    def center(self):
-        return (self.x + self.w / 2, self.y + self.h / 2)
-
-    def speed_multiplier(self):
-        return 1 + self.skills["runner"].level * 0.04
-
-    def damage_multiplier(self):
-        return 1 + self.skills["marksman"].level * 0.06
-
-    def heal_multiplier(self):
-        return 1 + self.skills["medic"].level * 0.08
-
-    def add_item(self, item_id, amount):
-        self.inventory[item_id] = self.inventory.get(item_id, 0) + amount
-
-    def remove_item(self, item_id, amount):
-        current = self.inventory.get(item_id, 0)
-        if current < amount:
-            return False
-        self.inventory[item_id] = current - amount
-        return True
-
-    def has_item(self, item_id, amount=1):
-        return self.inventory.get(item_id, 0) >= amount
-
-    def current_weapon(self):
-        return WEAPONS[self.weapon]
-
-    def switch_weapon(self, weapon_id):
-        definition = WEAPONS.get(weapon_id)
-        if not definition:
-            return False
-        if not self.weapons.get(weapon_id, {}).get("owned", False):
-            return False
-        self.weapon = weapon_id
-        self.reload_timer = 0
-        self.fire_timer = 0
-        return True
-
-    def unlock_weapon(self, weapon_id, ammo=0):
-        if weapon_id in self.weapons:
-            self.weapons[weapon_id]["owned"] = True
-            self.weapons[weapon_id]["ammo"] += ammo
-        else:
-            self.weapons[weapon_id] = {"owned": True, "ammo": ammo}
-
-    def receive_damage(self, amount, game):
-        if self.invulnerability > 0:
-            return
-
-        self.hp -= amount
-        self.invulnerability = 0.65
-        game.screen_shake = max(game.screen_shake, 8)
-        game.particles.blood(self.center[0], self.y + 50)
-        game.notify(f"-{int(amount)} health", RED)
-
-        if self.hp <= 0:
-            self.hp = 0
-            game.state = GAME_GAMEOVER
-
-    def gain_xp(self, amount, game):
-        self.xp += amount
-
-        while self.xp >= self.next_xp:
-            self.xp -= self.next_xp
-            self.level += 1
-            self.skill_points += 1
-            self.next_xp = int(self.next_xp * 1.35)
-            self.max_hp += 5
-            self.hp = self.max_hp
-            game.notify(
-                f"LEVEL UP! You are now level {self.level}. Skill point gained.",
-                YELLOW,
-            )
-
-    def use_bandage(self, game):
-        if self.has_item("bandage") and self.hp < self.max_hp:
-            self.remove_item("bandage", 1)
-            amount = int(25 * self.heal_multiplier())
-            self.hp = min(self.max_hp, self.hp + amount)
-            game.notify(f"Bandaged +{amount} HP", GREEN)
-            return True
-        return False
-
-    def use_medkit(self, game):
-        if self.has_item("medkit") and self.hp < self.max_hp:
-            self.remove_item("medkit", 1)
-            amount = int(65 * self.heal_multiplier())
-            self.hp = min(self.max_hp, self.hp + amount)
-            game.notify(f"Medical kit +{amount} HP", GREEN)
-            return True
-        return False
-
-    def eat(self, game):
-        if self.has_item("food"):
-            self.remove_item("food", 1)
-            self.hunger = min(100, self.hunger + 35)
-            self.stamina = min(100, self.stamina + 25)
-            game.notify("You ate canned food.", GREEN)
-            return True
-        return False
-
-    def update(self, game, dt):
-        self.fire_timer = max(0, self.fire_timer - dt)
-        self.reload_timer = max(0, self.reload_timer - dt)
-        self.invulnerability = max(0, self.invulnerability - dt)
-        self.attack_timer = max(0, self.attack_timer - dt)
-
-        keys = pygame.key.get_pressed()
-
-        movement = 0
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            movement -= 1
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            movement += 1
-
-        speed = PLAYER_SPEED * self.speed_multiplier()
-
-        if self.stamina < 20:
-            speed *= 0.82
-
-        self.vx = movement * speed
-
-        if movement:
-            self.facing = movement
-
-        jump = keys[pygame.K_w] or keys[pygame.K_SPACE]
-        if jump and self.on_ground:
-            self.vy = JUMP_SPEED
-            self.on_ground = False
-            game.particles.dust(self.x + self.w / 2, GROUND_Y)
-
-        self.vy += GRAVITY * dt
-
-        new_x = self.x + self.vx * dt
-        new_y = self.y + self.vy * dt
-
-        # Basic world bounds.
-        self.x = clamp(new_x, 0, WORLD_WIDTH - self.w)
-        self.y = new_y
-
-        if self.y + self.h >= GROUND_Y:
-            self.y = GROUND_Y - self.h
-            self.vy = 0
-            self.on_ground = True
-
-        if movement and not self.on_ground:
-            self.stamina = max(0, self.stamina - 2 * dt)
-        else:
-            self.stamina = min(self.max_stamina, self.stamina + 8 * dt)
-
-        self.hunger -= 0.45 * dt
-        if self.hunger <= 0:
-            self.hunger = 0
-            self.hp -= 1.5 * dt
-
-    def reload(self, game):
-        definition = self.current_weapon()
-        if definition.melee:
-            return
-
-        if self.reload_timer > 0:
-            return
-
-        current = self.weapons[self.weapon]["ammo"]
-        if current >= definition.magazine:
-            return
-
-        ammo_key = {
-            "9mm": "ammo_9mm",
-            "rifle": "ammo_rifle",
-            "shell": "ammo_shell",
-        }[definition.ammo_type]
-
-        available = self.inventory.get(ammo_key, 0)
-        needed = definition.magazine - current
-
-        if available <= 0:
-            game.notify("No ammunition for this weapon.", RED)
-            return
-
-        take = min(needed, available)
-        self.inventory[ammo_key] -= take
-        self.weapons[self.weapon]["ammo"] += take
-        self.reload_timer = definition.reload_time
-        game.notify("Reloading...", OFFWHITE)
-
-    def shoot(self, game, target_x, target_y):
-        definition = self.current_weapon()
-
-        if definition.melee:
-            self.melee_attack(game)
-            return
-
-        if self.reload_timer > 0:
-            return
-
-        if self.fire_timer > 0:
-            return
-
-        current = self.weapons[self.weapon]["ammo"]
-
-        if current <= 0:
-            game.notify("Empty magazine. Press R to reload.", RED)
-            self.reload(game)
-            return
-
-        self.weapons[self.weapon]["ammo"] -= 1
-        self.fire_timer = definition.fire_rate
-
-        origin_x = self.x + self.w / 2 + self.facing * 25
-        origin_y = self.y + self.h * 0.43
-
-        base_dx = target_x - origin_x
-        base_dy = target_y - origin_y
-        length = max(1, math.hypot(base_dx, base_dy))
-        base_angle = math.atan2(base_dy, base_dx)
-
-        for _ in range(definition.pellets):
-            angle = base_angle + random.uniform(
-                -definition.spread,
-                definition.spread,
-            )
-
-            dx = math.cos(angle)
-            dy = math.sin(angle)
-
-            damage = definition.damage * self.damage_multiplier()
-            game.projectiles.append(
-                Projectile(
-                    origin_x,
-                    origin_y,
-                    dx,
-                    dy,
-                    damage,
-                    "player",
-                    definition.range,
-                )
-            )
-
-        game.muzzle_flash = 0.06
-        game.screen_shake = max(game.screen_shake, 3)
-
-    def melee_attack(self, game):
-        if self.attack_timer > 0:
-            return
-
-        self.attack_timer = 0.55
-
-        attack_rect = pygame.Rect(
-            int(self.x + (self.w if self.facing > 0 else -75)),
-            int(self.y + 30),
-            75,
-            60,
-        )
-
-        for enemy in game.enemies:
-            if enemy.dead:
-                continue
-            if attack_rect.colliderect(enemy.rect):
-                damage = 70 * self.damage_multiplier()
-                enemy.take_damage(damage, game)
-                game.particles.blood(enemy.x, enemy.y + enemy.h / 2)
-
-        game.screen_shake = max(game.screen_shake, 5)
-
-    def throw_grenade(self, game, target_x, target_y):
-        if self.grenades <= 0:
-            game.notify("No grenades.", RED)
-            return
-
-        self.grenades -= 1
-        ox = self.x + self.w / 2
-        oy = self.y + 35
-
-        dx = target_x - ox
-        dy = target_y - oy
-        length = max(1, math.hypot(dx, dy))
-
-        game.grenades_projectiles.append(
-            Grenade(
-                ox,
-                oy,
-                dx / length * 460,
-                dy / length * 460,
-            )
-        )
-
-    def draw(self, surface, camera_x):
-        r = self.rect.move(-int(camera_x), 0)
-
-        if self.sprite:
-            sprite = self.sprite
-            if self.facing < 0:
-                sprite = pygame.transform.flip(sprite, True, False)
-
-            if self.invulnerability > 0:
-                sprite = sprite.copy()
-                sprite.set_alpha(
-                    150 if int(self.invulnerability * 10) % 2 == 0 else 255
-                )
-
-            surface.blit(sprite, r.topleft)
-        else:
-            # Fallback if the character image is unavailable.
-            pygame.draw.ellipse(
-                surface,
-                (70, 50, 40),
-                (r.x + 12, r.y, 36, 36),
-            )
-            pygame.draw.rect(
-                surface,
-                OFFWHITE,
-                (r.x + 7, r.y + 30, 46, 64),
-                border_radius=8,
-            )
-            pygame.draw.line(
-                surface,
-                DARK_GREY,
-                (r.centerx, r.y + 88),
-                (r.centerx - 12, r.bottom),
-                6,
-            )
-            pygame.draw.line(
-                surface,
-                DARK_GREY,
-                (r.centerx + 8, r.y + 88),
-                (r.centerx + 17, r.bottom),
-                6,
-            )
-
-        # Weapon visual.
-        if not self.current_weapon().melee:
-            gx = r.centerx + self.facing * 30
-            gy = r.y + 54
-            pygame.draw.line(
-                surface,
-                (35, 35, 33),
-                (r.centerx, gy),
-                (gx, gy),
-                7,
-            )
-
-# ============================================================
-# GRENADES
-# ============================================================
-
-class Grenade:
-    def __init__(self, x, y, vx, vy):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
-        self.timer = 1.8
-        self.radius = 8
-
-    def update(self, game, dt):
-        self.timer -= dt
-        self.vy += GRAVITY * 0.55 * dt
-        self.x += self.vx * dt
-        self.y += self.vy * dt
-
-        if self.y >= GROUND_Y - 10:
-            self.y = GROUND_Y - 10
-            self.vy *= -0.35
-            self.vx *= 0.65
-
-        if self.timer <= 0:
-            radius = 180
-            for enemy in game.enemies:
-                if enemy.dead:
-                    continue
-
-                d = dist(
-                    (self.x, self.y),
-                    (enemy.x + enemy.w / 2, enemy.y + enemy.h / 2),
-                )
-
-                if d < radius:
-                    damage = 120 * (1 - d / radius)
-                    enemy.take_damage(damage, game)
-
-            game.particles.burst(
-                self.x,
-                self.y,
-                ORANGE,
-                55,
-                360,
-                1.1,
-            )
-            game.screen_shake = 18
-            return False
-
-        return True
-
-    def draw(self, surface, camera_x):
-        pygame.draw.circle(
-            surface,
-            (35, 40, 36),
-            (int(self.x - camera_x), int(self.y)),
-            self.radius,
-        )
-
-
-# ============================================================
-# ZOMBIE AI
-# ============================================================
-
-class Zombie:
-    ARCHETYPES = {
-        "walker": {
-            "hp": 65,
-            "speed": 55,
-            "damage": 9,
-            "attack_range": 50,
-            "attack_rate": 1.0,
-            "size": (48, 86),
-            "color": (100, 110, 82),
-            "xp": 30,
-        },
-        "runner": {
-            "hp": 48,
-            "speed": 135,
-            "damage": 13,
-            "attack_range": 48,
-            "attack_rate": 0.85,
-            "size": (44, 84),
-            "color": (132, 85, 75),
-            "xp": 40,
-        },
-        "soldier": {
-            "hp": 90,
-            "speed": 75,
-            "damage": 14,
-            "attack_range": 55,
-            "attack_rate": 0.95,
-            "size": (52, 94),
-            "color": (74, 92, 69),
-            "xp": 55,
-        },
-        "brute": {
-            "hp": 260,
-            "speed": 38,
-            "damage": 28,
-            "attack_range": 75,
-            "attack_rate": 1.25,
-            "size": (76, 125),
-            "color": (92, 66, 62),
-            "xp": 120,
-        },
-        "screamer": {
-            "hp": 80,
-            "speed": 55,
-            "damage": 6,
-            "attack_range": 45,
-            "attack_rate": 1.1,
-            "size": (50, 95),
-            "color": (100, 76, 115),
-            "xp": 90,
-        },
     }
 
-    def __init__(self, x, archetype="walker", level=1):
-        data = self.ARCHETYPES[archetype]
+    return "UNKNOWN";
+}
 
-        self.archetype = archetype
-        self.x = float(x)
-        self.w, self.h = data["size"]
-        self.y = GROUND_Y - self.h
+function showMessage(text, duration=2) {
+    message = text;
+    messageTimer = duration;
+}
 
-        self.max_hp = data["hp"] * (1 + (level - 1) * 0.12)
-        self.hp = self.max_hp
+function random(min, max) {
+    return Math.random() * (max - min) + min;
+}
 
-        self.speed = data["speed"] * (1 + (level - 1) * 0.025)
-        self.damage = data["damage"] * (1 + (level - 1) * 0.08)
+function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+}
 
-        self.attack_range = data["attack_range"]
-        self.attack_rate = data["attack_rate"]
+function distance(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+}
 
-        self.attack_timer = random.uniform(0.1, 1.0)
-        self.alert = False
-        self.alert_timer = 0
-        self.dead = False
-        self.hit_flash = 0
-        self.direction = -1
-        self.xp_reward = int(data["xp"] * (1 + level * 0.08))
+function addXP(amount) {
 
-        self.scream_timer = random.uniform(5, 10)
+    player.xp += amount;
 
-    @property
-    def rect(self):
-        return pygame.Rect(
-            int(self.x),
-            int(self.y),
-            int(self.w),
-            int(self.h),
-        )
+    while (player.xp >= player.nextXP) {
 
-    def take_damage(self, amount, game):
-        if self.dead:
-            return
+        player.xp -= player.nextXP;
 
-        self.hp -= amount
-        self.hit_flash = 0.1
+        player.level++;
 
-        game.floating_texts.append(
-            FloatingText(
-                self.x + self.w / 2,
-                self.y,
-                str(int(amount)),
-                YELLOW,
-            )
-        )
+        player.maxHealth += 8;
+        player.health = player.maxHealth;
 
-        if self.hp <= 0:
-            self.dead = True
-            game.player.gain_xp(self.xp_reward, game)
-            game.quest_event("kill_zombie")
-            game.particles.blood(
-                self.x + self.w / 2,
-                self.y + self.h / 2,
-            )
+        player.nextXP = Math.floor(player.nextXP * 1.35);
 
-            if random.random() < 0.14:
-                game.drop_item(
-                    self.x + self.w / 2,
-                    self.y + self.h / 2,
-                )
+        showMessage(
+            "LEVEL UP! Level " + player.level,
+            3
+        );
+    }
+}
 
-    def update(self, game, dt):
-        if self.dead:
-            return
+function createWorld() {
 
-        self.attack_timer = max(0, self.attack_timer - dt)
-        self.hit_flash = max(0, self.hit_flash - dt)
-        self.alert_timer = max(0, self.alert_timer - dt)
+    chests.length = 0;
+    crates.length = 0;
+    wrecks.length = 0;
 
-        player = game.player
+    for (let x = 700; x < WORLD_WIDTH; x += random(450, 850)) {
 
-        dx = player.x - self.x
-        distance = abs(dx)
+        if (Math.random() < 0.75) {
 
-        if distance < 760:
-            self.alert = True
-
-        if not self.alert:
-            return
-
-        if dx != 0:
-            self.direction = sign(dx)
-
-        if distance > self.attack_range:
-            self.x += self.direction * self.speed * dt
-        else:
-            if self.attack_timer <= 0:
-                player.receive_damage(self.damage, game)
-                self.attack_timer = self.attack_rate
-
-        if self.archetype == "screamer":
-            self.scream_timer -= dt
-            if self.scream_timer <= 0 and distance < 900:
-                self.scream_timer = random.uniform(7, 12)
-                game.spawn_horde_near(self.x, 3)
-                game.notify("A Screamer has attracted more undead!", RED)
-
-        self.x = clamp(self.x, 0, WORLD_WIDTH - self.w)
-
-    def draw(self, surface, camera_x):
-        r = self.rect.move(-int(camera_x), 0)
-        data = self.ARCHETYPES[self.archetype]
-
-        body_color = data["color"]
-
-        if self.hit_flash > 0:
-            body_color = WHITE
-
-        pygame.draw.ellipse(
-            surface,
-            body_color,
-            (r.x + 4, r.y, r.w - 8, 35),
-        )
-
-        pygame.draw.rect(
-            surface,
-            body_color,
-            (r.x + 8, r.y + 25, r.w - 16, r.h - 25),
-            border_radius=8,
-        )
-
-        # Eyes.
-        pygame.draw.circle(
-            surface,
-            (220, 45, 35),
-            (r.x + r.w // 3, r.y + 15),
-            3,
-        )
-        pygame.draw.circle(
-            surface,
-            (220, 45, 35),
-            (r.x + 2 * r.w // 3, r.y + 15),
-            3,
-        )
-
-        # Soldier helmet.
-        if self.archetype == "soldier":
-            pygame.draw.rect(
-                surface,
-                (65, 72, 54),
-                (r.x + 2, r.y - 3, r.w - 4, 10),
-                border_radius=3,
-            )
-
-        # Brute arm.
-        if self.archetype == "brute":
-            pygame.draw.line(
-                surface,
-                (58, 48, 44),
-                (r.left, r.y + 50),
-                (r.left - 25, r.y + 78),
-                10,
-            )
-
-        # Screamer mouth.
-        if self.archetype == "screamer":
-            pygame.draw.ellipse(
-                surface,
-                BLACK,
-                (r.centerx - 9, r.y + 20, 18, 15),
-            )
-
-        if self.hp < self.max_hp:
-            draw_bar(
-                surface,
-                pygame.Rect(r.x, r.y - 13, r.w, 7),
-                self.hp,
-                self.max_hp,
-                RED,
-            )
-
-
-class Boss(Zombie):
-    def __init__(self, x):
-        super().__init__(x, "brute", level=12)
-        self.name = "THE WARDEN"
-        self.max_hp = 1600
-        self.hp = self.max_hp
-        self.speed = 45
-        self.damage = 45
-        self.attack_rate = 1.4
-        self.xp_reward = 900
-        self.phase = 1
-        self.special_timer = 4
-
-    def update(self, game, dt):
-        if self.dead:
-            return
-
-        super().update(game, dt)
-
-        self.special_timer -= dt
-
-        if self.hp < self.max_hp * 0.6:
-            self.phase = 2
-
-        if self.hp < self.max_hp * 0.25:
-            self.phase = 3
-
-        if self.special_timer <= 0:
-            self.special_timer = max(2.0, 5.0 - self.phase)
-
-            if self.phase >= 2:
-                game.spawn_horde_near(self.x, 2 + self.phase)
-
-            if self.phase >= 3:
-                game.screen_shake = 14
-                game.particles.burst(
-                    self.x,
-                    GROUND_Y - 20,
-                    RED,
-                    30,
-                    250,
-                    0.9,
-                )
-
-    def draw(self, surface, camera_x):
-        super().draw(surface, camera_x)
-
-        r = self.rect.move(-int(camera_x), 0)
-
-        draw_text(
-            surface,
-            self.name,
-            r.centerx,
-            r.top - 38,
-            FONT_SMALL,
-            RED,
-            True,
-        )
-
-        draw_bar(
-            surface,
-            pygame.Rect(
-                WIDTH // 2 - 250,
-                24,
-                500,
-                18,
-            ),
-            self.hp,
-            self.max_hp,
-            RED,
-        )
-
-
-# ============================================================
-# DROPS
-# ============================================================
-
-class WorldDrop:
-    def __init__(self, x, y, item_id, amount):
-        self.x = x
-        self.y = y
-        self.item_id = item_id
-        self.amount = amount
-        self.life = 45
-
-    @property
-    def rect(self):
-        return pygame.Rect(
-            int(self.x - 15),
-            int(self.y - 15),
-            30,
-            30,
-        )
-
-    def update(self, game, dt):
-        self.life -= dt
-
-        if self.life <= 0:
-            return False
-
-        if self.rect.colliderect(game.player.rect):
-            game.player.add_item(self.item_id, self.amount)
-            game.notify(
-                f"+{self.amount} {ITEM_NAMES.get(self.item_id, self.item_id)}",
-                GREEN,
-            )
-            return False
-
-        return True
-
-    def draw(self, surface, camera_x):
-        sx = int(self.x - camera_x)
-        sy = int(self.y)
-
-        color = {
-            "ammo_9mm": YELLOW,
-            "ammo_rifle": YELLOW,
-            "ammo_shell": ORANGE,
-            "bandage": WHITE,
-            "medkit": RED,
-            "scrap": GREY,
-            "fuel": ORANGE,
-            "eclipse": PURPLE,
-        }.get(self.item_id, GREEN)
-
-        pygame.draw.circle(surface, color, (sx, sy), 9)
-        draw_text(
-            surface,
-            ITEM_NAMES.get(self.item_id, self.item_id),
-            sx,
-            sy - 28,
-            FONT_TINY,
-            WHITE,
-            True,
-        )
-
-
-# ============================================================
-# QUEST SYSTEM
-# ============================================================
-
-class QuestSystem:
-    def __init__(self):
-        self.quests = [
-            Quest(
-                "escape",
-                "Escape the Asylum",
-                "Reach the first military checkpoint.",
-                "reach_checkpoint",
-                1,
-                reward_xp=150,
-                reward_items={"bandage": 2},
-            ),
-            Quest(
-                "scavenge",
-                "Scavenger",
-                "Open 5 supply containers.",
-                "open_chest",
-                5,
-                reward_xp=220,
-                reward_items={"ammo_9mm": 25},
-            ),
-            Quest(
-                "undead",
-                "Clean the Streets",
-                "Destroy 15 zombies.",
-                "kill_zombie",
-                15,
-                reward_xp=400,
-                reward_items={"ammo_rifle": 12},
-            ),
-            Quest(
-                "eclipse",
-                "Project Eclipse",
-                "Recover 3 Eclipse fragments.",
-                "collect_eclipse",
-                3,
-                reward_xp=750,
-                reward_items={"medkit": 2},
-            ),
-        ]
-
-    def event(self, target, amount=1):
-        for quest in self.quests:
-            quest.update(target, amount)
-
-    def claim(self, quest, game):
-        if not quest.completed or quest.claimed:
-            return
-
-        quest.claimed = True
-        game.player.gain_xp(quest.reward_xp, game)
-
-        for item, amount in quest.reward_items.items():
-            game.player.add_item(item, amount)
-
-        game.notify(
-            f"Quest reward: +{quest.reward_xp} XP",
-            YELLOW,
-        )
-
-
-# ============================================================
-# CRAFTING
-# ============================================================
-
-@dataclass
-class Recipe:
-    recipe_id: str
-    name: str
-    description: str
-    cost: Dict[str, int]
-    result: Dict[str, int]
-
-
-RECIPES = [
-    Recipe(
-        "bandage",
-        "Bandage",
-        "Basic emergency dressing.",
-        {"cloth": 2},
-        {"bandage": 1},
-    ),
-    Recipe(
-        "medkit",
-        "Medical Kit",
-        "Improvised medical supplies.",
-        {"cloth": 4, "scrap": 2},
-        {"medkit": 1},
-    ),
-    Recipe(
-        "ammo",
-        "9mm Ammo",
-        "A small ammunition batch.",
-        {"scrap": 2, "gunpowder": 1},
-        {"ammo_9mm": 12},
-    ),
-    Recipe(
-        "shell",
-        "Shotgun Shells",
-        "Four improvised shells.",
-        {"scrap": 3, "gunpowder": 2},
-        {"ammo_shell": 4},
-    ),
-    Recipe(
-        "flare",
-        "Signal Flare",
-        "Marks a location for survivors.",
-        {"cloth": 1, "gunpowder": 2, "wood": 1},
-        {"flare": 1},
-    ),
-]
-
-
-# ============================================================
-# SAFEHOUSE
-# ============================================================
-
-class Safehouse:
-    def __init__(self):
-        self.x = 850
-        self.level = 1
-        self.stash: Dict[str, int] = {}
-        self.medical_upgrade = 0
-        self.workbench_upgrade = 0
-
-    def inside(self, player):
-        return abs(player.x - self.x) < 230
-
-    def upgrade_medical(self, player, game):
-        cost = 8 + self.medical_upgrade * 6
-
-        if player.has_item("scrap", cost):
-            player.remove_item("scrap", cost)
-            self.medical_upgrade += 1
-            player.max_hp += 10
-            player.hp = player.max_hp
-            game.notify("Safehouse medical station upgraded.", GREEN)
-        else:
-            game.notify(f"Need {cost} scrap.", RED)
-
-    def upgrade_workbench(self, player, game):
-        cost = 10 + self.workbench_upgrade * 7
-
-        if player.has_item("scrap", cost):
-            player.remove_item("scrap", cost)
-            self.workbench_upgrade += 1
-            game.notify("Workbench upgraded.", GREEN)
-        else:
-            game.notify(f"Need {cost} scrap.", RED)
-
-    def draw(self, surface, camera_x):
-        sx = int(self.x - camera_x)
-
-        pygame.draw.rect(
-            surface,
-            (72, 73, 67),
-            (sx - 160, GROUND_Y - 200, 320, 200),
-        )
-        pygame.draw.polygon(
-            surface,
-            (45, 48, 44),
-            [
-                (sx - 185, GROUND_Y - 200),
-                (sx, GROUND_Y - 285),
-                (sx + 185, GROUND_Y - 200),
-            ],
-        )
-
-        draw_text(
-            surface,
-            "SAFEHOUSE",
-            sx,
-            GROUND_Y - 235,
-            FONT,
-            YELLOW,
-            True,
-        )
-
-
-# ============================================================
-# DIALOGUE
-# ============================================================
-
-class DialogueSystem:
-    def __init__(self):
-        self.active = False
-        self.speaker = ""
-        self.lines: List[str] = []
-        self.index = 0
-        self.callback = None
-
-    def start(self, speaker, lines, callback=None):
-        self.active = True
-        self.speaker = speaker
-        self.lines = lines
-        self.index = 0
-        self.callback = callback
-
-    def advance(self):
-        if not self.active:
-            return
-
-        self.index += 1
-
-        if self.index >= len(self.lines):
-            self.active = False
-
-            if self.callback:
-                callback = self.callback
-                self.callback = None
-                callback()
-
-    def draw(self, surface):
-        if not self.active:
-            return
-
-        box = pygame.Rect(
-            90,
-            HEIGHT - 205,
-            WIDTH - 180,
-            155,
-        )
-
-        draw_panel(surface, box, 235)
-
-        draw_text(
-            surface,
-            self.speaker,
-            box.x + 25,
-            box.y + 20,
-            FONT_MED,
-            YELLOW,
-        )
-
-        if self.lines:
-            draw_text(
-                surface,
-                self.lines[self.index],
-                box.x + 25,
-                box.y + 70,
-                FONT,
-                WHITE,
-            )
-
-        draw_text(
-            surface,
-            "SPACE / ENTER — Continue",
-            box.right - 245,
-            box.bottom - 35,
-            FONT_SMALL,
-            GREY,
-        )
-
-
-# ============================================================
-# WEATHER / DAY NIGHT
-# ============================================================
-
-class EnvironmentSystem:
-    def __init__(self):
-        self.time_of_day = 8.0
-        self.weather = WeatherState()
-        self.lightning = 0
-        self.rain_particles = []
-
-    def update(self, dt):
-        self.time_of_day += dt * 0.08
-
-        if self.time_of_day >= 24:
-            self.time_of_day -= 24
-
-        self.weather.timer -= dt
-
-        if self.weather.timer <= 0:
-            self.weather.kind = random.choice(
-                ["clear", "clear", "fog", "rain", "storm"]
-            )
-            self.weather.timer = random.uniform(35, 75)
-
-        if self.weather.kind in ("rain", "storm"):
-            for _ in range(5 if self.weather.kind == "rain" else 9):
-                self.rain_particles.append(
-                    [
-                        random.randint(0, WIDTH),
-                        random.randint(0, HEIGHT),
-                        random.randint(450, 750),
-                    ]
-                )
-
-        for p in self.rain_particles[:]:
-            p[1] += p[2] * dt
-
-            if p[1] > HEIGHT:
-                self.rain_particles.remove(p)
-
-    def draw_overlay(self, surface):
-        # Night darkness.
-        hour = self.time_of_day
-
-        if hour < 6 or hour > 19:
-            darkness = 125
-        elif hour < 8:
-            darkness = int(125 * (8 - hour) / 2)
-        elif hour > 17:
-            darkness = int(125 * (hour - 17) / 2)
-        else:
-            darkness = 0
-
-        if darkness:
-            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            overlay.fill((10, 15, 28, darkness))
-            surface.blit(overlay, (0, 0))
-
-        if self.weather.kind == "fog":
-            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            overlay.fill((190, 195, 188, 42))
-            surface.blit(overlay, (0, 0))
-
-        if self.weather.kind in ("rain", "storm"):
-            for x, y, speed in self.rain_particles:
-                pygame.draw.line(
-                    surface,
-                    (155, 180, 195),
-                    (int(x), int(y)),
-                    (int(x - 6), int(y + 15)),
-                    1,
-                )
-
-
-# ============================================================
-# WORLD / MAP
-# ============================================================
-
-@dataclass
-class Zone:
-    name: str
-    start: float
-    end: float
-    description: str
-    color: Tuple[int, int, int]
-
-
-ZONES = [
-    Zone(
-        "Abandoned Asylum",
-        0,
-        1500,
-        "Where the nightmare began.",
-        (70, 75, 72),
-    ),
-    Zone(
-        "Ruined Village",
-        1500,
-        3700,
-        "A town abandoned in the middle of a war.",
-        (86, 77, 62),
-    ),
-    Zone(
-        "No Man's Land",
-        3700,
-        6800,
-        "Trenches and infected soldiers.",
-        (73, 70, 57),
-    ),
-    Zone(
-        "Military Front",
-        6800,
-        10500,
-        "A fortified war zone.",
-        (62, 70, 64),
-    ),
-    Zone(
-        "Dead City",
-        10500,
-        14000,
-        "A city swallowed by the outbreak.",
-        (65, 63, 66),
-    ),
-    Zone(
-        "Project Eclipse",
-        14000,
-        WORLD_WIDTH,
-        "The source of the infection.",
-        (58, 55, 70),
-    ),
-]
-
-
-class World:
-    def __init__(self):
-        self.objects: List[WorldObject] = []
-        self.chests: List[Chest] = []
-        self.zone_messages = set()
-        self.generate()
-
-    def generate(self):
-        random.seed(1945)
-
-        # Environmental props.
-        for x in range(150, WORLD_WIDTH - 100, 210):
-            roll = random.random()
-
-            if roll < 0.20:
-                self.objects.append(
-                    WorldObject(
-                        x,
-                        GROUND_Y - 55,
-                        70,
-                        55,
-                        "crate",
-                    )
-                )
-            elif roll < 0.32:
-                self.objects.append(
-                    WorldObject(
-                        x,
-                        GROUND_Y - 65,
-                        50,
-                        65,
-                        "barrel",
-                    )
-                )
-            elif roll < 0.39:
-                self.objects.append(
-                    WorldObject(
-                        x,
-                        GROUND_Y - 55,
-                        150,
-                        55,
-                        "sandbags",
-                    )
-                )
-            elif roll < 0.44:
-                self.objects.append(
-                    WorldObject(
-                        x,
-                        GROUND_Y - 85,
-                        180,
-                        85,
-                        "wreck",
-                    )
-                )
-
-        # Chests.
-        for x in range(450, WORLD_WIDTH - 400, 850):
-            self.chests.append(
-                Chest(
-                    x,
-                    rare=(random.random() < 0.23),
-                )
-            )
-
-    def zone_at(self, x):
-        for zone in ZONES:
-            if zone.start <= x < zone.end:
-                return zone
-        return ZONES[-1]
-
-    def draw_background(self, surface, camera_x, environment):
-        zone = self.zone_at(camera_x + WIDTH / 2)
-
-        # Sky.
-        surface.fill(zone.color)
-
-        # Far mountains / ruins.
-        parallax = camera_x * 0.15
-
-        for i in range(-2, 60):
-            x = i * 330 - parallax
-            height = 90 + ((i * 71) % 130)
-
-            pygame.draw.polygon(
-                surface,
-                tuple(max(0, c - 18) for c in zone.color),
-                [
-                    (int(x), GROUND_Y),
-                    (int(x + 150), GROUND_Y - height),
-                    (int(x + 300), GROUND_Y),
-                ],
-            )
-
-        # Ruined buildings.
-        building_parallax = camera_x * 0.35
-
-        for i in range(-3, 80):
-            x = i * 270 - building_parallax
-            height = 110 + ((i * 43) % 180)
-            width = 170 + ((i * 29) % 90)
-
-            pygame.draw.rect(
-                surface,
-                (54, 56, 53),
-                (int(x), GROUND_Y - height, width, height),
-            )
-
-            for wy in range(
-                int(GROUND_Y - height + 25),
-                GROUND_Y - 20,
-                48,
-            ):
-                pygame.draw.rect(
-                    surface,
-                    (28, 31, 29),
-                    (int(x + 25), wy, 25, 28),
-                )
-
-        # Ground.
-        pygame.draw.rect(
-            surface,
-            (72, 68, 56),
-            (0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y),
-        )
-
-        # Road.
-        pygame.draw.rect(
-            surface,
-            (82, 78, 67),
-            (0, GROUND_Y + 35, WIDTH, 85),
-        )
-
-        for x in range(-100, WIDTH + 100, 160):
-            pygame.draw.rect(
-                surface,
-                (112, 104, 86),
-                (x, GROUND_Y + 72, 75, 5),
-            )
-
-        # War details.
-        for x in range(-50, WIDTH + 50, 230):
-            pygame.draw.circle(
-                surface,
-                (55, 52, 44),
-                (x, GROUND_Y + 22),
-                12,
-            )
-
-        # Zone label.
-        draw_panel(
-            surface,
-            pygame.Rect(
-                WIDTH // 2 - 190,
-                120,
-                380,
-                70,
-            ),
-            150,
-            False,
-        )
-
-        draw_text(
-            surface,
-            zone.name,
-            WIDTH // 2,
-            143,
-            FONT_MED,
-            YELLOW,
-            True,
-        )
-
-        draw_text(
-            surface,
-            zone.description,
-            WIDTH // 2,
-            171,
-            FONT_SMALL,
-            OFFWHITE,
-            True,
-        )
-
-    def draw_objects(self, surface, camera_x):
-        for obj in self.objects:
-            if -200 < obj.x - camera_x < WIDTH + 200:
-                obj.draw(surface, camera_x)
-
-        for chest in self.chests:
-            if -200 < chest.x - camera_x < WIDTH + 200:
-                chest.draw(surface, camera_x)
-
-
-# ============================================================
-# GAME CLASS
-# ============================================================
-
-class Game:
-    def __init__(self):
-        self.state = GAME_MENU
-        self.running = True
-
-        self.player = Player()
-        self.world = World()
-        self.safehouse = Safehouse()
-
-        self.enemies: List[Zombie] = []
-        self.projectiles: List[Projectile] = []
-        self.grenades_projectiles: List[Grenade] = []
-        self.drops: List[WorldDrop] = []
-
-        self.particles = ParticleSystem()
-        self.floating_texts: List[FloatingText] = []
-        self.messages: List[Message] = []
-
-        self.quest_system = QuestSystem()
-        self.dialogue = DialogueSystem()
-        self.environment = EnvironmentSystem()
-
-        self.camera_x = 0.0
-        self.camera_y = 0.0
-        self.camera_target_x = 0.0
-
-        self.screen_shake = 0.0
-        self.muzzle_flash = 0.0
-
-        self.spawn_timer = 2.0
-        self.total_time = 0
-        self.kills = 0
-
-        self.minimap = True
-        self.show_debug = False
-
-        self.main_menu_selection = 0
-        self.inventory_selection = 0
-        self.skill_selection = 0
-        self.quest_selection = 0
-        self.crafting_selection = 0
-
-        self.story_flags = {
-            "checkpoint": False,
-            "boss_spawned": False,
-            "boss_defeated": False,
-            "eclipse_started": False,
+            chests.push({
+                x: x,
+                y: GROUND - 40,
+                opened: false,
+                rare: Math.random() < 0.16
+            });
         }
 
-        self.last_zone = self.world.zone_at(self.player.x).name
+        if (Math.random() < 0.7) {
 
-        self.initialize_world()
+            crates.push({
+                x: x + random(-100, 100),
+                y: GROUND - 40
+            });
+        }
 
-    # --------------------------------------------------------
-    # Initialization
-    # --------------------------------------------------------
+        if (Math.random() < 0.35) {
 
-    def initialize_world(self):
-        self.spawn_initial_enemies()
+            wrecks.push({
+                x: x + random(-150, 150),
+                y: GROUND - 70,
+                w: random(150, 250)
+            });
+        }
+    }
+}
 
-    def spawn_initial_enemies(self):
-        positions = [
-            930,
-            1120,
-            1370,
-            1680,
-            1900,
-            2150,
-            2400,
-            2780,
-            3100,
-            3450,
-            3900,
-            4300,
-            4750,
-            5200,
-            5700,
-            6200,
-            6900,
-            7500,
-            8200,
-            8900,
-            9600,
-            10300,
-            11100,
-            11800,
-            12500,
-            13200,
-            13800,
-        ]
+function spawnZombie(type = null) {
 
-        for x in positions:
-            archetype = random.choices(
-                ["walker", "runner", "soldier", "screamer"],
-                [45, 20, 25, 10],
-            )[0]
+    let ztype = type;
 
-            level = max(1, int(x / 2200))
-            self.enemies.append(
-                Zombie(x, archetype, level)
-            )
+    if (!ztype) {
 
-    # --------------------------------------------------------
-    # Messaging
-    # --------------------------------------------------------
+        const roll = Math.random();
 
-    def notify(self, message, color=WHITE, duration=3):
-        self.messages.append(
-            Message(message, duration, color)
-        )
+        if (roll < .65) ztype = "walker";
+        else if (roll < .87) ztype = "runner";
+        else ztype = "soldier";
+    }
 
-        self.messages = self.messages[-6:]
+    let x;
 
-    # --------------------------------------------------------
-    # Quest Events
-    # --------------------------------------------------------
+    if (Math.random() < .5) {
+        x = player.x + random(850, 1500);
+    } else {
+        x = player.x - random(850, 1500);
+    }
 
-    def quest_event(self, target, amount=1):
-        self.quest_system.event(target, amount)
+    x = clamp(x, 100, WORLD_WIDTH - 100);
 
-    # --------------------------------------------------------
-    # Drops
-    # --------------------------------------------------------
+    const data = {
+        walker: {
+            hp: 65,
+            speed: 55,
+            damage: 9,
+            size: 48,
+            color: "#60705b"
+        },
 
-    def drop_item(self, x, y):
-        choices = [
-            ("ammo_9mm", random.randint(5, 14)),
-            ("ammo_rifle", random.randint(3, 8)),
-            ("scrap", random.randint(1, 5)),
-            ("cloth", random.randint(1, 3)),
-            ("food", 1),
-            ("bandage", 1),
-        ]
+        runner: {
+            hp: 42,
+            speed: 105,
+            damage: 12,
+            size: 43,
+            color: "#7e6655"
+        },
 
-        item, amount = random.choice(choices)
+        soldier: {
+            hp: 110,
+            speed: 42,
+            damage: 17,
+            size: 55,
+            color: "#4d5b48"
+        }
+    }[ztype];
 
-        self.drops.append(
-            WorldDrop(x, y, item, amount)
-        )
+    zombies.push({
+        type: ztype,
 
-    # --------------------------------------------------------
-    # Enemy Spawning
-    # --------------------------------------------------------
+        x: x,
+        y: GROUND - data.size,
 
-    def spawn_horde_near(self, x, count):
-        for _ in range(count):
-            spawn_x = x + random.choice(
-                [-1, 1]
-            ) * random.randint(300, 650)
+        w: data.size,
+        h: data.size,
 
-            spawn_x = clamp(spawn_x, 0, WORLD_WIDTH - 100)
+        hp: data.hp * (1 + wave * .08),
+        maxHp: data.hp * (1 + wave * .08),
 
-            archetype = random.choice(
-                ["walker", "runner", "soldier"]
-            )
+        speed: data.speed * (1 + wave * .025),
 
-            self.enemies.append(
-                Zombie(
-                    spawn_x,
-                    archetype,
-                    max(1, int(spawn_x / 2200)),
-                )
-            )
+        damage: data.damage * (1 + wave * .04),
 
-    def spawn_boss(self):
-        if self.story_flags["boss_spawned"]:
-            return
+        attackCooldown: 0,
 
-        self.story_flags["boss_spawned"] = True
+        color: data.color,
 
-        boss = Boss(15100)
-        self.enemies.append(boss)
+        dead: false,
 
-        self.notify(
-            "WARNING: THE WARDEN HAS AWAKENED.",
-            RED,
-            6,
-        )
+        hitFlash: 0
+    });
+}
 
-    # --------------------------------------------------------
-    # Story
-    # --------------------------------------------------------
+function spawnWave() {
 
-    def update_story(self):
-        player_x = self.player.x
+    const count = Math.min(30, 4 + wave * 2);
+
+    for (let i = 0; i < count; i++) {
+        spawnZombie();
+    }
+
+    showMessage(
+        "WAVE " + wave + " — THE DEAD ARE COMING",
+        3
+    );
+}
+
+function spawnBoss() {
+
+    boss = {
+        x: 15300,
+        y: GROUND - 145,
+
+        w: 90,
+        h: 145,
+
+        hp: 1800,
+        maxHp: 1800,
+
+        speed: 65,
+
+        attackCooldown: 0,
+
+        color: "#252d27"
+    };
+
+    showMessage(
+        "THE WARDEN HAS ARRIVED",
+        5
+    );
+}
+
+function shoot() {
+
+    if (!gameRunning) return;
+
+    if (player.reloadTimer > 0) return;
+
+    if (player.fireCooldown > 0) return;
+
+    if (player.ammo <= 0) {
+
+        showMessage("EMPTY MAGAZINE — PRESS R");
+
+        reload();
+
+        return;
+    }
+
+    player.ammo--;
+
+    player.fireCooldown = .22;
+
+    const worldMouseX =
+        mouse.x + cameraX;
+
+    const worldMouseY =
+        mouse.y;
+
+    const ox =
+        player.x +
+        player.w / 2 +
+        player.facing * 25;
+
+    const oy =
+        player.y + 38;
+
+    let dx = worldMouseX - ox;
+    let dy = worldMouseY - oy;
+
+    const length =
+        Math.hypot(dx, dy) || 1;
+
+    dx /= length;
+    dy /= length;
+
+    bullets.push({
+        x: ox,
+        y: oy,
+
+        vx: dx * 1200,
+        vy: dy * 1200,
+
+        damage: 34,
+
+        life: 1.4
+    });
+
+    screenShake = 3;
+}
+
+function reload() {
+
+    if (player.reloadTimer > 0) return;
+
+    if (player.ammo >= player.magazine) return;
+
+    if (player.reserveAmmo <= 0) {
+
+        showMessage("NO AMMUNITION");
+
+        return;
+    }
+
+    player.reloadTimer = 1.25;
+
+    showMessage("RELOADING...");
+}
+
+function finishReload() {
+
+    const needed =
+        player.magazine - player.ammo;
+
+    const amount =
+        Math.min(needed, player.reserveAmmo);
+
+    player.ammo += amount;
+    player.reserveAmmo -= amount;
+}
+
+function grenade() {
+
+    if (!gameRunning) return;
+
+    if (player.grenades <= 0) {
+
+        showMessage("NO GRENADES");
+
+        return;
+    }
+
+    player.grenades--;
+
+    const targetX =
+        mouse.x + cameraX;
+
+    const targetY =
+        mouse.y;
+
+    let dx =
+        targetX - player.x;
+
+    let dy =
+        targetY - player.y;
+
+    const len =
+        Math.hypot(dx, dy) || 1;
+
+    dx /= len;
+    dy /= len;
+
+    grenades.push({
+        x: player.x,
+        y: player.y + 30,
+
+        vx: dx * 480,
+        vy: dy * 480,
+
+        timer: 1.0
+    });
+}
+
+function interact() {
+
+    for (const chest of chests) {
+
+        if (chest.opened) continue;
 
         if (
-            not self.story_flags["checkpoint"]
-            and player_x > 1450
-        ):
-            self.story_flags["checkpoint"] = True
-            self.quest_event("reach_checkpoint")
+            Math.abs(player.x - chest.x) < 100
+        ) {
 
-            self.dialogue.start(
-                "Mara",
-                [
-                    "You made it out of the asylum...",
-                    "But this isn't a war anymore.",
-                    "Whatever happened here changed everything.",
-                    "Find the military radio. Someone may still be alive.",
-                ],
-            )
+            chest.opened = true;
 
-        if (
-            player_x > 6800
-            and not self.story_flags["eclipse_started"]
-        ):
-            self.story_flags["eclipse_started"] = True
+            const ammo =
+                chest.rare ? 35 : 15;
 
-            self.dialogue.start(
-                "Unknown Radio",
-                [
-                    "If anyone can hear this...",
-                    "Do not enter the Eclipse facility.",
-                    "The dead are not the worst thing inside.",
-                ],
-            )
+            player.reserveAmmo += ammo;
 
-        if player_x > 14000:
-            self.spawn_boss()
+            if (Math.random() < .5) {
+                player.health = Math.min(
+                    player.maxHealth,
+                    player.health + 25
+                );
+            }
 
-        if (
-            self.story_flags["boss_spawned"]
-            and not self.story_flags["boss_defeated"]
-        ):
-            if not any(
-                isinstance(enemy, Boss) and not enemy.dead
-                for enemy in self.enemies
-            ):
-                self.story_flags["boss_defeated"] = True
-                self.state = GAME_VICTORY
+            if (Math.random() < .35) {
+                player.grenades++;
+            }
 
-    # --------------------------------------------------------
-    # Input
-    # --------------------------------------------------------
+            addXP(chest.rare ? 100 : 35);
 
-    def handle_event(self, event):
-        if event.type == pygame.QUIT:
-            self.running = False
-            return
+            showMessage(
+                chest.rare
+                    ? "RARE MILITARY CACHE FOUND!"
+                    : "SUPPLIES FOUND!",
+                3
+            );
 
-        if self.state == GAME_MENU:
-            self.handle_menu_event(event)
-            return
+            return;
+        }
+    }
+}
 
-        if self.state == GAME_DIALOGUE:
-            if event.type == pygame.KEYDOWN:
-                if event.key in (
-                    pygame.K_SPACE,
-                    pygame.K_RETURN,
-                    pygame.K_e,
-                ):
-                    self.dialogue.advance()
-                    if not self.dialogue.active:
-                        self.state = GAME_PLAYING
-            return
+function hurtPlayer(amount) {
 
-        if self.state == GAME_GAMEOVER:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    self.new_game()
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = GAME_MENU
-            return
+    if (player.invincible > 0) return;
 
-        if self.state == GAME_VICTORY:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    self.new_game()
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = GAME_MENU
-            return
+    player.health -= amount;
 
-        if event.type == pygame.KEYDOWN:
-            self.handle_keydown(event.key)
+    player.invincible = .7;
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            self.handle_mouse(event)
+    screenShake = 10;
 
-    def handle_menu_event(self, event):
-        if event.type != pygame.KEYDOWN:
-            return
+    showMessage("-" + Math.floor(amount) + " HEALTH");
 
-        if event.key in (pygame.K_DOWN, pygame.K_s):
-            self.main_menu_selection = (
-                self.main_menu_selection + 1
-            ) % 4
+    if (player.health <= 0) {
 
-        elif event.key in (pygame.K_UP, pygame.K_w):
-            self.main_menu_selection = (
-                self.main_menu_selection - 1
-            ) % 4
+        player.health = 0;
 
-        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-            if self.main_menu_selection == 0:
-                self.new_game()
+        endGame();
+    }
+}
 
-            elif self.main_menu_selection == 1:
-                if SAVE_FILE.exists():
-                    self.load_game()
-                else:
-                    self.notify("No save file found.", RED)
+function killZombie(z) {
 
-            elif self.main_menu_selection == 2:
-                self.state = GAME_PLAYING
-                self.notify(
-                    "Demo mode started. Your progress will not be reset.",
-                    YELLOW,
-                )
+    if (z.dead) return;
 
-            elif self.main_menu_selection == 3:
-                self.running = False
+    z.dead = true;
 
-    def handle_keydown(self, key):
-        if key in (pygame.K_ESCAPE, pygame.K_p):
-            if self.state == GAME_PLAYING:
-                self.state = GAME_PAUSED
-            elif self.state == GAME_PAUSED:
-                self.state = GAME_PLAYING
-            return
+    zombiesKilled++;
 
-        if self.state == GAME_PAUSED:
-            if key == pygame.K_F5:
-                self.save_game()
-            elif key == pygame.K_F9:
-                self.load_game()
-            return
+    player.score += 100;
 
-        if key == pygame.K_F5:
-            self.save_game()
-            return
+    addXP(45);
 
-        if key == pygame.K_F9:
-            self.load_game()
-            return
+    for (let i = 0; i < 10; i++) {
 
-        if key == pygame.K_F3:
-            self.show_debug = not self.show_debug
-            return
+        particles.push({
+            x: z.x + z.w / 2,
+            y: z.y + z.h / 2,
 
-        if key == pygame.K_i:
-            self.state = (
-                GAME_PLAYING
-                if self.state == GAME_INVENTORY
-                else GAME_INVENTORY
-            )
-            return
+            vx: random(-180, 180),
+            vy: random(-250, 50),
 
-        if key == pygame.K_k:
-            self.state = (
-                GAME_PLAYING
-                if self.state == GAME_SKILLS
-                else GAME_SKILLS
-            )
-            return
+            life: random(.3, .8),
 
-        if key == pygame.K_j:
-            self.state = (
-                GAME_PLAYING
-                if self.state == GAME_QUESTS
-                else GAME_QUESTS
-            )
-            return
+            color: "#a62d2d"
+        });
+    }
+}
 
-        if key == pygame.K_m:
-            self.state = (
-                GAME_PLAYING
-                if self.state == GAME_MAP
-                else GAME_MAP
-            )
-            return
+function damageZombie(z, amount) {
 
-        if key == pygame.K_c:
-            self.state = (
-                GAME_PLAYING
-                if self.state == GAME_CRAFTING
-                else GAME_CRAFTING
-            )
-            return
+    z.hp -= amount;
 
-        if self.state == GAME_INVENTORY:
-            self.handle_inventory_key(key)
-            return
+    z.hitFlash = .08;
 
-        if self.state == GAME_SKILLS:
-            self.handle_skill_key(key)
-            return
+    if (z.hp <= 0) {
+        killZombie(z);
+    }
+}
 
-        if self.state == GAME_QUESTS:
-            self.handle_quest_key(key)
-            return
+function updatePlayer(dt) {
 
-        if self.state == GAME_CRAFTING:
-            self.handle_crafting_key(key)
-            return
+    player.fireCooldown =
+        Math.max(0, player.fireCooldown - dt);
 
-        if key == pygame.K_r:
-            self.player.reload(self)
+    player.invincible =
+        Math.max(0, player.invincible - dt);
 
-        elif key == pygame.K_f:
-            self.player.flashlight = not self.player.flashlight
+    if (player.reloadTimer > 0) {
 
-        elif key == pygame.K_q:
-            self.player.melee_attack(self)
+        player.reloadTimer -= dt;
 
-        elif key == pygame.K_g:
-            mx, my = pygame.mouse.get_pos()
-            self.player.throw_grenade(
-                self,
-                mx + self.camera_x,
-                my,
-            )
+        if (player.reloadTimer <= 0) {
+            finishReload();
+        }
+    }
 
-        elif key == pygame.K_1:
-            self.player.switch_weapon(WEAPON_PISTOL)
+    let direction = 0;
 
-        elif key == pygame.K_2:
-            self.player.switch_weapon(WEAPON_RIFLE)
+    if (
+        keys["KeyA"] ||
+        keys["ArrowLeft"]
+    ) {
+        direction--;
+    }
 
-        elif key == pygame.K_3:
-            self.player.switch_weapon(WEAPON_SMG)
+    if (
+        keys["KeyD"] ||
+        keys["ArrowRight"]
+    ) {
+        direction++;
+    }
 
-        elif key == pygame.K_4:
-            self.player.switch_weapon(WEAPON_SHOTGUN)
+    const sprint =
+        keys["ShiftLeft"] ||
+        keys["ShiftRight"];
 
-        elif key == pygame.K_5:
-            self.player.switch_weapon(WEAPON_AXE)
+    let speed =
+        sprint &&
+        player.stamina > 0
+            ? player.sprintSpeed
+            : player.speed;
 
-        elif key == pygame.K_h:
-            self.player.use_bandage(self)
+    if (sprint && direction !== 0) {
 
-        elif key == pygame.K_t:
-            self.player.use_medkit(self)
+        player.stamina -= 28 * dt;
 
-        elif key == pygame.K_y:
-            self.player.eat(self)
+    } else {
 
-        elif key == pygame.K_e:
-            self.interact()
+        player.stamina += 20 * dt;
+    }
 
-    def handle_inventory_key(self, key):
-        if key == pygame.K_ESCAPE:
-            self.state = GAME_PLAYING
-            return
+    player.stamina =
+        clamp(player.stamina, 0, player.maxStamina);
 
-        if key == pygame.K_h:
-            self.player.use_bandage(self)
+    player.vx =
+        direction * speed;
 
-        elif key == pygame.K_t:
-            self.player.use_medkit(self)
+    if (direction !== 0) {
+        player.facing = direction;
+    }
 
-        elif key == pygame.K_y:
-            self.player.eat(self)
+    if (
+        (keys["KeyW"] ||
+        keys["Space"]) &&
+        player.y + player.h >= GROUND - 2
+    ) {
 
-    def handle_skill_key(self, key):
-        if key == pygame.K_ESCAPE:
-            self.state = GAME_PLAYING
-            return
+        player.vy = -620;
+    }
 
-        skills = list(self.player.skills.keys())
+    player.vy += 1500 * dt;
 
-        if key in (pygame.K_DOWN, pygame.K_s):
-            self.skill_selection = (
-                self.skill_selection + 1
-            ) % len(skills)
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
 
-        elif key in (pygame.K_UP, pygame.K_w):
-            self.skill_selection = (
-                self.skill_selection - 1
-            ) % len(skills)
+    if (player.y + player.h >= GROUND) {
 
-        elif key in (pygame.K_RETURN, pygame.K_SPACE):
-            skill_id = skills[self.skill_selection]
-            skill = self.player.skills[skill_id]
+        player.y =
+            GROUND - player.h;
+
+        player.vy = 0;
+    }
+
+    player.x =
+        clamp(
+            player.x,
+            0,
+            WORLD_WIDTH - player.w
+        );
+
+    player.hunger -= .25 * dt;
+
+    if (player.hunger <= 0) {
+
+        player.hunger = 0;
+
+        player.health -= 2 * dt;
+    }
+
+    if (mouse.down) {
+        shoot();
+    }
+}
+
+function updateBullets(dt) {
+
+    for (let i = bullets.length - 1; i >= 0; i--) {
+
+        const b = bullets[i];
+
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+
+        b.life -= dt;
+
+        let hit = false;
+
+        for (const z of zombies) {
+
+            if (z.dead) continue;
 
             if (
-                self.player.skill_points > 0
-                and skill.level < skill.maximum
-            ):
-                skill.level += 1
-                self.player.skill_points -= 1
-                self.notify(
-                    f"{skill.name} upgraded to level {skill.level}.",
-                    GREEN,
-                )
+                b.x > z.x &&
+                b.x < z.x + z.w &&
+                b.y > z.y &&
+                b.y < z.y + z.h
+            ) {
 
-    def handle_quest_key(self, key):
-        if key == pygame.K_ESCAPE:
-            self.state = GAME_PLAYING
-            return
+                damageZombie(z, b.damage);
 
-        if key in (pygame.K_DOWN, pygame.K_s):
-            self.quest_selection = (
-                self.quest_selection + 1
-            ) % len(self.quest_system.quests)
+                hit = true;
 
-        elif key in (pygame.K_UP, pygame.K_w):
-            self.quest_selection = (
-                self.quest_selection - 1
-            ) % len(self.quest_system.quests)
-
-        elif key in (pygame.K_RETURN, pygame.K_SPACE):
-            quest = self.quest_system.quests[
-                self.quest_selection
-            ]
-
-            if quest.completed and not quest.claimed:
-                self.quest_system.claim(quest, self)
-
-    def handle_crafting_key(self, key):
-        if key == pygame.K_ESCAPE:
-            self.state = GAME_PLAYING
-            return
-
-        if key in (pygame.K_DOWN, pygame.K_s):
-            self.crafting_selection = (
-                self.crafting_selection + 1
-            ) % len(RECIPES)
-
-        elif key in (pygame.K_UP, pygame.K_w):
-            self.crafting_selection = (
-                self.crafting_selection - 1
-            ) % len(RECIPES)
-
-        elif key in (pygame.K_RETURN, pygame.K_SPACE):
-            self.craft(RECIPES[self.crafting_selection])
-
-    def handle_mouse(self, event):
-        if self.state != GAME_PLAYING:
-            return
-
-        if event.button == 1:
-            mx, my = pygame.mouse.get_pos()
-            self.player.shoot(
-                self,
-                mx + self.camera_x,
-                my + self.camera_y,
-            )
-
-        elif event.button == 3:
-            self.player.aiming = not self.player.aiming
-
-    # --------------------------------------------------------
-    # Interactions
-    # --------------------------------------------------------
-
-    def interact(self):
-        # Chest interaction.
-        nearby = [
-            chest
-            for chest in self.world.chests
-            if abs(chest.x - self.player.x) < 105
-        ]
-
-        if nearby:
-            nearby.sort(
-                key=lambda chest: abs(
-                    chest.x - self.player.x
-                )
-            )
-            nearby[0].interact(self)
-            return
-
-        # Safehouse interaction.
-        if self.safehouse.inside(self.player):
-            self.dialogue.start(
-                "Survivor",
-                [
-                    "This place can be rebuilt.",
-                    "Scrap metal can improve the medical station.",
-                    "A stronger workbench will unlock better equipment.",
-                ],
-            )
-            self.state = GAME_DIALOGUE
-            return
-
-        self.notify("Nothing nearby to interact with.", GREY)
-
-    # --------------------------------------------------------
-    # Crafting
-    # --------------------------------------------------------
-
-    def craft(self, recipe):
-        for item, amount in recipe.cost.items():
-            if not self.player.has_item(item, amount):
-                self.notify(
-                    f"Missing {ITEM_NAMES.get(item, item)}.",
-                    RED,
-                )
-                return
-
-        for item, amount in recipe.cost.items():
-            self.player.remove_item(item, amount)
-
-        for item, amount in recipe.result.items():
-            self.player.add_item(item, amount)
-
-        self.notify(
-            f"Crafted {recipe.name}.",
-            GREEN,
-        )
-
-    # --------------------------------------------------------
-    # Update
-    # --------------------------------------------------------
-
-    def update(self, dt):
-        if self.state != GAME_PLAYING:
-            self.update_messages(dt)
-            return
-
-        self.total_time += dt
-
-        self.environment.update(dt)
-        self.player.update(self, dt)
-
-        self.update_camera(dt)
-        self.update_enemies(dt)
-        self.update_projectiles(dt)
-        self.update_grenades(dt)
-        self.update_drops(dt)
-        self.update_particles(dt)
-        self.update_floating_text(dt)
-        self.update_messages(dt)
-        self.update_story()
-
-        self.muzzle_flash = max(0, self.muzzle_flash - dt)
-        self.screen_shake = max(0, self.screen_shake - 24 * dt)
-
-        # Checkpoint.
-        if self.player.x > 1450:
-            self.player_checkpoint = 1450
-
-        # Zone transition notification.
-        zone = self.world.zone_at(self.player.x)
-
-        if zone.name != self.last_zone:
-            self.last_zone = zone.name
-            self.notify(
-                f"Entering: {zone.name}",
-                YELLOW,
-                4,
-            )
-
-        # Unlock some weapons as the player reaches zones.
-        if (
-            self.player.x > 2500
-            and not self.player.weapons[WEAPON_RIFLE]["owned"]
-        ):
-            self.player.unlock_weapon(WEAPON_RIFLE, 5)
-            self.notify(
-                "Weapon found: Bolt Rifle",
-                YELLOW,
-            )
-
-        if (
-            self.player.x > 5600
-            and not self.player.weapons[WEAPON_SMG]["owned"]
-        ):
-            self.player.unlock_weapon(WEAPON_SMG, 32)
-            self.notify(
-                "Weapon found: WW2 SMG",
-                YELLOW,
-            )
-
-        if (
-            self.player.x > 8900
-            and not self.player.weapons[WEAPON_SHOTGUN]["owned"]
-        ):
-            self.player.unlock_weapon(WEAPON_SHOTGUN, 5)
-            self.notify(
-                "Weapon found: Trench Shotgun",
-                YELLOW,
-            )
-
-        # Procedural spawns near player.
-        self.spawn_timer -= dt
-
-        if self.spawn_timer <= 0:
-            self.spawn_timer = random.uniform(5, 10)
-
-            alive = sum(
-                1 for enemy in self.enemies
-                if not enemy.dead
-            )
-
-            if alive < 24:
-                side = random.choice([-1, 1])
-
-                spawn_x = self.player.x + side * random.randint(
-                    800,
-                    1250,
-                )
-
-                spawn_x = clamp(
-                    spawn_x,
-                    0,
-                    WORLD_WIDTH - 100,
-                )
-
-                archetype = random.choices(
-                    ["walker", "runner", "soldier", "screamer"],
-                    [50, 20, 25, 5],
-                )[0]
-
-                self.enemies.append(
-                    Zombie(
-                        spawn_x,
-                        archetype,
-                        max(1, int(spawn_x / 2200)),
-                    )
-                )
-
-    def update_camera(self, dt):
-        target = self.player.x - WIDTH * 0.38
-
-        self.camera_x = lerp(
-            self.camera_x,
-            target,
-            clamp(dt * 6, 0, 1),
-        )
-
-        self.camera_x = clamp(
-            self.camera_x,
-            0,
-            WORLD_WIDTH - WIDTH,
-        )
-
-    def update_enemies(self, dt):
-        for enemy in self.enemies:
-            enemy.update(self, dt)
-
-        # Keep dead enemies for a while for quest/story references.
-        if len(self.enemies) > 80:
-            self.enemies = [
-                enemy
-                for enemy in self.enemies
-                if not enemy.dead
-            ]
-
-    def update_projectiles(self, dt):
-        for projectile in self.projectiles[:]:
-            projectile.update(dt)
-
-            if projectile.life <= 0:
-                self.projectiles.remove(projectile)
-                continue
-
-            hit = False
-
-            if projectile.owner == "player":
-                for enemy in self.enemies:
-                    if enemy.dead:
-                        continue
-
-                    if projectile.rect().colliderect(enemy.rect):
-                        enemy.take_damage(
-                            projectile.damage,
-                            self,
-                        )
-
-                        self.particles.blood(
-                            projectile.x,
-                            projectile.y,
-                        )
-
-                        hit = True
-                        break
-
-            if hit and projectile in self.projectiles:
-                self.projectiles.remove(projectile)
-
-    def update_grenades(self, dt):
-        for grenade in self.grenades_projectiles[:]:
-            if not grenade.update(self, dt):
-                self.grenades_projectiles.remove(grenade)
-
-    def update_drops(self, dt):
-        for drop in self.drops[:]:
-            if not drop.update(self, dt):
-                self.drops.remove(drop)
-
-    def update_particles(self, dt):
-        self.particles.update(dt)
-
-    def update_floating_text(self, dt):
-        for item in self.floating_texts[:]:
-            item.update(dt)
-            if item.life <= 0:
-                self.floating_texts.remove(item)
-
-    def update_messages(self, dt):
-        for message in self.messages[:]:
-            message.timer -= dt
-            if message.timer <= 0:
-                self.messages.remove(message)
-
-    # --------------------------------------------------------
-    # Save / Load
-    # --------------------------------------------------------
-
-    def save_game(self):
-        data = {
-            "player": {
-                "x": self.player.x,
-                "hp": self.player.hp,
-                "max_hp": self.player.max_hp,
-                "stamina": self.player.stamina,
-                "hunger": self.player.hunger,
-                "level": self.player.level,
-                "xp": self.player.xp,
-                "next_xp": self.player.next_xp,
-                "skill_points": self.player.skill_points,
-                "inventory": self.player.inventory,
-                "weapons": self.player.weapons,
-                "weapon": self.player.weapon,
-                "grenades": self.player.grenades,
-                "skills": {
-                    key: asdict(skill)
-                    for key, skill in self.player.skills.items()
-                },
-            },
-            "chests": [
-                chest.opened
-                for chest in self.world.chests
-            ],
-            "quests": [
-                asdict(quest)
-                for quest in self.quest_system.quests
-            ],
-            "safehouse": {
-                "level": self.safehouse.level,
-                "medical_upgrade": self.safehouse.medical_upgrade,
-                "workbench_upgrade": self.safehouse.workbench_upgrade,
-            },
-            "story_flags": self.story_flags,
-            "total_time": self.total_time,
+                break;
+            }
         }
 
-        try:
-            SAVE_FILE.write_text(
-                json.dumps(data, indent=2),
-                encoding="utf-8",
-            )
-            self.notify(
-                "Game saved.",
-                GREEN,
-            )
-        except OSError as exc:
-            self.notify(
-                f"Save failed: {exc}",
-                RED,
-            )
+        if (
+            boss &&
+            b.x > boss.x &&
+            b.x < boss.x + boss.w &&
+            b.y > boss.y &&
+            b.y < boss.y + boss.h
+        ) {
 
-    def load_game(self):
-        if not SAVE_FILE.exists():
-            self.notify(
-                "No save game exists.",
-                RED,
-            )
-            return
+            boss.hp -= b.damage;
 
-        try:
-            data = json.loads(
-                SAVE_FILE.read_text(
-                    encoding="utf-8"
-                )
-            )
+            hit = true;
 
-            pdata = data["player"]
+            if (boss.hp <= 0) {
 
-            self.player.x = pdata["x"]
-            self.player.hp = pdata["hp"]
-            self.player.max_hp = pdata["max_hp"]
-            self.player.stamina = pdata["stamina"]
-            self.player.hunger = pdata["hunger"]
-            self.player.level = pdata["level"]
-            self.player.xp = pdata["xp"]
-            self.player.next_xp = pdata["next_xp"]
-            self.player.skill_points = pdata["skill_points"]
-            self.player.inventory = pdata["inventory"]
-            self.player.weapons = pdata["weapons"]
-            self.player.weapon = pdata["weapon"]
-            self.player.grenades = pdata["grenades"]
+                boss = null;
 
-            for key, skill_data in pdata["skills"].items():
-                if key in self.player.skills:
-                    self.player.skills[key].level = skill_data["level"]
+                document
+                    .getElementById("victory")
+                    .classList
+                    .remove("hidden");
 
-            for chest, opened in zip(
-                self.world.chests,
-                data.get("chests", []),
-            ):
-                chest.opened = opened
+                gameRunning = false;
+            }
+        }
 
-            for quest, saved in zip(
-                self.quest_system.quests,
-                data.get("quests", []),
-            ):
-                quest.progress = saved["progress"]
-                quest.completed = saved["completed"]
-                quest.claimed = saved["claimed"]
+        if (
+            hit ||
+            b.life <= 0 ||
+            b.x < 0 ||
+            b.x > WORLD_WIDTH
+        ) {
 
-            safehouse = data.get("safehouse", {})
-            self.safehouse.level = safehouse.get(
-                "level",
-                1,
-            )
-            self.safehouse.medical_upgrade = safehouse.get(
-                "medical_upgrade",
+            bullets.splice(i, 1);
+        }
+    }
+}
+
+function updateZombies(dt) {
+
+    for (const z of zombies) {
+
+        if (z.dead) continue;
+
+        z.hitFlash =
+            Math.max(0, z.hitFlash - dt);
+
+        z.attackCooldown =
+            Math.max(
                 0,
-            )
-            self.safehouse.workbench_upgrade = safehouse.get(
-                "workbench_upgrade",
+                z.attackCooldown - dt
+            );
+
+        const dx =
+            player.x - z.x;
+
+        const distance =
+            Math.abs(dx);
+
+        if (distance > 50) {
+
+            z.x +=
+                Math.sign(dx) *
+                z.speed *
+                dt;
+        }
+
+        if (
+            distance < 65 &&
+            z.attackCooldown <= 0
+        ) {
+
+            hurtPlayer(z.damage);
+
+            z.attackCooldown = 1.0;
+        }
+
+        z.x =
+            clamp(
+                z.x,
                 0,
-            )
+                WORLD_WIDTH - z.w
+            );
+    }
 
-            self.story_flags.update(
-                data.get("story_flags", {})
-            )
+    for (let i = zombies.length - 1; i >= 0; i--) {
 
-            self.total_time = data.get(
-                "total_time",
-                0,
-            )
+        if (zombies[i].dead) {
+            zombies.splice(i, 1);
+        }
+    }
 
-            self.state = GAME_PLAYING
-            self.notify(
-                "Game loaded.",
-                GREEN,
-            )
+    if (
+        zombies.length === 0 &&
+        player.x < 14500
+    ) {
 
-        except (
-            OSError,
-            json.JSONDecodeError,
-            KeyError,
-            TypeError,
-        ) as exc:
-            self.notify(
-                f"Load failed: {exc}",
-                RED,
-            )
+        wave++;
 
-    # --------------------------------------------------------
-    # New Game
-    # --------------------------------------------------------
+        spawnWave();
+    }
+}
 
-    def new_game(self):
-        self.__init__()
-        self.state = GAME_PLAYING
-        self.notify(
-            "You escaped the asylum. Find supplies and survive.",
-            YELLOW,
-            5,
-        )
+function updateBoss(dt) {
 
-    # --------------------------------------------------------
-    # Drawing
-    # --------------------------------------------------------
+    if (!boss) return;
 
-    def draw(self):
-        # Camera shake.
-        shake_x = 0
-        shake_y = 0
-
-        if self.screen_shake > 0:
-            shake_x = random.randint(
-                -int(self.screen_shake),
-                int(self.screen_shake),
-            )
-            shake_y = random.randint(
-                -int(self.screen_shake),
-                int(self.screen_shake),
-            )
-
-        world_surface = pygame.Surface(
-            (WIDTH, HEIGHT)
-        )
-
-        self.world.draw_background(
-            world_surface,
-            self.camera_x,
-            self.environment,
-        )
-
-        self.safehouse.draw(
-            world_surface,
-            self.camera_x,
-        )
-
-        self.world.draw_objects(
-            world_surface,
-            self.camera_x,
-        )
-
-        # Drops.
-        for drop in self.drops:
-            drop.draw(
-                world_surface,
-                self.camera_x,
-            )
-
-        # Enemies.
-        for enemy in self.enemies:
-            if not enemy.dead:
-                enemy.draw(
-                    world_surface,
-                    self.camera_x,
-                )
-
-        # Projectiles.
-        for projectile in self.projectiles:
-            projectile.draw(
-                world_surface,
-                self.camera_x,
-            )
-
-        # Grenades.
-        for grenade in self.grenades_projectiles:
-            grenade.draw(
-                world_surface,
-                self.camera_x,
-            )
-
-        self.player.draw(
-            world_surface,
-            self.camera_x,
-        )
-
-        self.particles.draw(
-            world_surface,
-            self.camera_x,
-        )
-
-        self.floating_texts_draw(
-            world_surface
-        )
-
-        screen.fill(BLACK)
-        screen.blit(
-            world_surface,
-            (shake_x, shake_y),
-        )
-
-        # Environment overlays.
-        self.environment.draw_overlay(screen)
-
-        # Flashlight.
-        self.draw_flashlight()
-
-        # Muzzle flash.
-        if self.muzzle_flash > 0:
-            mx, my = pygame.mouse.get_pos()
-            pygame.draw.circle(
-                screen,
-                (255, 225, 135),
-                (mx, my),
-                24,
-            )
-
-        # State UI.
-        if self.state == GAME_PLAYING:
-            self.draw_hud()
-
-        elif self.state == GAME_PAUSED:
-            self.draw_hud()
-            self.draw_pause()
-
-        elif self.state == GAME_INVENTORY:
-            self.draw_hud()
-            self.draw_inventory()
-
-        elif self.state == GAME_SKILLS:
-            self.draw_hud()
-            self.draw_skills()
-
-        elif self.state == GAME_QUESTS:
-            self.draw_hud()
-            self.draw_quests()
-
-        elif self.state == GAME_MAP:
-            self.draw_hud()
-            self.draw_map()
-
-        elif self.state == GAME_CRAFTING:
-            self.draw_hud()
-            self.draw_crafting()
-
-        elif self.state == GAME_DIALOGUE:
-            self.draw_hud()
-            self.dialogue.draw(screen)
-
-        elif self.state == GAME_GAMEOVER:
-            self.draw_gameover()
-
-        elif self.state == GAME_VICTORY:
-            self.draw_victory()
-
-        self.draw_messages()
-
-        if self.show_debug:
-            self.draw_debug()
-
-    def floating_texts_draw(self, surface):
-        for item in self.floating_texts:
-            item.draw(
-                surface,
-                self.camera_x,
-            )
-
-    # --------------------------------------------------------
-    # Flashlight
-    # --------------------------------------------------------
-
-    def draw_flashlight(self):
-        if not self.player.flashlight:
-            return
-
-        overlay = pygame.Surface(
-            (WIDTH, HEIGHT),
-            pygame.SRCALPHA,
-        )
-
-        overlay.fill(
-            (0, 0, 0, 135)
-        )
-
-        mx, my = pygame.mouse.get_pos()
-
-        # Transparent circular light.
-        pygame.draw.circle(
-            overlay,
-            (0, 0, 0, 0),
-            (mx, my),
-            205,
-        )
-
-        # Additional subtle light.
-        pygame.draw.circle(
-            overlay,
-            (255, 255, 210, 18),
-            (mx, my),
-            220,
-        )
-
-        screen.blit(
-            overlay,
-            (0, 0),
-        )
-
-    # --------------------------------------------------------
-    # HUD
-    # --------------------------------------------------------
-
-    def draw_hud(self):
-        # Left player panel.
-        panel = pygame.Rect(
-            15,
-            15,
-            365,
-            125,
-        )
-
-        draw_panel(
-            screen,
-            panel,
-            205,
-        )
-
-        draw_text(
-            screen,
-            f"LEVEL {self.player.level}",
-            30,
-            25,
-            FONT_SMALL,
-            YELLOW,
-        )
-
-        draw_text(
-            screen,
-            f"XP {int(self.player.xp)}/{self.player.next_xp}",
-            120,
-            25,
-            FONT_SMALL,
-            OFFWHITE,
-        )
-
-        draw_bar(
-            screen,
-            pygame.Rect(30, 52, 210, 18),
-            self.player.hp,
-            self.player.max_hp,
-            RED,
-        )
-
-        draw_text(
-            screen,
-            f"{int(self.player.hp)}/{self.player.max_hp}",
-            250,
-            48,
-            FONT_SMALL,
-            WHITE,
-        )
-
-        draw_bar(
-            screen,
-            pygame.Rect(30, 78, 210, 14),
-            self.player.stamina,
-            self.player.max_stamina,
-            GREEN,
-        )
-
-        draw_bar(
-            screen,
-            pygame.Rect(30, 100, 210, 14),
-            self.player.hunger,
-            100,
-            ORANGE,
-        )
-
-        draw_text(
-            screen,
-            f"{WEAPONS[self.player.weapon].name}",
-            250,
-            77,
-            FONT_SMALL,
-            YELLOW,
-        )
-
-        ammo = self.player.weapons[
-            self.player.weapon
-        ]["ammo"]
-
-        draw_text(
-            screen,
-            f"{ammo} / {self.ammo_reserve()}",
-            250,
-            100,
-            FONT_SMALL,
-            WHITE,
-        )
-
-        # Right controls panel.
-        draw_panel(
-            screen,
-            pygame.Rect(
-                WIDTH - 300,
-                15,
-                285,
-                125,
-            ),
-            180,
-        )
-
-        draw_text(
-            screen,
-            "A/D Move   SPACE Jump",
-            WIDTH - 285,
-            25,
-            FONT_TINY,
-            OFFWHITE,
-        )
-        draw_text(
-            screen,
-            "LMB Shoot   R Reload",
-            WIDTH - 285,
-            47,
-            FONT_TINY,
-            OFFWHITE,
-        )
-        draw_text(
-            screen,
-            "E Search   F Light",
-            WIDTH - 285,
-            69,
-            FONT_TINY,
-            OFFWHITE,
-        )
-        draw_text(
-            screen,
-            "I Inventory   J Quests",
-            WIDTH - 285,
-            91,
-            FONT_TINY,
-            OFFWHITE,
-        )
-        draw_text(
-            screen,
-            "K Skills   C Craft",
-            WIDTH - 285,
-            113,
-            FONT_TINY,
-            OFFWHITE,
-        )
-
-        # Minimap.
-        if self.minimap:
-            self.draw_minimap()
-
-    def ammo_reserve(self):
-        ammo_type = WEAPONS[
-            self.player.weapon
-        ].ammo_type
-
-        item = {
-            "9mm": "ammo_9mm",
-            "rifle": "ammo_rifle",
-            "shell": "ammo_shell",
-        }.get(ammo_type)
-
-        if not item:
-            return 0
-
-        return self.player.inventory.get(
-            item,
+    boss.attackCooldown =
+        Math.max(
             0,
-        )
-
-    # --------------------------------------------------------
-    # Minimap
-    # --------------------------------------------------------
-
-    def draw_minimap(self):
-        rect = pygame.Rect(
-            WIDTH - 300,
-            HEIGHT - 130,
-            285,
-            100,
-        )
-
-        draw_panel(
-            screen,
-            rect,
-            190,
-        )
-
-        # World line.
-        line = pygame.Rect(
-            rect.x + 15,
-            rect.y + 50,
-            rect.w - 30,
-            8,
-        )
-
-        pygame.draw.rect(
-            screen,
-            (62, 65, 61),
-            line,
-        )
-
-        player_ratio = self.player.x / WORLD_WIDTH
-        px = int(
-            line.x + player_ratio * line.width
-        )
-
-        pygame.draw.circle(
-            screen,
-            YELLOW,
-            (px, line.centery),
-            7,
-        )
-
-        for zone in ZONES:
-            zx = int(
-                line.x
-                + zone.start / WORLD_WIDTH * line.width
-            )
-
-            pygame.draw.line(
-                screen,
-                zone.color,
-                (zx, line.y - 4),
-                (zx, line.bottom + 4),
-                3,
-            )
-
-        draw_text(
-            screen,
-            "WORLD MAP",
-            rect.x + 15,
-            rect.y + 12,
-            FONT_SMALL,
-            OFFWHITE,
-        )
-
-        draw_text(
-            screen,
-            self.world.zone_at(self.player.x).name,
-            rect.x + 15,
-            rect.y + 68,
-            FONT_TINY,
-            YELLOW,
-        )
-
-    # --------------------------------------------------------
-    # Inventory
-    # --------------------------------------------------------
-
-    def draw_inventory(self):
-        draw_panel(
-            screen,
-            pygame.Rect(
-                120,
-                70,
-                WIDTH - 240,
-                HEIGHT - 140,
-            ),
-            235,
-        )
-
-        draw_text(
-            screen,
-            "INVENTORY",
-            WIDTH // 2,
-            100,
-            FONT_BIG,
-            YELLOW,
-            True,
-        )
-
-        y = 165
-
-        items = [
-            (key, value)
-            for key, value in self.player.inventory.items()
-            if value > 0
-        ]
-
-        if not items:
-            draw_text(
-                screen,
-                "Empty backpack.",
-                WIDTH // 2,
-                y,
-                FONT,
-                GREY,
-                True,
-            )
-
-        for item_id, amount in items:
-            draw_text(
-                screen,
-                ITEM_NAMES.get(
-                    item_id,
-                    item_id,
-                ),
-                190,
-                y,
-                FONT,
-                WHITE,
-            )
-
-            draw_text(
-                screen,
-                str(amount),
-                560,
-                y,
-                FONT,
-                YELLOW,
-            )
-
-            y += 34
-
-        # Weapons.
-        draw_text(
-            screen,
-            "WEAPONS",
-            690,
-            160,
-            FONT_MED,
-            YELLOW,
-        )
-
-        y = 205
-
-        for weapon_id, data in self.player.weapons.items():
-            definition = WEAPONS[weapon_id]
-
-            owned = data["owned"]
-
-            draw_text(
-                screen,
-                definition.name,
-                690,
-                y,
-                FONT_SMALL,
-                WHITE if owned else GREY,
-            )
-
-            if owned:
-                draw_text(
-                    screen,
-                    f"{data['ammo']} loaded",
-                    940,
-                    y,
-                    FONT_SMALL,
-                    GREEN,
-                )
-            else:
-                draw_text(
-                    screen,
-                    "LOCKED",
-                    940,
-                    y,
-                    FONT_SMALL,
-                    RED,
-                )
-
-            y += 34
-
-        draw_text(
-            screen,
-            "H Bandage   T Medkit   Y Food",
-            WIDTH // 2,
-            HEIGHT - 105,
-            FONT_SMALL,
-            OFFWHITE,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "I / ESC to close",
-            WIDTH // 2,
-            HEIGHT - 75,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Skills
-    # --------------------------------------------------------
-
-    def draw_skills(self):
-        draw_panel(
-            screen,
-            pygame.Rect(
-                180,
-                70,
-                WIDTH - 360,
-                HEIGHT - 140,
-            ),
-            235,
-        )
-
-        draw_text(
-            screen,
-            "SKILLS",
-            WIDTH // 2,
-            105,
-            FONT_BIG,
-            YELLOW,
-            True,
-        )
-
-        draw_text(
-            screen,
-            f"Skill Points: {self.player.skill_points}",
-            WIDTH // 2,
-            155,
-            FONT,
-            GREEN,
-            True,
-        )
-
-        skills = list(
-            self.player.skills.values()
-        )
-
-        y = 205
-
-        for index, skill in enumerate(skills):
-            selected = (
-                index == self.skill_selection
-            )
-
-            if selected:
-                pygame.draw.rect(
-                    screen,
-                    (65, 75, 65),
-                    (235, y - 7, 810, 72),
-                    border_radius=7,
-                )
-
-            draw_text(
-                screen,
-                f"{skill.name}  [{skill.level}/{skill.maximum}]",
-                260,
-                y,
-                FONT_MED,
-                YELLOW if selected else WHITE,
-            )
-
-            draw_text(
-                screen,
-                skill.description,
-                260,
-                y + 35,
-                FONT_SMALL,
-                OFFWHITE,
-            )
-
-            y += 82
-
-        draw_text(
-            screen,
-            "UP/DOWN select   ENTER upgrade   K/ESC close",
-            WIDTH // 2,
-            HEIGHT - 95,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Quests
-    # --------------------------------------------------------
-
-    def draw_quests(self):
-        draw_panel(
-            screen,
-            pygame.Rect(
-                100,
-                60,
-                WIDTH - 200,
-                HEIGHT - 120,
-            ),
-            235,
-        )
-
-        draw_text(
-            screen,
-            "MISSIONS",
-            WIDTH // 2,
-            95,
-            FONT_BIG,
-            YELLOW,
-            True,
-        )
-
-        y = 165
-
-        for index, quest in enumerate(
-            self.quest_system.quests
-        ):
-            selected = (
-                index == self.quest_selection
-            )
-
-            if selected:
-                pygame.draw.rect(
-                    screen,
-                    (63, 72, 64),
-                    (140, y - 8, 1000, 92),
-                    border_radius=8,
-                )
-
-            status = (
-                "CLAIMED"
-                if quest.claimed
-                else "COMPLETED"
-                if quest.completed
-                else f"{quest.progress}/{quest.required}"
-            )
-
-            draw_text(
-                screen,
-                quest.title,
-                165,
-                y,
-                FONT_MED,
-                YELLOW if selected else WHITE,
-            )
-
-            draw_text(
-                screen,
-                quest.description,
-                165,
-                y + 38,
-                FONT_SMALL,
-                OFFWHITE,
-            )
-
-            draw_text(
-                screen,
-                status,
-                960,
-                y + 10,
-                FONT_SMALL,
-                GREEN if quest.completed else WHITE,
-            )
-
-            y += 105
-
-        draw_text(
-            screen,
-            "UP/DOWN select   ENTER claim reward   J/ESC close",
-            WIDTH // 2,
-            HEIGHT - 80,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Crafting
-    # --------------------------------------------------------
-
-    def draw_crafting(self):
-        draw_panel(
-            screen,
-            pygame.Rect(
-                180,
-                65,
-                WIDTH - 360,
-                HEIGHT - 130,
-            ),
-            235,
-        )
-
-        draw_text(
-            screen,
-            "FIELD WORKBENCH",
-            WIDTH // 2,
-            105,
-            FONT_BIG,
-            YELLOW,
-            True,
-        )
-
-        y = 180
-
-        for index, recipe in enumerate(
-            RECIPES
-        ):
-            selected = (
-                index == self.crafting_selection
-            )
-
-            if selected:
-                pygame.draw.rect(
-                    screen,
-                    (65, 74, 66),
-                    (225, y - 8, 830, 80),
-                    border_radius=7,
-                )
-
-            draw_text(
-                screen,
-                recipe.name,
-                250,
-                y,
-                FONT_MED,
-                YELLOW if selected else WHITE,
-            )
-
-            costs = ", ".join(
-                f"{ITEM_NAMES.get(k,k)} x{v}"
-                for k, v in recipe.cost.items()
-            )
-
-            result = ", ".join(
-                f"{ITEM_NAMES.get(k,k)} x{v}"
-                for k, v in recipe.result.items()
-            )
-
-            draw_text(
-                screen,
-                f"Cost: {costs}",
-                250,
-                y + 34,
-                FONT_SMALL,
-                OFFWHITE,
-            )
-
-            draw_text(
-                screen,
-                f"Produces: {result}",
-                700,
-                y + 34,
-                FONT_SMALL,
-                GREEN,
-            )
-
-            y += 88
-
-        draw_text(
-            screen,
-            "UP/DOWN select   ENTER craft   C/ESC close",
-            WIDTH // 2,
-            HEIGHT - 80,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Map
-    # --------------------------------------------------------
-
-    def draw_map(self):
-        draw_panel(
-            screen,
-            pygame.Rect(
-                60,
-                55,
-                WIDTH - 120,
-                HEIGHT - 110,
-            ),
-            235,
-        )
-
-        draw_text(
-            screen,
-            "TACTICAL MAP",
-            WIDTH // 2,
-            90,
-            FONT_BIG,
-            YELLOW,
-            True,
-        )
-
-        map_rect = pygame.Rect(
-            110,
-            165,
-            WIDTH - 220,
-            330,
-        )
-
-        pygame.draw.rect(
-            screen,
-            (44, 50, 45),
-            map_rect,
-            border_radius=8,
-        )
-
-        for zone in ZONES:
-            x = (
-                map_rect.x
-                + zone.start / WORLD_WIDTH
-                * map_rect.width
-            )
-
-            width = (
-                zone.end - zone.start
-            ) / WORLD_WIDTH * map_rect.width
-
-            pygame.draw.rect(
-                screen,
-                zone.color,
-                (
-                    int(x),
-                    map_rect.y,
-                    int(width),
-                    map_rect.height,
-                ),
-            )
-
-            draw_text(
-                screen,
-                zone.name,
-                x + width / 2,
-                map_rect.centery,
-                FONT_SMALL,
-                WHITE,
-                True,
-            )
-
-        player_x = (
-            map_rect.x
-            + self.player.x / WORLD_WIDTH
-            * map_rect.width
-        )
-
-        pygame.draw.circle(
-            screen,
-            YELLOW,
-            (int(player_x), map_rect.centery),
-            10,
-        )
-
-        draw_text(
-            screen,
-            "● YOU",
-            int(player_x) + 18,
-            map_rect.centery - 10,
-            FONT_SMALL,
-            YELLOW,
-        )
-
-        draw_text(
-            screen,
-            "M / ESC to close",
-            WIDTH // 2,
-            HEIGHT - 100,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Pause
-    # --------------------------------------------------------
-
-    def draw_pause(self):
-        overlay = pygame.Surface(
-            (WIDTH, HEIGHT),
-            pygame.SRCALPHA,
-        )
-        overlay.fill(
-            (0, 0, 0, 175)
-        )
-        screen.blit(
-            overlay,
-            (0, 0),
-        )
-
-        draw_text(
-            screen,
-            "PAUSED",
-            WIDTH // 2,
-            HEIGHT // 2 - 70,
-            FONT_TITLE,
-            YELLOW,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "ESC / P — Resume",
-            WIDTH // 2,
-            HEIGHT // 2 + 10,
-            FONT,
-            WHITE,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "F5 — Save     F9 — Load",
-            WIDTH // 2,
-            HEIGHT // 2 + 55,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Menu
-    # --------------------------------------------------------
-
-    def draw_menu(self):
-        screen.fill(
-            (19, 23, 21)
-        )
-
-        # Large background.
-        for i in range(10):
-            pygame.draw.rect(
-                screen,
-                (
-                    35 + i * 2,
-                    39 + i * 2,
-                    36 + i * 2,
-                ),
-                (
-                    i * 70,
-                    0,
-                    WIDTH - i * 140,
-                    HEIGHT,
-                ),
-                3,
-            )
-
-        draw_text(
-            screen,
-            "ASHES",
-            WIDTH // 2,
-            145,
-            FONT_TITLE,
-            OFFWHITE,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "OF THE DEAD",
-            WIDTH // 2,
-            215,
-            FONT_TITLE,
-            RED,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "WW2 ZOMBIE SURVIVAL",
-            WIDTH // 2,
-            280,
-            FONT_MED,
-            YELLOW,
-            True,
-        )
-
-        options = [
-            "NEW GAME",
-            "LOAD GAME",
-            "CONTINUE DEMO",
-            "QUIT",
-        ]
-
-        y = 380
-
-        for index, option in enumerate(options):
-            selected = (
-                index == self.main_menu_selection
-            )
-
-            if selected:
-                pygame.draw.rect(
-                    screen,
-                    (70, 75, 67),
-                    (WIDTH // 2 - 180, y - 8, 360, 52),
-                    border_radius=7,
-                )
-
-            draw_text(
-                screen,
-                option,
-                WIDTH // 2,
-                y + 16,
-                FONT_MED,
-                YELLOW if selected else OFFWHITE,
-                True,
-            )
-
-            y += 62
-
-        draw_text(
-            screen,
-            VERSION,
-            WIDTH // 2,
-            HEIGHT - 35,
-            FONT_TINY,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Game Over
-    # --------------------------------------------------------
-
-    def draw_gameover(self):
-        screen.fill(
-            (20, 13, 14)
-        )
-
-        overlay = pygame.Surface(
-            (WIDTH, HEIGHT),
-            pygame.SRCALPHA,
-        )
-        overlay.fill(
-            (90, 10, 15, 80)
-        )
-        screen.blit(
-            overlay,
-            (0, 0),
-        )
-
-        draw_text(
-            screen,
-            "THE DEAD FOUND YOU",
-            WIDTH // 2,
-            245,
-            FONT_TITLE,
-            RED,
-            True,
-        )
-
-        draw_text(
-            screen,
-            f"Level reached: {self.player.level}",
-            WIDTH // 2,
-            345,
-            FONT_MED,
-            WHITE,
-            True,
-        )
-
-        draw_text(
-            screen,
-            f"XP earned: {int(self.player.xp)}",
-            WIDTH // 2,
-            390,
-            FONT,
-            OFFWHITE,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "ENTER — Restart",
-            WIDTH // 2,
-            480,
-            FONT_MED,
-            YELLOW,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "ESC — Main Menu",
-            WIDTH // 2,
-            530,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Victory
-    # --------------------------------------------------------
-
-    def draw_victory(self):
-        screen.fill(
-            (17, 23, 20)
-        )
-
-        draw_text(
-            screen,
-            "PROJECT ECLIPSE",
-            WIDTH // 2,
-            190,
-            FONT_TITLE,
-            YELLOW,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "THE WARDEN HAS FALLEN",
-            WIDTH // 2,
-            275,
-            FONT_BIG,
-            RED,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "But the outbreak may not be over...",
-            WIDTH // 2,
-            360,
-            FONT_MED,
-            WHITE,
-            True,
-        )
-
-        draw_text(
-            screen,
-            f"Survival Level: {self.player.level}",
-            WIDTH // 2,
-            425,
-            FONT,
-            OFFWHITE,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "ENTER — New Game",
-            WIDTH // 2,
-            500,
-            FONT_MED,
-            YELLOW,
-            True,
-        )
-
-        draw_text(
-            screen,
-            "ESC — Main Menu",
-            WIDTH // 2,
-            545,
-            FONT_SMALL,
-            GREY,
-            True,
-        )
-
-    # --------------------------------------------------------
-    # Messages
-    # --------------------------------------------------------
-
-    def draw_messages(self):
-        if not self.messages:
-            return
-
-        y = HEIGHT - 180
-
-        for message in reversed(
-            self.messages[-4:]
-        ):
-            draw_panel(
-                screen,
-                pygame.Rect(
-                    20,
-                    y,
-                    480,
-                    34,
-                ),
-                180,
-                False,
-            )
-
-            draw_text(
-                screen,
-                message.text,
-                32,
-                y + 8,
-                FONT_SMALL,
-                message.color,
-            )
-
-            y -= 39
-
-    # --------------------------------------------------------
-    # Debug
-    # --------------------------------------------------------
-
-    def draw_debug(self):
-        lines = [
-            f"FPS: {clock.get_fps():.1f}",
-            f"State: {self.state}",
-            f"Player X: {self.player.x:.1f}",
-            f"Enemies: {len(self.enemies)}",
-            f"Projectiles: {len(self.projectiles)}",
-            f"Particles: {len(self.particles.particles)}",
-            f"Time: {self.total_time:.1f}",
-            f"Weather: {self.environment.weather.kind}",
-        ]
-
-        y = 150
-
-        for line in lines:
-            draw_text(
-                screen,
-                line,
-                20,
-                y,
-                FONT_TINY,
-                GREEN,
-            )
-            y += 18
-
-    # --------------------------------------------------------
-    # Main Loop
-    # --------------------------------------------------------
-
-    def run(self):
-        while self.running:
-            dt = min(
-                clock.tick(FPS) / 1000.0,
-                0.035,
-            )
-
-            for event in pygame.event.get():
-                self.handle_event(event)
-
-            if self.state == GAME_MENU:
-                self.update_messages(dt)
-            elif self.state not in (
-                GAME_GAMEOVER,
-                GAME_VICTORY,
-            ):
-                self.update(dt)
-
-            if self.state == GAME_MENU:
-                self.draw_menu()
-            else:
-                self.draw()
-
-            pygame.display.flip()
-
-        pygame.quit()
-
-
-# ============================================================
-# ENTRY POINT
-# ============================================================
-
-def main():
-    game = Game()
-    game.run()
+            boss.attackCooldown - dt
+        );
+
+    const dx =
+        player.x - boss.x;
+
+    if (Math.abs(dx) > 90) {
+
+        boss.x +=
+            Math.sign(dx) *
+            boss.speed *
+            dt;
+    }
+
+    if (
+        Math.abs(dx) < 110 &&
+        boss.attackCooldown <= 0
+    ) {
+
+        hurtPlayer(28);
+
+        boss.attackCooldown = 1.2;
+    }
+}
+
+function updateGrenades(dt) {
+
+    for (
+        let i = grenades.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const g = grenades[i];
+
+        g.x += g.vx * dt;
+        g.y += g.vy * dt;
+
+        g.vy += 700 * dt;
+
+        g.timer -= dt;
+
+        if (g.timer <= 0) {
+
+            for (const z of zombies) {
+
+                const d =
+                    Math.hypot(
+                        g.x - z.x,
+                        g.y - z.y
+                    );
+
+                if (d < 230) {
+
+                    damageZombie(
+                        z,
+                        160 * (1 - d / 300)
+                    );
+                }
+            }
+
+            if (boss) {
+
+                const d =
+                    Math.hypot(
+                        g.x - boss.x,
+                        g.y - boss.y
+                    );
+
+                if (d < 250) {
+
+                    boss.hp -=
+                        250 * (1 - d / 300);
+                }
+            }
+
+            for (let p = 0; p < 35; p++) {
+
+                particles.push({
+                    x: g.x,
+                    y: g.y,
+
+                    vx: random(-350, 350),
+                    vy: random(-350, 100),
+
+                    life: random(.3, 1),
+
+                    color: Math.random() < .5
+                        ? "#e2a63b"
+                        : "#9e3427"
+                });
+            }
+
+            screenShake = 18;
+
+            grenades.splice(i, 1);
+        }
+    }
+}
+
+function updateParticles(dt) {
+
+    for (
+        let i = particles.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const p = particles[i];
+
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+
+        p.vy += 500 * dt;
+
+        p.life -= dt;
+
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+}
+
+function updateCamera() {
+
+    const target =
+        player.x - W * .4;
+
+    cameraX +=
+        (target - cameraX) * .1;
+
+    cameraX =
+        clamp(
+            cameraX,
+            0,
+            WORLD_WIDTH - W
+        );
+}
+
+function drawBackground() {
+
+    const gradient =
+        ctx.createLinearGradient(
+            0,
+            0,
+            0,
+            H
+        );
+
+    gradient.addColorStop(
+        0,
+        "#151b18"
+    );
+
+    gradient.addColorStop(
+        .6,
+        "#30382d"
+    );
+
+    gradient.addColorStop(
+        1,
+        "#151713"
+    );
+
+    ctx.fillStyle = gradient;
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    // Moon
+    ctx.fillStyle =
+        "rgba(220,220,180,.18)";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        W * .78,
+        120,
+        70,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // Clouds
+    for (let i = 0; i < 12; i++) {
+
+        const x =
+            ((i * 850 - cameraX * .15)
+                % (W + 900)) - 400;
+
+        const y =
+            70 + (i % 4) * 50;
+
+        ctx.fillStyle =
+            "rgba(0,0,0,.18)";
+
+        ctx.beginPath();
+
+        ctx.ellipse(
+            x,
+            y,
+            130,
+            28,
+            0,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+
+    // Distant ruins
+    for (
+        let x = -500;
+        x < W + 500;
+        x += 300
+    ) {
+
+        const world =
+            x + cameraX * .35;
+
+        const height =
+            80 + Math.sin(world * .01) * 40;
+
+        ctx.fillStyle =
+            "#20251f";
+
+        ctx.fillRect(
+            x,
+            GROUND - height,
+            170,
+            height
+        );
+
+        ctx.fillStyle =
+            "#10130f";
+
+        for (
+            let wx = x + 20;
+            wx < x + 150;
+            wx += 35
+        ) {
+
+            ctx.fillRect(
+                wx,
+                GROUND - height + 30,
+                15,
+                25
+            );
+        }
+    }
+}
+
+function drawGround() {
+
+    ctx.fillStyle = "#3d402d";
+
+    ctx.fillRect(
+        0,
+        GROUND,
+        W,
+        H - GROUND
+    );
+
+    ctx.fillStyle = "#282b20";
+
+    ctx.fillRect(
+        0,
+        GROUND,
+        W,
+        10
+    );
+
+    // road
+    ctx.fillStyle = "#292a25";
+
+    ctx.fillRect(
+        0,
+        GROUND + 30,
+        W,
+        150
+    );
+
+    ctx.strokeStyle =
+        "rgba(190,170,105,.3)";
+
+    ctx.lineWidth = 4;
+
+    const roadOffset =
+        -cameraX % 120;
+
+    for (
+        let x = roadOffset - 120;
+        x < W + 120;
+        x += 120
+    ) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            x,
+            GROUND + 105
+        );
+
+        ctx.lineTo(
+            x + 65,
+            GROUND + 105
+        );
+
+        ctx.stroke();
+    }
+}
+
+function drawWrecks() {
+
+    for (const w of wrecks) {
+
+        const sx =
+            w.x - cameraX;
+
+        if (
+            sx < -300 ||
+            sx > W + 300
+        ) continue;
+
+        ctx.fillStyle =
+            "#353a34";
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            sx,
+            w.y + 70
+        );
+
+        ctx.lineTo(
+            sx + w.w * .12,
+            w.y + 25
+        );
+
+        ctx.lineTo(
+            sx + w.w * .7,
+            w.y
+        );
+
+        ctx.lineTo(
+            sx + w.w,
+            w.y + 30
+        );
+
+        ctx.lineTo(
+            sx + w.w,
+            w.y + 70
+        );
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        ctx.fillStyle =
+            "#121412";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            sx + 35,
+            w.y + 65,
+            20,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.arc(
+            sx + w.w - 35,
+            w.y + 65,
+            20,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+}
+
+function drawCrates() {
+
+    for (const c of crates) {
+
+        const x =
+            c.x - cameraX;
+
+        if (x < -80 || x > W + 80) continue;
+
+        ctx.fillStyle =
+            "#70543a";
+
+        ctx.fillRect(
+            x,
+            c.y,
+            55,
+            40
+        );
+
+        ctx.strokeStyle =
+            "#35291d";
+
+        ctx.lineWidth = 4;
+
+        ctx.strokeRect(
+            x,
+            c.y,
+            55,
+            40
+        );
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            x,
+            c.y
+        );
+
+        ctx.lineTo(
+            x + 55,
+            c.y + 40
+        );
+
+        ctx.moveTo(
+            x + 55,
+            c.y
+        );
+
+        ctx.lineTo(
+            x,
+            c.y + 40
+        );
+
+        ctx.stroke();
+    }
+}
+
+function drawChests() {
+
+    for (const c of chests) {
+
+        const x =
+            c.x - cameraX;
+
+        if (x < -100 || x > W + 100) continue;
+
+        ctx.fillStyle =
+            c.rare
+                ? "#624f77"
+                : "#765638";
+
+        ctx.fillRect(
+            x,
+            c.y,
+            65,
+            40
+        );
+
+        ctx.strokeStyle =
+            "#241d17";
+
+        ctx.lineWidth = 4;
+
+        ctx.strokeRect(
+            x,
+            c.y,
+            65,
+            40
+        );
+
+        ctx.fillStyle =
+            "#d4b34b";
+
+        ctx.fillRect(
+            x + 28,
+            c.y + 14,
+            9,
+            9
+        );
+
+        if (!c.opened) {
+
+            ctx.fillStyle =
+                "rgba(255,220,90,.25)";
+
+            ctx.fillRect(
+                x - 8,
+                c.y - 8,
+                81,
+                56
+            );
+        }
+    }
+}
+
+function drawPlayer() {
+
+    const x =
+        player.x - cameraX;
+
+    const y =
+        player.y;
+
+    ctx.save();
+
+    if (player.invincible > 0) {
+
+        ctx.globalAlpha =
+            Math.sin(
+                Date.now() * .025
+            ) > 0
+                ? .35
+                : 1;
+    }
+
+    // legs
+    ctx.fillStyle = "#272b25";
+
+    ctx.fillRect(
+        x + 9,
+        y + 67,
+        11,
+        33
+    );
+
+    ctx.fillRect(
+        x + 27,
+        y + 67,
+        11,
+        33
+    );
+
+    // boots
+    ctx.fillStyle = "#171713";
+
+    ctx.fillRect(
+        x + 5,
+        y + 94,
+        18,
+        8
+    );
+
+    ctx.fillRect(
+        x + 26,
+        y + 94,
+        18,
+        8
+    );
+
+    // body
+    ctx.fillStyle = "#d6d0bd";
+
+    ctx.fillRect(
+        x + 7,
+        y + 35,
+        32,
+        38
+    );
+
+    // jacket
+    ctx.fillStyle = "#68705d";
+
+    ctx.fillRect(
+        x + 8,
+        y + 42,
+        30,
+        30
+    );
+
+    // head
+    ctx.fillStyle = "#dcae8e";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + 23,
+        y + 25,
+        18,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // hair
+    ctx.fillStyle = "#563d2f";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + 23,
+        y + 20,
+        18,
+        Math.PI,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // hair back
+    ctx.fillRect(
+        x + 6,
+        y + 20,
+        7,
+        28
+    );
+
+    // arm
+    ctx.fillStyle = "#dcae8e";
+
+    const gunDirection =
+        player.facing;
+
+    ctx.save();
+
+    if (gunDirection < 0) {
+        ctx.translate(
+            x + 23,
+            0
+        );
+
+        ctx.scale(-1, 1);
+
+        ctx.translate(
+            -(x + 23),
+            0
+        );
+    }
+
+    ctx.fillRect(
+        x + 30,
+        y + 42,
+        28,
+        9
+    );
+
+    // pistol
+    ctx.fillStyle =
+        "#171918";
+
+    ctx.fillRect(
+        x + 51,
+        y + 38,
+        23,
+        7
+    );
+
+    ctx.fillRect(
+        x + 55,
+        y + 44,
+        8,
+        11
+    );
+
+    ctx.restore();
+
+    ctx.restore();
+}
+
+function drawZombie(z) {
+
+    const x =
+        z.x - cameraX;
+
+    const y =
+        z.y;
+
+    ctx.save();
+
+    if (z.hitFlash > 0) {
+        ctx.globalAlpha = .55;
+    }
+
+    // legs
+    ctx.fillStyle = "#252a24";
+
+    ctx.fillRect(
+        x + 8,
+        y + z.h - 28,
+        10,
+        28
+    );
+
+    ctx.fillRect(
+        x + z.w - 18,
+        y + z.h - 28,
+        10,
+        28
+    );
+
+    // body
+    ctx.fillStyle =
+        z.color;
+
+    ctx.fillRect(
+        x + 5,
+        y + 25,
+        z.w - 10,
+        z.h - 40
+    );
+
+    // head
+    ctx.fillStyle =
+        "#8d9b76";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + z.w / 2,
+        y + 19,
+        18,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // eyes
+    ctx.fillStyle =
+        "#b92c2c";
+
+    ctx.fillRect(
+        x + z.w / 2 - 9,
+        y + 15,
+        5,
+        5
+    );
+
+    ctx.fillRect(
+        x + z.w / 2 + 5,
+        y + 15,
+        5,
+        5
+    );
+
+    // arms
+    ctx.strokeStyle =
+        "#879273";
+
+    ctx.lineWidth = 9;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x + 8,
+        y + 38
+    );
+
+    ctx.lineTo(
+        x - 15,
+        y + 60
+    );
+
+    ctx.moveTo(
+        x + z.w - 8,
+        y + 38
+    );
+
+    ctx.lineTo(
+        x + z.w + 15,
+        y + 55
+    );
+
+    ctx.stroke();
+
+    // health bar
+    const hpRatio =
+        clamp(
+            z.hp / z.maxHp,
+            0,
+            1
+        );
+
+    ctx.fillStyle =
+        "#171717";
+
+    ctx.fillRect(
+        x,
+        y - 13,
+        z.w,
+        6
+    );
+
+    ctx.fillStyle =
+        "#b52f2f";
+
+    ctx.fillRect(
+        x,
+        y - 13,
+        z.w * hpRatio,
+        6
+    );
+
+    ctx.restore();
+}
+
+function drawBoss() {
+
+    if (!boss) return;
+
+    const x =
+        boss.x - cameraX;
+
+    const y =
+        boss.y;
+
+    ctx.fillStyle =
+        boss.color;
+
+    ctx.fillRect(
+        x + 12,
+        y + 35,
+        boss.w - 24,
+        boss.h - 35
+    );
+
+    ctx.fillStyle =
+        "#7c8b68";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + boss.w / 2,
+        y + 28,
+        28,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // helmet
+    ctx.fillStyle =
+        "#30372e";
+
+    ctx.fillRect(
+        x + 20,
+        y + 2,
+        50,
+        15
+    );
+
+    ctx.fillStyle =
+        "#d52828";
+
+    ctx.fillRect(
+        x + 32,
+        y + 25,
+        8,
+        8
+    );
+
+    ctx.fillRect(
+        x + 50,
+        y + 25,
+        8,
+        8
+    );
+
+    // health
+    const ratio =
+        clamp(
+            boss.hp / boss.maxHp,
+            0,
+            1
+        );
+
+    ctx.fillStyle =
+        "#171717";
+
+    ctx.fillRect(
+        x - 10,
+        y - 25,
+        boss.w + 20,
+        12
+    );
+
+    ctx.fillStyle =
+        "#bd2828";
+
+    ctx.fillRect(
+        x - 10,
+        y - 25,
+        (boss.w + 20) * ratio,
+        12
+    );
+
+    ctx.fillStyle = "white";
+
+    ctx.font = "bold 16px Arial";
+
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        "THE WARDEN",
+        x + boss.w / 2,
+        y - 32
+    );
+}
+
+function drawBullets() {
+
+    ctx.fillStyle =
+        "#ffd86b";
+
+    for (const b of bullets) {
+
+        const x =
+            b.x - cameraX;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            b.y,
+            4,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+}
+
+function drawGrenades() {
+
+    for (const g of grenades) {
+
+        ctx.fillStyle =
+            "#2c322b";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            g.x - cameraX,
+            g.y,
+            9,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+}
+
+function drawParticles() {
+
+    for (const p of particles) {
+
+        ctx.globalAlpha =
+            clamp(p.life, 0, 1);
+
+        ctx.fillStyle =
+            p.color;
+
+        ctx.fillRect(
+            p.x - cameraX,
+            p.y,
+            4,
+            4
+        );
+    }
+
+    ctx.globalAlpha = 1;
+}
+
+function drawZoneTitle() {
+
+    const zone =
+        zoneName();
+
+    ctx.fillStyle =
+        "rgba(0,0,0,.35)";
+
+    ctx.fillRect(
+        W / 2 - 220,
+        20,
+        440,
+        45
+    );
+
+    ctx.fillStyle =
+        "#d2c89e";
+
+    ctx.font =
+        "bold 22px Arial";
+
+    ctx.textAlign =
+        "center";
+
+    ctx.fillText(
+        zone,
+        W / 2,
+        50
+    );
+}
+
+function drawNightOverlay() {
+
+    const darkness =
+        .28 +
+        Math.sin(gameTime * .08) * .08;
+
+    ctx.fillStyle =
+        `rgba(5,10,18,${darkness})`;
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    // flashlight
+    const px =
+        player.x - cameraX;
+
+    const py =
+        player.y + 45;
+
+    const angle =
+        Math.atan2(
+            mouse.y - py,
+            mouse.x - px
+        );
+
+    const gradient =
+        ctx.createRadialGradient(
+            px,
+            py,
+            40,
+            px,
+            py,
+            500
+        );
+
+    gradient.addColorStop(
+        0,
+        "rgba(255,245,200,.16)"
+    );
+
+    gradient.addColorStop(
+        1,
+        "rgba(255,245,200,0)"
+    );
+
+    ctx.fillStyle =
+        gradient;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        px,
+        py,
+        500,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+}
+
+function draw() {
+
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    ctx.save();
+
+    if (screenShake > 0) {
+
+        ctx.translate(
+            random(-screenShake, screenShake),
+            random(-screenShake, screenShake)
+        );
+
+        screenShake *= .9;
+
+        if (screenShake < .2) {
+            screenShake = 0;
+        }
+    }
+
+    drawBackground();
+
+    drawGround();
+
+    drawWrecks();
+
+    drawCrates();
+
+    drawChests();
+
+    drawBullets();
+
+    drawGrenades();
+
+    for (const z of zombies) {
+        if (!z.dead) {
+            drawZombie(z);
+        }
+    }
+
+    drawBoss();
+
+    drawPlayer();
+
+    drawParticles();
+
+    drawNightOverlay();
+
+    drawZoneTitle();
+
+    ctx.restore();
+
+    updateHUD();
+}
+
+function updateHUD() {
+
+    document.getElementById(
+        "healthFill"
+    ).style.width =
+        (player.health /
+        player.maxHealth * 100) + "%";
+
+    document.getElementById(
+        "staminaFill"
+    ).style.width =
+        (player.stamina /
+        player.maxStamina * 100) + "%";
+
+    document.getElementById(
+        "xpFill"
+    ).style.width =
+        (player.xp /
+        player.nextXP * 100) + "%";
+
+    document.getElementById(
+        "info"
+    ).innerHTML = `
+        <b>LEVEL:</b> ${player.level}<br>
+        <b>WEAPON:</b> ${player.weapon}<br>
+        <b>AMMO:</b> ${player.ammo}/${player.reserveAmmo}<br>
+        <b>GRENADES:</b> ${player.grenades}<br>
+        <b>WAVE:</b> ${wave}<br>
+        <b>ZOMBIES:</b> ${zombiesKilled}<br>
+        <b>SCORE:</b> ${player.score}<br>
+        <b>ZONE:</b> ${zoneName()}
+    `;
+
+    document.getElementById(
+        "message"
+    ).textContent =
+        messageTimer > 0
+            ? message
+            : "";
+}
+
+function update(dt) {
+
+    if (!gameRunning) return;
+
+    gameTime += dt;
+
+    if (messageTimer > 0) {
+        messageTimer -= dt;
+    }
+
+    updatePlayer(dt);
+
+    updateBullets(dt);
+
+    updateZombies(dt);
+
+    updateBoss(dt);
+
+    updateGrenades(dt);
+
+    updateParticles(dt);
+
+    updateCamera();
+
+    if (
+        player.x > 14000 &&
+        !boss
+    ) {
+        spawnBoss();
+    }
+
+    if (player.health <= 0) {
+        endGame();
+    }
+}
+
+function loop(timestamp) {
+
+    if (!window.lastTime) {
+        window.lastTime = timestamp;
+    }
+
+    let dt =
+        (timestamp - window.lastTime)
+        / 1000;
+
+    window.lastTime =
+        timestamp;
+
+    dt =
+        Math.min(dt, .033);
+
+    update(dt);
+
+    draw();
+
+    requestAnimationFrame(loop);
+}
+
+function startGame() {
+
+    document
+        .getElementById("menu")
+        .classList
+        .add("hidden");
+
+    document
+        .getElementById("gameOver")
+        .classList
+        .add("hidden");
+
+    document
+        .getElementById("victory")
+        .classList
+        .add("hidden");
+
+    gameRunning = true;
+
+    resetGame();
+
+    spawnWave();
+}
+
+function resetGame() {
+
+    player.x = 500;
+    player.y = GROUND - player.h;
+
+    player.health = 100;
+    player.maxHealth = 100;
+
+    player.stamina = 100;
+
+    player.hunger = 100;
+
+    player.level = 1;
+    player.xp = 0;
+    player.nextXP = 250;
+
+    player.ammo = 8;
+    player.reserveAmmo = 80;
+
+    player.grenades = 3;
+
+    player.score = 0;
+
+    player.reloadTimer = 0;
+    player.fireCooldown = 0;
+
+    zombies.length = 0;
+    bullets.length = 0;
+    grenades.length = 0;
+    particles.length = 0;
+
+    boss = null;
+
+    wave = 1;
+    zombiesKilled = 0;
+
+    cameraX = 0;
+
+    createWorld();
+}
+
+function endGame() {
+
+    if (!gameRunning) return;
+
+    gameRunning = false;
+
+    document.getElementById(
+        "deathText"
+    ).textContent =
+        `You reached level ${player.level}, `
+        + `killed ${zombiesKilled} zombies `
+        + `and scored ${player.score} points.`;
+
+    document
+        .getElementById("gameOver")
+        .classList
+        .remove("hidden");
+}
+
+function restartGame() {
+
+    document
+        .getElementById("gameOver")
+        .classList
+        .add("hidden");
+
+    document
+        .getElementById("victory")
+        .classList
+        .add("hidden");
+
+    startGame();
+}
+
+document
+    .getElementById("startButton")
+    .addEventListener(
+        "click",
+        startGame
+    );
+
+
+// Mobile controls
+function holdButton(id, code) {
+
+    const element =
+        document.getElementById(id);
+
+    element.addEventListener(
+        "touchstart",
+        e => {
+            e.preventDefault();
+            keys[code] = true;
+        }
+    );
+
+    element.addEventListener(
+        "touchend",
+        e => {
+            e.preventDefault();
+            keys[code] = false;
+        }
+    );
+
+    element.addEventListener(
+        "mousedown",
+        () => {
+            keys[code] = true;
+        }
+    );
+
+    element.addEventListener(
+        "mouseup",
+        () => {
+            keys[code] = false;
+        }
+    );
+}
+
+holdButton("left", "KeyA");
+holdButton("right", "KeyD");
+holdButton("jump", "Space");
+
+document
+    .getElementById("shoot")
+    .addEventListener(
+        "touchstart",
+        e => {
+            e.preventDefault();
+            mouse.down = true;
+        }
+    );
+
+document
+    .getElementById("shoot")
+    .addEventListener(
+        "touchend",
+        e => {
+            e.preventDefault();
+            mouse.down = false;
+        }
+    );
+
+document
+    .getElementById("grenade")
+    .addEventListener(
+        "click",
+        grenade
+    );
+
+document
+    .getElementById("reload")
+    .addEventListener(
+        "click",
+        reload
+    );
+
+createWorld();
+
+requestAnimationFrame(loop);
+
+</script>
+
+</body>
+</html>
+"""
+
+
+@app.route("/")
+def index():
+    return render_template_string(HTML)
+
+
+@app.route("/health")
+def health():
+    return {
+        "status": "ok",
+        "game": "Ashes of the Dead"
+    }
 
 
 if __name__ == "__main__":
-    main()
+    import os
+
+    port = int(os.environ.get("PORT", 10000))
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )
