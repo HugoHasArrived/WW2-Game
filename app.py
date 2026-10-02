@@ -35,8 +35,8 @@ const mouse={x:640,y:360,down:false};let audioCtx=null;
 function jumpSound(){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const now=audioCtx.currentTime;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(110,now);o.frequency.exponentialRampToValueAtTime(38,now+.32);g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.18,now+.015);g.gain.exponentialRampToValueAtTime(.0001,now+.55);o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+.6);}catch(e){}}
 async function requestRealLocation(){const el=document.getElementById('gloc');if(!navigator.geolocation){el.textContent='UNAVAILABLE';return;}el.textContent='REQUESTING PERMISSION...';navigator.geolocation.getCurrentPosition(pos=>{const a=pos.coords.latitude.toFixed(5),o=pos.coords.longitude.toFixed(5);el.textContent=a+', '+o;setMsg('LOCATION SHARED WITH NIGHTWATCH',1.5);},()=>{el.textContent='DENIED OR UNAVAILABLE';setMsg('LOCATION NOT SHARED',1.2);},{enableHighAccuracy:false,maximumAge:60000,timeout:8000});}
 function triggerJumpScare(){if(jumpScare>0||gadgetOpen||mode!=='play')return;jumpScare=.62;jumpType=Math.floor(Math.random()*4);shake=14;flash=.18;p.sanity=clamp(p.sanity-8,0,100);jumpSound();setMsg('DON’T TURN AROUND.',1.2);}
-function scareSound(close=false){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=close?42:28;g.gain.setValueAtTime(0.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(close?.035:.018,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+(close?1.1:1.8));o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+(close?1.2:1.9));}catch(e){}}
-let mode='notice',name='Julia',t=0,last=0,cam=0,shake=0,flash=0,lightning=0,heartbeat=0,ambientPulse=0,lightFlicker=1,gadgetOpen=false,jumpScare=0,jumpType=0,jumpCooldown=8;
+function scareSound(close=false){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=close?'sawtooth':'sine';o.frequency.setValueAtTime(close?55:32,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(close?22:17,audioCtx.currentTime+(close?.7:1.4));g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(close?.06:.025,audioCtx.currentTime+.04);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+(close?1.0:1.7));o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+(close?1.1:1.8));if(close){const n=audioCtx.createOscillator(),ng=audioCtx.createGain();n.type='square';n.frequency.value=140;ng.gain.setValueAtTime(.0001,audioCtx.currentTime);ng.gain.exponentialRampToValueAtTime(.025,audioCtx.currentTime+.02);ng.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.22);n.connect(ng);ng.connect(audioCtx.destination);n.start();n.stop(audioCtx.currentTime+.25);}}catch(e){}}
+let mode='notice',name='Julia',t=0,last=0,cam=0,shake=0,flash=0,lightning=0,heartbeat=0,ambientPulse=0,lightFlicker=1,gadgetOpen=false,jumpScare=0,jumpType=0,jumpCooldown=8;let horrorTimer=6,horrorEvent=0,horrorLife=0,horrorX=0,horrorDamage=0,horrorBlackout=0,horrorWhisper=0,horrorDoor=0,horrorLunge=0;
 let objective='';let message='';let messageUntil=0;let prompt='';
 let zombies=[],vehicles=[],buildings=[],survivors=[],loot=[],chests=[],bullets=[],particles=[],rain=[],shells=[],blood=[],doors=[],interior=null;
 let alcatrazEscaped=false,boatReady=false,fuel=0,alarm=0,hordeTimer=26,smilerTimer=11,smiler={active:false,x:0,ttl:0,phase:0,close:false,glitch:0,stare:0};
@@ -249,6 +249,32 @@ function triggerHorde(){
 }
 function triggerSmiler(){if(smiler.active)return;smiler.active=true;smiler.ttl=2.8+Math.random()*4;smiler.phase=0;smiler.glitch=0;smiler.stare=0;smiler.close=Math.random()<.42;const side=Math.random()<.5?-1:1;smiler.x=clamp(p.x+side*(smiler.close?rnd(95,185):rnd(420,720)),80,WORLD-80);p.sanity=clamp(p.sanity-(smiler.close?16:7),0,100);shake=Math.max(shake,smiler.close?4:1);setMsg(smiler.close?'DON’T LOOK AWAY.':'Something is watching from the dark.',2.8);scareSound(smiler.close);if(smiler.close){flash=.08;for(let i=0;i<12;i++)spawnParticle(p.x+rnd(-20,40),p.y+rnd(0,60),'#c7c0b2',.18,rnd(1,2),rnd(-60,60),rnd(-40,40));}}
 function updateSmiler(dt){smilerTimer-=dt;jumpCooldown-=dt;if(jumpCooldown<=0&&chapter==='ALCATRAZ'&&p.sanity<72&&Math.random()<dt*.025){triggerJumpScare();jumpCooldown=14+Math.random()*20;}if(jumpScare>0)jumpScare-=dt;if(smilerTimer<=0){smilerTimer=11+Math.random()*19;if(Math.random()<.62)triggerSmiler();}if(smiler.active){smiler.ttl-=dt;smiler.phase+=dt;smiler.stare+=dt;smiler.glitch=Math.max(0,smiler.glitch-dt);if(smiler.close&&smiler.stare>.65&&Math.random()<dt*.45){smiler.glitch=.18;shake=Math.max(shake,3);p.sanity=clamp(p.sanity-2,0,100);}if(smiler.ttl<=0)smiler.active=false;}if(smiler.active&&Math.abs(smiler.x-p.x)<700)p.sanity=clamp(p.sanity-dt*(smiler.close?4.2:1.4),0,100);}
+function updateHorror(dt){
+ horrorTimer-=dt;
+ horrorLife=Math.max(0,horrorLife-dt);
+ horrorBlackout=Math.max(0,horrorBlackout-dt);
+ horrorWhisper=Math.max(0,horrorWhisper-dt);
+ horrorDoor=Math.max(0,horrorDoor-dt);
+ horrorLunge=Math.max(0,horrorLunge-dt);
+ if(horrorTimer<=0&&!gadgetOpen&&mode==='play'){
+  horrorTimer=(chapter==='ALCATRAZ'?8:12)+Math.random()*18;
+  const pool=chapter==='ALCATRAZ'?[0,1,2,3,4,5,6,7]:[0,1,2,3,5,6,7,8];
+  horrorEvent=pool[Math.floor(Math.random()*pool.length)];
+  horrorLife=1.1+Math.random()*2.4;
+  horrorX=p.x+rnd(-360,360);
+  if(horrorEvent===0){horrorBlackout=.9+Math.random()*1.8;lightFlicker=.01;shake=Math.max(shake,2);scareSound(false);setMsg('THE LIGHTS GO OUT.',1.5);}
+  if(horrorEvent===1){horrorWhisper=2.8;setMsg('You hear footsteps that match your own.',2);scareSound(false);}
+  if(horrorEvent===2){horrorDoor=1.4;shake=Math.max(shake,3);setMsg('A cell door SLAMS somewhere behind you.',1.8);scareSound(true);}
+  if(horrorEvent===3){horrorLunge=.55;horrorDamage=10;p.sanity=clamp(p.sanity-12,0,100);shake=12;flash=.08;scareSound(true);setMsg('SOMETHING RUSHED PAST YOU.',1.2);}
+  if(horrorEvent===4){p.sanity=clamp(p.sanity-10,0,100);horrorLife=2.8;setMsg('The writing on the wall has changed.',2);}
+  if(horrorEvent===5){horrorLife=1.6;horrorDamage=6;p.hp=clamp(p.hp-horrorDamage,0,100);shake=8;scareSound(true);setMsg('A shape moves in the corner of your eye.',1.4);}
+  if(horrorEvent===6){horrorLife=2.2;p.sanity=clamp(p.sanity-15,0,100);setMsg('There is breathing directly behind you.',2);scareSound(true);}
+  if(horrorEvent===7){horrorLife=1.8;flash=.12;shake=9;p.sanity=clamp(p.sanity-18,0,100);setMsg('DON’T LOOK AT THE WINDOW.',1.7);scareSound(true);}
+  if(horrorEvent===8){horrorLife=1.5;horrorDamage=8;p.hp=clamp(p.hp-horrorDamage,0,100);setMsg('THE DEAD ARE MOVING.',1.5);shake=7;scareSound(true);}
+ }
+ if(horrorEvent===3&&horrorLunge>0&&horrorLunge<.3&&Math.random()<dt*2){p.hp=clamp(p.hp-6,0,100);p.invuln=.5;}
+ if(horrorBlackout>0)lightFlicker=.015;
+}
 function updateSanity(dt){
  const darkness=(p.light?0:1);p.sanity=clamp(p.sanity-dt*(.15+darkness*.22),0,100);
  if(p.sanity<25&&Math.random()<dt*.7){setMsg('You hear breathing behind you.',1.5);}
@@ -276,9 +302,9 @@ function transitionToSanFrancisco(){
 function update(dt){
  if(mode!=='play')return;
  t+=dt;p.invuln=Math.max(0,p.invuln-dt);
- movePlayer(dt);updateZombies(dt);updateBullets(dt);updateSurvivors(dt);updateVehicles(dt);updateParticles(dt);updateRain(dt);triggerHorde();updateSmiler(dt);updateSanity(dt);updateObjective();
+ movePlayer(dt);updateZombies(dt);updateBullets(dt);updateSurvivors(dt);updateVehicles(dt);updateParticles(dt);updateRain(dt);triggerHorde();updateSmiler(dt);updateHorror(dt);updateSanity(dt);updateObjective();
  if(p.reload>0){p.reload-=dt;if(p.reload<=0){p.reload=0;p.ammo=p.maxAmmo;setMsg('Reloaded.',.7);}}
- if(p.hp<=0){p.hp=100;p.sanity=55;p.x=Math.max(80,p.x-250);setMsg('You collapsed. You wake up again in the rain.',4);shake=10;}
+ if(p.hp<=0){p.hp=100;p.sanity=42;p.x=Math.max(80,p.x-420);p.vx=0;smiler.active=false;jumpScare=0;horrorLife=0;shake=18;flash=.3;scareSound(true);setMsg('YOU DIED. Something dragged you back into the dark.',3.5);setObj(chapter==='ALCATRAZ'?'Escape the prison. Do not let the dark catch you.':'Survive the streets. Find the survivors.');}
  if(keys.has('r')&&p.reload<=0&&p.ammo<p.maxAmmo)p.reload=1.0;
  if(p.reload<=0&&p.ammo===0){p.reload=.9;}
  document.getElementById('hp').style.width=p.hp+'%';document.getElementById('stam').style.width=p.stam+'%';document.getElementById('san').style.width=p.sanity+'%';document.getElementById('ammo').textContent='AMMO '+p.ammo+' / '+p.maxAmmo+(p.reload>0?' — RELOADING':'');document.getElementById('watch').textContent=smiler.active?'THE SMILER IS WATCHING YOU':'THE SMILER IS ALWAYS WATCHING';
@@ -546,7 +572,16 @@ function render(){ctx.save();if(shake>0){ctx.translate(rnd(-shake,shake),rnd(-sh
  if(chapter==='ALCATRAZ'&&p.sanity<35){const a=(35-p.sanity)/150;ctx.fillStyle='rgba(30,0,0,'+a+')';ctx.fillRect(0,0,W,H);}
  if(p.sanity<32&&heartbeat>0){const pulse=Math.max(0,1-heartbeat/1.15);ctx.fillStyle='rgba(70,0,0,'+(pulse*.07)+')';ctx.fillRect(0,0,W,H);}
  if(smiler.active){ctx.fillStyle='rgba(0,0,0,'+(smiler.close?.19:.07)+')';ctx.fillRect(0,0,W,H);if(smiler.close){ctx.globalAlpha=.08;for(let y=0;y<H;y+=8)rect(0,y,W,1,'#ddd6c4');ctx.globalAlpha=1;}}
- if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash+')';ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.04);}if(jumpScare>0){const a=Math.min(1,jumpScare/.16);ctx.fillStyle='rgba(0,0,0,'+(.18+a*.55)+')';ctx.fillRect(0,0,W,H);const j=jumpType;const cx=W/2+rnd(-18,18),cy=H/2+20;ctx.globalAlpha=a;if(j===0){rect(cx-145,cy-185,290,370,'#050607');rect(cx-112,cy-235,224,70,'#090b0c');rect(cx-105,cy-120,62,62,'#d7d0b9');rect(cx+43,cy-120,62,62,'#d7d0b9');rect(cx-82,cy-70,164,44,'#e8e0ca');for(let i=0;i<14;i++)rect(cx-72+i*11,cy-62+(i%2)*3,6,18,'#171719');}else if(j===1){rect(cx-70,cy-210,140,410,'#020304');rect(cx-115,cy-170,42,260,'#020304');rect(cx+73,cy-170,42,260,'#020304');rect(cx-34,cy-105,20,18,'#e5dfca');rect(cx+14,cy-105,20,18,'#e5dfca');line(cx-30,cy-35,cx+30,cy-35,'#e7dfcf',7);}else if(j===2){for(let i=0;i<9;i++)rect(cx-190+i*48,cy-170,18,350,'#202426');rect(cx-100,cy-70,200,18,'#cfc6af');rect(cx-65,cy-30,130,25,'#ded4bc');}else{rect(cx-100,cy-180,200,360,'#090b0c');for(let i=0;i<7;i++)rect(cx-82+i*26,cy-70,13,13,'#e4dcc7');line(cx-70,cy+20,cx+70,cy+20,'#d9cfba',8);}ctx.globalAlpha=1;}}
+ if(horrorBlackout>0){ctx.fillStyle='rgba(0,0,0,'+clamp(horrorBlackout*.78,0,.9)+')';ctx.fillRect(0,0,W,H);for(let i=0;i<8;i++)rect(rnd(0,W),rnd(0,H),rnd(30,180),rnd(1,4),'#171a1a');}
+if(horrorEvent===1&&horrorWhisper>0){ctx.globalAlpha=.55;txt('...',W/2,H-115,18,'#9b9187','center');ctx.globalAlpha=1;}
+if(horrorEvent===2&&horrorDoor>0){const bx=W/2+Math.sin(t*31)*rnd(90,180);ctx.globalAlpha=.45;rect(bx-38,120,76,390,'#060809');rect(bx-29,132,58,365,'#242829');for(let k=0;k<5;k++)rect(bx-20+k*11,135,4,350,'#4b4f4e');ctx.globalAlpha=1;}
+if(horrorEvent===3&&horrorLunge>0){const a=clamp(horrorLunge/.55,0,1);ctx.globalAlpha=a;const bx=W/2+(1-a)*rnd(-80,80);rect(bx-55,170,110,370,'#020303');rect(bx-28,145,56,60,'#080909');rect(bx-20,168,12,9,'#ded5bf');rect(bx+8,168,12,9,'#ded5bf');line(bx-28,215,bx+28,215,'#ddd1bc',5);ctx.globalAlpha=1;}
+if(horrorEvent===4&&horrorLife>0){ctx.globalAlpha=.8;txt('HE MOVED',W/2,120,16,'#783b3b','center');txt('WHEN YOU LOOKED AWAY',W/2,142,11,'#6d3737','center');ctx.globalAlpha=1;}
+if(horrorEvent===5&&horrorLife>0){ctx.globalAlpha=.42;const bx=(horrorX-cam);rect(bx-22,240,44,230,'#030405');rect(bx-18,220,36,42,'#060708');rect(bx-13,236,7,7,'#d5cfb9');rect(bx+6,236,7,7,'#d5cfb9');ctx.globalAlpha=1;}
+if(horrorEvent===6&&horrorLife>0){ctx.globalAlpha=.18+.12*Math.sin(t*22);ctx.fillStyle='#000';ctx.beginPath();ctx.arc(W/2,330,145,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+if(horrorEvent===7&&horrorLife>0){ctx.globalAlpha=.8;for(let i=0;i<6;i++){const ex=130+i*190+Math.sin(t*9+i)*12;rect(ex,160,12,12,'#ddd5bf');rect(ex+28,160,12,12,'#ddd5bf');}ctx.globalAlpha=1;}
+if(horrorEvent===8&&horrorLife>0&&chapter==='SAN FRANCISCO'){ctx.globalAlpha=.5;for(let i=0;i<4;i++){const bx=180+i*260+Math.sin(t*8+i)*20;rect(bx,300,30,190,'#050607');rect(bx+6,278,18,35,'#070809');}ctx.globalAlpha=1;}
+if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash+')';ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.04);}if(jumpScare>0){const a=Math.min(1,jumpScare/.16);ctx.fillStyle='rgba(0,0,0,'+(.18+a*.55)+')';ctx.fillRect(0,0,W,H);const j=jumpType;const cx=W/2+rnd(-18,18),cy=H/2+20;ctx.globalAlpha=a;if(j===0){rect(cx-145,cy-185,290,370,'#050607');rect(cx-112,cy-235,224,70,'#090b0c');rect(cx-105,cy-120,62,62,'#d7d0b9');rect(cx+43,cy-120,62,62,'#d7d0b9');rect(cx-82,cy-70,164,44,'#e8e0ca');for(let i=0;i<14;i++)rect(cx-72+i*11,cy-62+(i%2)*3,6,18,'#171719');}else if(j===1){rect(cx-70,cy-210,140,410,'#020304');rect(cx-115,cy-170,42,260,'#020304');rect(cx+73,cy-170,42,260,'#020304');rect(cx-34,cy-105,20,18,'#e5dfca');rect(cx+14,cy-105,20,18,'#e5dfca');line(cx-30,cy-35,cx+30,cy-35,'#e7dfcf',7);}else if(j===2){for(let i=0;i<9;i++)rect(cx-190+i*48,cy-170,18,350,'#202426');rect(cx-100,cy-70,200,18,'#cfc6af');rect(cx-65,cy-30,130,25,'#ded4bc');}else{rect(cx-100,cy-180,200,360,'#090b0c');for(let i=0;i<7;i++)rect(cx-82+i*26,cy-70,13,13,'#e4dcc7');line(cx-70,cy+20,cx+70,cy+20,'#d9cfba',8);}ctx.globalAlpha=1;}}
 function loop(ts){const dt=Math.min(.033,(ts-last)/1000||0);last=ts;if(mode==='intro'){cutTimer+=dt;if(cutTimer>2.2){cutTimer=0;nextCut();}}update(dt);render();requestAnimationFrame(loop);}
 function showNotice(){document.getElementById('pause').classList.add('hidden');document.getElementById('menu').classList.add('hidden');document.getElementById('notice').classList.remove('hidden');mode='notice';setTimeout(()=>document.getElementById('accept').focus(),0);}
 function enterGameFromNotice(){document.getElementById('notice').classList.add('hidden');document.getElementById('menu').classList.remove('hidden');mode='menu';setTimeout(()=>{const first=document.querySelector('[data-name=\"Julia\"]');if(first)first.focus();},0);}
