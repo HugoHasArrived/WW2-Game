@@ -1,3 +1,10 @@
+# Render-safe environment setup.
+# Native Pygame remains intact; on Render there is no physical display/audio device.
+import os
+if os.environ.get("RENDER") or os.environ.get("HEADLESS") or os.environ.get("GUNICORN_CMD_ARGS"):
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+
 """
 ASHES OF THE DEAD
 Pixelated 2D side-view detective horror game
@@ -35,13 +42,7 @@ split into sprites, animations, maps, sounds, and data files.
 import math
 import random
 import sys
-import os
 from dataclasses import dataclass, field
-
-# Render/headless safety: never require a physical display or audio device.
-if os.environ.get("RENDER") or os.environ.get("HEADLESS"):
-    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 from enum import Enum, auto
 
 import os
@@ -13892,3 +13893,73 @@ def pixel_helper_0800(x, y, size=1):
 
 if os.environ.get("ASHES_PRISON_CHAPTER") == "1":
     run_notes_prison_chapter()
+
+
+# ===========================================================================
+# RENDER / GUNICORN WEB ENTRY POINT
+# ===========================================================================
+# The entire original Pygame game remains in this same file.  Flask is added
+# at the bottom so Render can load `app:app` without needing a second game.py.
+
+from flask import Flask, jsonify, render_template_string
+
+app = Flask(__name__)
+VERSION = "2.0.0 - FINAL EXPANDED EDITION"
+
+PAGE = r"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ashes of the Dead</title>
+<style>
+html,body{margin:0;min-height:100%;background:#090b0f;color:#e8e8e8;font-family:Arial,sans-serif}
+body{display:grid;place-items:center;padding:24px;box-sizing:border-box}
+.card{max-width:820px;width:100%;background:#11151b;border:1px solid #303743;border-radius:14px;padding:28px;box-shadow:0 20px 60px #0008}
+h1{margin:0 0 8px;font-size:34px}.sub{color:#9aa4b2;margin-bottom:24px}
+.ok{display:inline-block;background:#173b25;color:#8ff0aa;padding:7px 10px;border-radius:999px;font-size:13px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:20px 0}
+.item{background:#0b0e13;border:1px solid #252b34;border-radius:10px;padding:12px}
+code{background:#080a0d;padding:2px 6px;border-radius:5px}
+.note{color:#b7bec9;line-height:1.6}
+</style></head>
+<body><main class="card">
+<div class="ok">SERVER ONLINE</div>
+<h1>Ashes of the Dead</h1>
+<div class="sub">Pixelated 2D detective horror • {{ version }}</div>
+<div class="grid">
+<div class="item"><b>Julia</b><br>Detective route</div>
+<div class="item"><b>May</b><br>Detective route</div>
+<div class="item"><b>Yumi</b><br>Detective route</div>
+<div class="item"><b>Original Pygame build</b><br>All game code is in <code>app.py</code></div>
+</div>
+<p class="note">The Render service is online. The original game is a native Pygame application. A normal Render Web Service cannot display a native Pygame desktop window inside a browser tab, but the complete game source remains in this file.</p>
+</main></body></html>"""
+
+@app.get("/")
+def index():
+    return render_template_string(PAGE, version=VERSION)
+
+@app.get("/health")
+def health():
+    return jsonify({"status": "ok", "service": "ashes-of-the-dead", "version": VERSION})
+
+@app.get("/api/status")
+def status():
+    return jsonify({
+        "status": "online",
+        "game_source": "app.py",
+        "engine": "pygame",
+        "render_safe": True,
+        "version": VERSION,
+    })
+
+if __name__ == "__main__":
+    # Local behavior: preserve the native Pygame game when explicitly run
+    # outside Render.  Gunicorn imports this module and therefore does not
+    # execute the native game loop.
+    if os.environ.get("RENDER") or os.environ.get("HEADLESS"):
+        port = int(os.environ.get("PORT", "10000"))
+        app.run(host="0.0.0.0", port=port)
+    else:
+        main()
