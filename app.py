@@ -39,7 +39,13 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 
 import os
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+if os.environ.get("RENDER"):
+    os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-render")
+    os.makedirs(os.environ["XDG_RUNTIME_DIR"], mode=0o700, exist_ok=True)
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+else:
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 pygame.init()
@@ -3735,6 +3741,14 @@ WORLD_LORE = [
     {"id": 1800, "chapter": 18, "district": 12, "title": "Case Fragment 1800", "text": "Fragment 1800: rain, empty streets, missing reports, and traces connected to the infection.", "evidence": ["wet footprint", "damaged radio", "blood trail"], "importance": 1},
 ]
 
+
+# Palette aliases used by the generated sprite metadata.
+rust = ((116, 47, 35), (164, 67, 43), (205, 111, 66), (74, 39, 34))
+hospital = ((205, 205, 190), (154, 160, 158), (93, 105, 108), (48, 56, 59))
+military = ((73, 82, 57), (108, 112, 72), (157, 145, 92), (42, 48, 39))
+rain = ((55, 69, 79), (89, 108, 119), (145, 157, 160), (29, 38, 45))
+graveyard = ((55, 65, 60), (89, 91, 76), (128, 119, 88), (31, 35, 34))
+night = ((22, 28, 38), (43, 51, 65), (76, 82, 93), (12, 15, 22))
 
 # ===========================================================================
 # PIXEL SPRITE SPECIFICATIONS
@@ -12039,3 +12053,17 @@ def pixel_helper_0800(x, y, size=1):
 
 if os.environ.get("ASHES_PRISON_CHAPTER") == "1":
     run_notes_prison_chapter()
+
+
+# Render/Gunicorn WSGI entry point. The native Pygame loop is intentionally
+# not started during import, so Gunicorn can load this module safely.
+from flask import Flask, Response
+app = Flask(__name__)
+
+@app.get("/")
+def index():
+    return Response("""<!doctype html><html><head><meta charset='utf-8'><title>Ashes of the Dead</title><style>body{margin:0;background:#080a0d;color:#ddd;font-family:monospace;display:grid;place-items:center;min-height:100vh}main{max-width:760px;padding:32px;border:1px solid #303640;background:#10141a;box-shadow:0 0 40px #000}h1{margin-top:0}code{color:#9fd18b}</style></head><body><main><h1>Ashes of the Dead</h1><p>Server is online. The Pygame game code loaded successfully under Gunicorn.</p><p><code>/health</code> reports the server status.</p></main></body></html>""", mimetype="text/html")
+
+@app.get("/health")
+def health():
+    return {"status":"ok","game":"Ashes of the Dead"}
