@@ -1426,6 +1426,7 @@ PRISON_H = 720
 PRISON_FLOOR = 560
 
 class PrisonMode:
+    DISCLAIMER = -1
     CUTSCENE = 0
     PLAY = 1
     PAUSE = 2
@@ -1434,8 +1435,15 @@ class PrisonMode:
 
 class PrisonGame:
     def __init__(self):
-        self.mode = PrisonMode.CUTSCENE
+        self.mode = PrisonMode.DISCLAIMER
         self.time = 0.0
+        self.disclaimer_time = 0.0
+        self.creepy_event_timer = 0.0
+        self.creepy_event = False
+        self.creepy_event_time = 0.0
+        self.fake_ip = random.choice(["185.71.██.██", "103.42.██.██", "49.146.██.██", "112.198.██.██"])
+        self.fake_country = random.choice(["PHILIPPINES", "UNITED STATES", "CANADA", "JAPAN", "UNITED KINGDOM"])
+        self.fake_city = random.choice(["UNKNOWN", "SAN FRANCISCO?", "MANILA?", "UNKNOWN CITY"])
         self.cutscene = 0
         self.cutscene_time = 0.0
         self.camera = 0.0
@@ -1507,8 +1515,25 @@ class PrisonGame:
     def update(self, dt, keys):
         self.time += dt
         self.update_particles(dt)
+        if self.creepy_event:
+            self.creepy_event_time -= dt
+            if self.creepy_event_time <= 0:
+                self.creepy_event = False
+        elif self.mode == PrisonMode.PLAY:
+            self.creepy_event_timer += dt
+            if self.creepy_event_timer > random.uniform(18, 34):
+                self.creepy_event_timer = 0
+                if random.random() < 0.75:
+                    self.creepy_event = True
+                    self.creepy_event_time = random.uniform(4.0, 7.0)
+                    self.damage_sanity(random.uniform(2, 5))
+                    self.say("THE SMILER KNOWS YOU ARE HERE.", 3.5)
         if self.message_timer > 0:
             self.message_timer -= dt
+
+        if self.mode == PrisonMode.DISCLAIMER:
+            self.disclaimer_time += dt
+            return
 
         if self.mode == PrisonMode.CUTSCENE:
             self.cutscene_time += dt
@@ -1792,6 +1817,71 @@ class PrisonGame:
             pygame.draw.rect(surface, (5, 6, 7), box.inflate(20, 12))
             surface.blit(msg, box)
 
+    def draw_disclaimer(self, surface):
+        surface.fill((3, 4, 5))
+        pulse = int((math.sin(self.disclaimer_time * 2.5) + 1) * 8)
+        pygame.draw.rect(surface, (20 + pulse, 18, 18), (28, 24, 744, 672), 2)
+        title = pygame.font.Font(None, 34).render("ASHES OF THE DEAD", True, (225, 225, 215))
+        surface.blit(title, title.get_rect(center=(400, 78)))
+        warning = pygame.font.Font(None, 25).render("HORROR WARNING", True, (190 + pulse, 55, 55))
+        surface.blit(warning, warning.get_rect(center=(400, 125)))
+        lines = [
+            "This game contains disturbing imagery, flashing effects,",
+            "psychological horror, sudden sounds, and intense scares.",
+            "",
+            "THE GAME MAY DISPLAY FICTIONAL NETWORK-LIKE INFORMATION",
+            "SUCH AS AN IP ADDRESS, COUNTRY, OR LOCATION AS A HORROR EFFECT.",
+            "",
+            "It does NOT access your personal files, passwords, camera,",
+            "microphone, or other private computer data.",
+            "No real location is required for these effects."
+        ]
+        font = pygame.font.Font(None, 17)
+        y = 185
+        for line in lines:
+            color = (205, 205, 195) if "FICTIONAL" not in line and "IP ADDRESS" not in line else (220, 170, 120)
+            r = font.render(line, True, color)
+            surface.blit(r, r.get_rect(center=(400, y)))
+            y += 29
+        box = pygame.Rect(250, 520, 300, 58)
+        pygame.draw.rect(surface, (18, 20, 22), box)
+        pygame.draw.rect(surface, (110, 110, 100), box, 2)
+        cont = pygame.font.Font(None, 22).render("ENTER / SPACE  —  CONTINUE", True, (235, 235, 220))
+        surface.blit(cont, cont.get_rect(center=box.center))
+        hint = pygame.font.Font(None, 14).render("If horror effects make you uncomfortable, exit the game.", True, (125, 125, 120))
+        surface.blit(hint, hint.get_rect(center=(400, 625)))
+
+    def draw_creepy_event(self, surface):
+        if not self.creepy_event:
+            return
+        overlay = pygame.Surface((800, 720), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 185))
+        surface.blit(overlay, (0, 0))
+        glitch = int(math.sin(self.time * 35) * 3)
+        box = pygame.Rect(105 + glitch, 190, 590, 300)
+        pygame.draw.rect(surface, (8, 9, 10), box)
+        pygame.draw.rect(surface, (155, 45, 45), box, 2)
+        f1 = pygame.font.Font(None, 30)
+        f2 = pygame.font.Font(None, 19)
+        lines = [
+            "CONNECTION ESTABLISHED",
+            "",
+            "SUBJECT: UNKNOWN",
+            f"IP: {self.fake_ip}",
+            f"COUNTRY: {self.fake_country}",
+            f"LOCATION: {self.fake_city}",
+            "",
+            "WE CAN SEE YOU.",
+            "STOP LOOKING BEHIND YOU."
+        ]
+        y = 225
+        for i, line in enumerate(lines):
+            font = f1 if i in (0, 7, 8) else f2
+            color = (225, 60, 60) if i in (0, 7, 8) else (205, 205, 195)
+            r = font.render(line, True, color)
+            surface.blit(r, r.get_rect(center=(400, y)))
+            y += 27 if i in (0, 7, 8) else 23
+
     def draw_cutscene(self, surface):
         surface.fill((7, 8, 10))
         t = self.cutscene_time
@@ -1841,6 +1931,9 @@ class PrisonGame:
         surface.blit(sub, sub.get_rect(center=(400, 675)))
 
     def draw(self, surface):
+        if self.mode == PrisonMode.DISCLAIMER:
+            self.draw_disclaimer(surface)
+            return
         if self.mode == PrisonMode.CUTSCENE:
             self.draw_cutscene(surface)
             return
@@ -1873,6 +1966,7 @@ class PrisonGame:
             pygame.draw.rect(surface, p[5], (px, int(p[1]), 3, 3))
         self.draw_lighting(surface)
         self.draw_hud(surface)
+        self.draw_creepy_event(surface)
 
         if self.mode == PrisonMode.PAUSE:
             overlay = pygame.Surface((800, 720), pygame.SRCALPHA)
