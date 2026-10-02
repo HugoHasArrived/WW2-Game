@@ -31,11 +31,13 @@ const MAP=document.getElementById('map');
 const mctx=MAP.getContext('2d');
 const W=1280,H=720,G=570,WORLD=12800;
 const keys=new Set();
-const mouse={x:640,y:360,down:false};
+const mouse={x:640,y:360,down:false};let audioCtx=null;
+function scareSound(close=false){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=close?42:28;g.gain.setValueAtTime(0.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(close?.035:.018,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+(close?1.1:1.8));o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+(close?1.2:1.9));}catch(e){}}
 let mode='notice',name='Julia',t=0,last=0,cam=0,shake=0,flash=0;
 let objective='';let message='';let messageUntil=0;let prompt='';
 let zombies=[],vehicles=[],buildings=[],survivors=[],loot=[],bullets=[],particles=[],rain=[],shells=[],blood=[],doors=[],interior=null;
-let alcatrazEscaped=false,boatReady=false,fuel=0,alarm=0,hordeTimer=18,smilerTimer=7,smiler={active:false,x:0,ttl:0,phase:0};
+let alcatrazEscaped=false,boatReady=false,fuel=0,alarm=0,hordeTimer=26,smilerTimer=11,smiler={active:false,x:0,ttl:0,phase:0,close:false,glitch:0,stare:0};
+let chapter='ALCATRAZ',escapeTransition=0,worldFear=0;
 let startCell=true,cellKey=false,cellDoorOpen=false,cellInspected={bed:false,window:false,note:false},gameStarted=false,gunshotTimer=0;
 let cutLines=[],cutIndex=0,cutTimer=0;
 let p={x:160,y:G-64,w:34,h:64,vx:0,vy:0,ground:true,face:1,hp:100,stam:100,sanity:100,ammo:12,maxAmmo:12,reload:0,grenades:2,light:true,anim:0,kills:0,shots:0,run:false,invuln:0};
@@ -102,16 +104,16 @@ function buildWorld(){
 }
 function intro(){
  cutLines=[
- 'ALCATRAZ ISLAND — 11:47 PM',
- 'Rain claws at the prison windows. You wake alone inside a locked cell.',
- 'The emergency lights die. For a moment, the corridor beyond the bars is completely black.',
- 'A tall shape appears at the far end. Two pale eyes. One impossible smile. Then it is gone.',
- 'The lock clicks. No voices. No footsteps. Just rain. ESCAPE ALCATRAZ.'
+ 'ALCATRAZ — 11:47 PM',
+ 'You wake alone in Cell A-17. Rain. Concrete. A locked door.',
+ 'The light flickers. Something impossibly tall stands at the end of the corridor.',
+ 'It does not move. It only smiles. The light dies. When it returns, nothing is there.',
+ 'The lock clicks open. ESCAPE ALCATRAZ.'
  ];cutIndex=0;cutTimer=0;mode='intro';document.getElementById('cutscene').classList.remove('hidden');showCut();}
 function showCut(){const el=document.getElementById('cutline');el.textContent=cutLines[cutIndex]||'';}
 function nextCut(){cutIndex++;if(cutIndex>=cutLines.length)finishIntro();else{cutTimer=0;showCut();}}
 function finishIntro(){document.getElementById('cutscene').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');mode='play';buildWorld();p={...p,x:180,y:G-64,hp:100,stam:100,sanity:100,ammo:12,reload:0,grenades:2,kills:0,shots:0,invuln:0,light:false};cam=0;interior='OPENING_CELL';startCell=true;cellKey=false;cellDoorOpen=false;cellInspected={bed:false,window:false,note:false};gameStarted=true;alarm=0;setObj('Search the cell. Find a way out.');setMsg('Cold concrete. Rain beyond the bars. You are alone.',4);}
-function resetChapter(){document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');mode='play';buildWorld();p={x:180,y:G-64,w:34,h:64,vx:0,vy:0,ground:true,face:1,hp:100,stam:100,sanity:100,ammo:12,maxAmmo:12,reload:0,grenades:2,light:false,anim:0,kills:0,shots:0,run:false,invuln:0};cam=0;interior='OPENING_CELL';startCell=true;cellKey=false;cellDoorOpen=false;cellInspected={bed:false,window:false,note:false};alcatrazEscaped=false;boatReady=false;fuel=0;smiler.active=false;alarm=0;gameStarted=true;setObj('Search the cell. Find a way out.');setMsg('Chapter restarted.',2);}
+function resetChapter(){document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');mode='play';buildWorld();p={x:180,y:G-64,w:34,h:64,vx:0,vy:0,ground:true,face:1,hp:100,stam:100,sanity:100,ammo:12,maxAmmo:12,reload:0,grenades:2,light:false,anim:0,kills:0,shots:0,run:false,invuln:0};cam=0;interior='OPENING_CELL';startCell=true;cellKey=false;cellDoorOpen=false;cellInspected={bed:false,window:false,note:false};alcatrazEscaped=false;boatReady=false;fuel=0;smiler.active=false;alarm=0;chapter='ALCATRAZ';worldFear=0;gameStarted=true;setObj('Search the cell. Find a way out.');setMsg('Chapter restarted.',2);}
 function playerRect(){return {x:p.x,y:p.y,w:p.w,h:p.h};}
 function near(a,b,d){return Math.abs(a-b)<d;}
 function getBuilding(){let best=null,bd=99999;for(const b of buildings){const d=Math.abs((b.x+b.w/2)-p.x);if(d<bd&&d<b.w/2+65){best=b;bd=d;}}return best;}
@@ -130,16 +132,12 @@ function interact(){
  }
  const l=getLoot();if(l){l.got=true;if(l.type==='medkit'){p.hp=clamp(p.hp+40,0,100);setMsg('Medical supplies restored health.',2);}else if(l.type==='ammo'){p.ammo=clamp(p.ammo+l.amount,0,p.maxAmmo);setMsg('Ammunition collected.',2);}else if(l.type==='grenade'){p.grenades+=l.amount;setMsg('Grenades collected.',2);}else if(l.type==='fuel'){fuel++;setMsg('Fuel can collected. '+fuel+'/2 fuel.',2);}else if(l.type==='battery'){setMsg('Generator battery collected.',2);}return;}
  const s=getSurvivor();if(s){s.talked=true;s.follow=true;p.sanity=clamp(p.sanity+8,0,100);setMsg(s.name+': “Stay close. The Smiler is watching.”',4);setObj('Help the survivors reach the dock.');return;}
- const v=getVehicle();if(v){if(v.broken){if(fuel>0){fuel--;v.broken=false;v.usable=true;setMsg('Vehicle repaired with fuel.',3);}else setMsg('This vehicle needs fuel.',2);return;}if(v.usable){p.x=v.x+v.w/2;setMsg('Vehicle ready. Press E to drive / leave.',2);setObj('Reach the dock.');return;}}
+ if(p.x>11600&&fuel>=2&&!boatReady){boatReady=true;fuel-=2;setMsg('The boat engine coughs to life.',3);setObj('Board the boat.');shake=3;return;}const v=getVehicle();if(v){if(v.broken){if(fuel>0){fuel--;v.broken=false;v.usable=true;setMsg('Vehicle repaired with fuel.',3);}else setMsg('This vehicle needs fuel.',2);return;}if(v.usable){p.x=v.x+v.w/2;setMsg('Vehicle ready. Press E to drive / leave.',2);setObj('Reach the dock.');return;}}
  const b=getBuilding();if(b){if(!b.open){b.open=true;interior=b.name;enterBuilding(b);return;}b.open=false;interior=null;setMsg('Exited '+b.name+'.',2);setObj('Search the island and find a route to the dock.');return;}
  if(p.x>11650&&fuel>=2){boatReady=true;setMsg('The boat is fueled. Escape Alcatraz!',3);setObj('Reach the escape boat.');}
 }
 function spawnFirstThreats(){
- const spots=[560,760,1080,1420,1880,2240,2780,3300];
- for(let i=0;i<spots.length;i++){const type=i===2||i===6?'runner':'walker';spawnZombie(spots[i],type);}
- addSurvivor(1190,'Eli','former guard');
- addSurvivor(1900,'Mara','nurse');
- setObj('Reach the prison exit. Stay alert.');
+ const spots=[760,1320,2220];for(let i=0;i<spots.length;i++)spawnZombie(spots[i],i===2?'runner':'walker');survivors=[];setObj('Reach the prison exit. Stay alert.');setMsg('Something moved somewhere below you.',3);
 }
 function enterBuilding(b){
  setObj('Search '+b.name+' for supplies and survivors.');setMsg('Entered '+b.name+'. The outside world is quiet.',2);
@@ -150,11 +148,7 @@ function movePlayer(dt){
  const left=keys.has('a')||keys.has('ArrowLeft'),right=keys.has('d')||keys.has('ArrowRight');
  if(startCell){p.vx=(right-left)*125;p.x+=p.vx*dt;p.x=clamp(p.x,70,1120);p.anim+=dt*5;return;}
  p.run=keys.has('Shift')&&p.stam>2;
- let speed=p.run?310:185;
- if(p.run&&(left||right))p.stam=clamp(p.stam-dt*20,0,100);else p.stam=clamp(p.stam+dt*12,0,100);
- p.vx=(right-left)*speed;if(p.vx)p.face=Math.sign(p.vx);
- if((keys.has(' ')||keys.has('w')||keys.has('ArrowUp'))&&p.ground){p.vy=-445;p.ground=false;for(let i=0;i<5;i++)spawnParticle(p.x+17,G,'#777',.35,2,rnd(-30,30),rnd(-40,0));}
- p.vy+=1120*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+ let speed=p.run?320:185;if(p.run&&(left||right))p.stam=clamp(p.stam-dt*20,0,100);else p.stam=clamp(p.stam+dt*12,0,100);const targetV=(right-left)*speed;p.vx+=(targetV-p.vx)*Math.min(1,dt*11);if(!left&&!right)p.vx*=Math.pow(.001,dt);if(Math.abs(p.vx)>4)p.face=Math.sign(p.vx);if((keys.has(' ')||keys.has('w')||keys.has('ArrowUp'))&&p.ground){p.vy=-445;p.ground=false;shake=Math.max(shake,1.5);for(let i=0;i<8;i++)spawnParticle(p.x+17,G,'#777',.35,2,rnd(-30,30),rnd(-40,0));}p.vy+=1250*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
  if(p.y+p.h>=G){p.y=G-p.h;p.vy=0;p.ground=true;}
  p.x=clamp(p.x,0,WORLD-p.w);
  const target=p.x-390;cam+=(target-cam)*Math.min(1,dt*7);cam=clamp(cam,0,WORLD-W);
@@ -167,7 +161,7 @@ function updateZombies(dt){
   const hearing=135+(p.run?120:0)+(gunshotTimer>0?280:0);
   if(dist<hearing){z.alert=2;z.vx=Math.sign(dx)*(z.type==='runner'?125:z.type==='brute'?48:72);z.x+=z.vx*dt;}
   else z.x+=Math.sin(t*.8+z.anim)*8*dt;
-  if(dist<48){z.attack-=dt;if(z.attack<=0&&p.invuln<=0){const dmg=z.type==='brute'?16:z.type==='runner'?10:7;p.hp-=dmg;p.invuln=.55;shake=6;spawnBlood(p.x+17,p.y+30);setMsg('A zombie grabbed you.',1.2);}}
+  if(dist<48){z.attack-=dt;if(z.attack<=0&&p.invuln<=0){const dmg=z.type==='brute'?16:z.type==='runner'?10:7;p.hp-=dmg;p.invuln=.55;p.vx+=(Math.sign(p.x-z.x)||1)*85;z.x-=Math.sign(dx||1)*18;shake=6;spawnBlood(p.x+17,p.y+30);setMsg('A zombie grabbed you.',1.2);}}
   if(z.hp<=0&&!z.dead){z.dead=true;p.kills++;spawnBlood(z.x,z.y+25);for(let i=0;i<6;i++)spawnParticle(z.x,z.y+30,'#71413e',.5,2,rnd(-50,50),rnd(-70,20));}
  }
 }
@@ -186,33 +180,22 @@ function updateSurvivors(dt){for(const s of survivors){if(s.follow){s.x+=(p.x-75
 function updateVehicles(dt){for(const v of vehicles){if(v.driving){v.x+=p.face*170*dt;}}}
 function updateParticles(dt){for(const q of particles){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=80*dt;q.life-=dt;}particles=particles.filter(q=>q.life>0);}
 function updateRain(dt){for(const r of rain){r.y+=r.v*dt;if(r.y>H+30){r.y=-30;r.x=rnd(0,W);}}}
-function triggerHorde(){
- if(startCell||zombies.filter(z=>!z.dead).length>=12)return;if(t<hordeTimer)return;hordeTimer=t+40+rnd(10,20);const base=clamp(p.x-600,50,WORLD-600);const count=Math.min(4,12-zombies.filter(z=>!z.dead).length);for(let i=0;i<count;i++){const r=Math.random();spawnZombie(base+i*75+rnd(-40,40),r<.15?'runner':'walker');}setMsg('More movement in the dark...',3);alarm=.35;}
-function triggerSmiler(){
- if(smiler.active)return;
- smiler.active=true;smiler.ttl=3.8+Math.random()*3;smiler.phase=0;const side=Math.random()<.5?-1:1;smiler.x=clamp(p.x+side*rnd(300,520),80,WORLD-80);p.sanity=clamp(p.sanity-8,0,100);setMsg('THE SMILER IS WATCHING.',2.5);
-}
-function updateSmiler(dt){
- smilerTimer-=dt;if(smilerTimer<=0){smilerTimer=10+Math.random()*15;if(Math.random()<.7)triggerSmiler();}
- if(smiler.active){smiler.ttl-=dt;smiler.phase+=dt;if(smiler.ttl<=0)smiler.active=false;}
- // Persistent observation: sanity drains subtly when the player is close to its sight line.
- if(smiler.active&&Math.abs(smiler.x-p.x)<650)p.sanity=clamp(p.sanity-dt*1.8,0,100);
-}
+function triggerHorde(){const living=zombies.filter(z=>!z.dead).length;if(startCell||chapter!=='ALCATRAZ'||living>=8)return;if(t<hordeTimer)return;hordeTimer=t+38+rnd(18,30);const base=clamp(p.x-700,80,WORLD-700);const count=Math.min(2,8-living);for(let i=0;i<count;i++){const r=Math.random();spawnZombie(base+i*95+rnd(-45,45),r<.12?'runner':'walker');}setMsg('A distant door slams. Then silence.',2.5);alarm=.22;}
+function triggerSmiler(){if(smiler.active)return;smiler.active=true;smiler.ttl=2.8+Math.random()*4;smiler.phase=0;smiler.glitch=0;smiler.stare=0;smiler.close=Math.random()<.34;const side=Math.random()<.5?-1:1;smiler.x=clamp(p.x+side*(smiler.close?rnd(125,220):rnd(420,720)),80,WORLD-80);p.sanity=clamp(p.sanity-(smiler.close?16:7),0,100);shake=Math.max(shake,smiler.close?4:1);setMsg(smiler.close?'DON’T LOOK AWAY.':'Something is watching from the dark.',2.8);scareSound(smiler.close);}
+function updateSmiler(dt){smilerTimer-=dt;if(smilerTimer<=0){smilerTimer=11+Math.random()*19;if(Math.random()<.62)triggerSmiler();}if(smiler.active){smiler.ttl-=dt;smiler.phase+=dt;smiler.stare+=dt;smiler.glitch=Math.max(0,smiler.glitch-dt);if(smiler.close&&smiler.stare>.65&&Math.random()<dt*.45){smiler.glitch=.18;shake=Math.max(shake,3);p.sanity=clamp(p.sanity-2,0,100);}if(smiler.ttl<=0)smiler.active=false;}if(smiler.active&&Math.abs(smiler.x-p.x)<700)p.sanity=clamp(p.sanity-dt*(smiler.close?4.2:1.4),0,100);}
 function updateSanity(dt){
  const darkness=(p.light?0:1);p.sanity=clamp(p.sanity-dt*(.15+darkness*.22),0,100);
  if(p.sanity<25&&Math.random()<dt*.7){setMsg('You hear breathing behind you.',1.5);}
 }
-function updateObjective(){
- if(!alcatrazEscaped&&p.x>3850){alcatrazEscaped=true;setObj('The mainland route is blocked. Reach the dock and find a boat.');setMsg('You made it through the prison complex.',4);}
- if(alcatrazEscaped&&p.x>11300&&fuel<2)setObj('Find 2 fuel cans and reach the escape boat.');
- if(alcatrazEscaped&&p.x>11300&&fuel>=2&&!boatReady)setObj('Fuel the escape boat with E.');
- if(boatReady&&p.x>11900){setMsg('YOU ESCAPED ALCATRAZ.',8);setObj('Chapter complete — San Francisco awaits.');}
-}
+function updateObjective(){if(!alcatrazEscaped&&p.x>3850){alcatrazEscaped=true;setObj('The mainland route is blocked. Reach the dock and find a boat.');setMsg('The prison is behind you. The island is not safe.',4);}if(alcatrazEscaped&&p.x>11300&&fuel<2)setObj('Find 2 fuel cans and reach the escape boat.');if(alcatrazEscaped&&p.x>11300&&fuel>=2&&!boatReady)setObj('Fuel the escape boat with E.');if(boatReady&&p.x>11900&&chapter==='ALCATRAZ')transitionToSanFrancisco();}
+function transitionToSanFrancisco(){
+ chapter='SAN FRANCISCO';escapeTransition=1;interior=null;startCell=false;boatReady=false;alcatrazEscaped=true;zombies=[];survivors=[];loot=[];buildings=[];vehicles=[];p.x=420;p.y=G-64;p.vx=0;p.vy=0;p.light=false;p.sanity=72;cam=0;for(let i=0;i<5;i++)spawnZombie(1450+i*260,i===3?'runner':'walker');addBuilding(780,300,260,'Abandoned Apartment','city',false);addBuilding(1350,360,300,'Police Station','city',false);addBuilding(2050,430,330,'Hospital','medical',false);addBuilding(2920,380,290,'Funeral Home','city',false);addVehicle(650,G-34,120,'car',true,false);addVehicle(1740,G-34,130,'jeep',true,false);addLoot(880,G-24,'ammo','Ammunition',10);addLoot(1120,G-24,'medkit','Medical Kit');addLoot(1530,G-24,'ammo','Ammunition',12);smilerTimer=9;smiler.active=false;worldFear=.25;setObj('Reach the city and find out what happened in San Francisco.');setMsg('SAN FRANCISCO. The prison is behind you. Something followed.',5);}
+
 function update(dt){
  if(mode!=='play')return;
  t+=dt;p.invuln=Math.max(0,p.invuln-dt);
  movePlayer(dt);updateZombies(dt);updateBullets(dt);updateSurvivors(dt);updateVehicles(dt);updateParticles(dt);updateRain(dt);triggerHorde();updateSmiler(dt);updateSanity(dt);updateObjective();
- if(p.reload>0)p.reload-=dt;
+ if(p.reload>0){p.reload-=dt;if(p.reload<=0){p.reload=0;p.ammo=p.maxAmmo;setMsg('Reloaded.',.7);}}
  if(p.hp<=0){p.hp=100;p.sanity=55;p.x=Math.max(80,p.x-250);setMsg('You collapsed. You wake up again in the rain.',4);shake=10;}
  if(keys.has('r')&&p.reload<=0&&p.ammo<p.maxAmmo)p.reload=1.0;
  if(p.reload<=0&&p.ammo===0){p.reload=.9;}
@@ -224,14 +207,8 @@ function update(dt){
  document.getElementById('message').textContent=t<messageUntil?message:'';
  updateMap();
 }
-function drawSky(){
- const g=ctx.createLinearGradient(0,0,0,G);g.addColorStop(0,COLORS.sky);g.addColorStop(1,COLORS.sky2);ctx.fillStyle=g;ctx.fillRect(0,0,W,G);
- // distant San Francisco silhouette
- for(let i=0;i<18;i++){let x=i*110-(cam*.12%110);let h=70+(i*37%100);rect(x,G-115-h,70,h,'#10171c');rect(x+12,G-100-h,9,10,'#252b2d');rect(x+40,G-82-h,8,9,'#252b2d');}
- // moon behind clouds
- ctx.globalAlpha=.18;ctx.fillStyle='#c2c3b6';ctx.beginPath();ctx.arc(1040,100,42,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
-}
-function drawGround(){rect(0,G,W,H-G,COLORS.ground);for(let x=-(cam%80);x<W;x+=80){rect(x,G+7,48,2,'#3d4041');rect(x+55,G+38,14,2,'#1d2021');}rect(0,G,W,8,'#55575a');}
+function drawSky(){const g=ctx.createLinearGradient(0,0,0,G);g.addColorStop(0,chapter==='SAN FRANCISCO'?'#07090c':'#080d12');g.addColorStop(1,chapter==='SAN FRANCISCO'?'#151a1e':'#111a20');ctx.fillStyle=g;ctx.fillRect(0,0,W,G);for(let i=0;i<28;i++){let x=i*72-(cam*.12%72);let h=55+(i*53%135);rect(x,G-115-h,48+(i%4)*14,h,chapter==='SAN FRANCISCO'?'#0b0e11':'#10171c');if(i%3===0)rect(x+18,G-95-h,5,5,'#77735e');}ctx.globalAlpha=.12;ctx.fillStyle='#c2c3b6';ctx.beginPath();ctx.arc(1040,100,42,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;for(let i=0;i<7;i++){ctx.globalAlpha=.035;ctx.fillStyle='#9aa3a4';ctx.beginPath();ctx.ellipse((i*220+t*12)%(W+300)-150,470+i*18,220,30,0,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+function drawGround(){rect(0,G,W,H-G,chapter==='SAN FRANCISCO'?'#202326':COLORS.ground);for(let x=-(cam%80);x<W;x+=80){rect(x,G+7,48,2,'#3d4041');rect(x+55,G+38,14,2,'#1d2021');}for(let i=0;i<18;i++){const x=(i*137-cam*.7)%W;line(x,G+20,x+24,G+36,'#171a1b',2);line(x+24,G+36,x+36,G+25,'#171a1b',1);}rect(0,G,W,8,'#55575a');}
 function drawBuilding(b){const x=b.x-cam;if(x+b.w<0||x>W)return;const top=G-b.h;const dark=b.open?'#32383a':'#292e31';rect(x,top,b.w,b.h,dark);rect(x+8,top+8,b.w-16,9,'#4d5354');
  for(let yy=top+34;yy<G-45;yy+=42){for(let xx=x+22;xx<x+b.w-20;xx+=47){rect(xx,yy,20,24,'#111619');if(((xx+yy+Math.floor(t*4))%11)<2)rect(xx+5,yy+5,8,8,'#6b6c57');}}
  const doorX=x+b.w/2-25;rect(doorX,G-78,50,78,b.open?'#59665d':'#15191b');if(b.open){rect(doorX+20,G-50,3,3,'#b9b28d');}else{rect(doorX+18,G-43,13,13,'#2c3031');}
@@ -244,10 +221,7 @@ function drawLoot(l){if(l.got)return;const x=l.x-cam;if(x<-30||x>W+30)return;let
 function drawSurvivor(s){const x=s.x-cam,bob=Math.sin(t*7+s.anim)*2;rect(x+9,s.y-42+bob,16,18,COLORS.skin);rect(x+5,s.y-25+bob,24,34,s.role==='soldier'?'#4d574b':'#51575a');rect(x,s.y+7+bob,9,25,'#252a2d');rect(x+24,s.y+7+bob,9,25,'#252a2d');line(x+5,s.y-8+bob,x-7,s.y+10+bob,'#3e4548',5);line(x+29,s.y-8+bob,x+41,s.y+10+bob,'#3e4548',5);txt(s.name,x+17,s.y-52,11,'#ddd','center');if(near(s.x,p.x,90))txt('E TALK',x+17,s.y-65,10,'#fff','center');}
 function drawPlayer(){const x=p.x-cam,bob=p.ground?Math.sin(p.anim)*1.5:0;const walk=Math.sin(p.anim)*3;rect(x+7,p.y+2+bob,21,25,COLORS.skin);rect(x+5,p.y+26+bob,25,37,name==='May'?'#4b5560':name==='Yumi'?'#55505e':'#4b5550');rect(x,p.y+39+bob,9,25,'#202529');rect(x+25,p.y+39+bob,9,25,'#202529');line(x+8,p.y+34+bob,x+(p.face>0?40:-8),p.y+28+bob,'#303438',6);const gx=p.face>0?x+34:x-17;rect(gx,p.y+27,28,6,'#202224');if(p.reload>0)txt('RELOADING',x+17,p.y-15,10,'#aaa','center');}
 function drawZombie(z){const x=z.x-cam,bob=Math.sin(t*8+z.anim)*3;const c=z.type==='brute'?'#303936':z.type==='runner'?'#46574b':'#39483f';const skin=z.type==='brute'?'#4c5750':'#536055';rect(x+7,z.y-38+bob,24,z.type==='brute'?34:27,skin);rect(x,z.y-10+bob,z.w,z.h-25,c);line(x+4,z.y+8+bob,x-12,z.y+32+bob,c,7);line(x+z.w-4,z.y+8+bob,x+z.w+12,z.y+32+bob,c,7);rect(x+4,z.y+z.h-13,13,20,'#242a27');rect(x+z.w-17,z.y+z.h-13,13,20,'#242a27');rect(x+13,z.y-29+bob,4,4,'#c6c19b');rect(x+26,z.y-29+bob,4,4,'#c6c19b');if(z.type==='runner'){line(x+5,z.y+10,x-16,z.y-3,'#536055',6);}}
-function drawSmiler(){if(!smiler.active)return;const x=smiler.x-cam;if(x<-100||x>W+100)return;const base=G-260;ctx.save();ctx.globalAlpha=.92; // tall silhouette
- rect(x-25,base,50,260,'#050607');rect(x-15,base-80,30,82,'#030405');rect(x-39,base+5,14,190,'#040506');rect(x+25,base+5,14,190,'#040506');rect(x-16,base+230,14,42,'#030405');rect(x+2,base+230,14,42,'#030405');
- // long neck and impossible head
- rect(x-12,base-36,24,35,'#030405');ctx.strokeStyle='#d7d1c3';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,base-58,18,0,Math.PI*2);ctx.stroke();rect(x-9,base-62,5,5,'#e4e0cf');rect(x+4,base-62,5,5,'#e4e0cf');ctx.strokeStyle='#eee7d7';ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,base-56,13,.18,2.96);ctx.stroke();ctx.globalAlpha=.18+.1*Math.sin(smiler.phase*8);rect(x-55,base-100,110,360,'#000');ctx.restore();}
+function drawSmiler(){if(!smiler.active)return;const x=smiler.x-cam;if(x<-180||x>W+180)return;const nearFear=smiler.close;const base=G-(nearFear?250:215);const scale=nearFear?1.28:1;ctx.save();for(let ghost=3;ghost>=1;ghost--){ctx.globalAlpha=(nearFear?.035:.025)*ghost;const gx=x+Math.sin(smiler.phase*9+ghost)*ghost*7;rect(gx-27*scale,base-5,54*scale,285*scale,'#000');}ctx.globalAlpha=.97;rect(x-22*scale,base,44*scale,255*scale,'#020304');rect(x-12*scale,base-84*scale,24*scale,88*scale,'#010203');line(x-19*scale,base+22,x-62*scale,base+210*scale,'#010203',12*scale);line(x+19*scale,base+22,x+62*scale,base+210*scale,'#010203',12*scale);for(let i=0;i<4;i++){line(x-62*scale+i*4,base+205*scale,x-82*scale+i*7,base+235*scale,'#010203',4*scale);line(x+62*scale-i*4,base+205*scale,x+82*scale-i*7,base+235*scale,'#010203',4*scale);}line(x-10*scale,base+235*scale,x-27*scale,base+335*scale,'#010203',12*scale);line(x+10*scale,base+235*scale,x+27*scale,base+335*scale,'#010203',12*scale);ctx.translate(x,base-108*scale);ctx.rotate(Math.sin(smiler.phase*.8)*.055);ctx.fillStyle='#010203';ctx.beginPath();ctx.ellipse(0,0,31*scale,39*scale,0,0,Math.PI*2);ctx.fill();const eyeShift=clamp((p.x-smiler.x)/260,-1,1)*5;rect(-17*scale+eyeShift,-8*scale,8*scale,11*scale,'#e8e2cf');rect(9*scale+eyeShift,-8*scale,8*scale,11*scale,'#e8e2cf');rect(-14*scale+eyeShift,-5*scale,2*scale,6*scale,'#17100f');rect(12*scale+eyeShift,-5*scale,2*scale,6*scale,'#17100f');ctx.strokeStyle='#f0eadb';ctx.lineWidth=nearFear?6:4;ctx.beginPath();ctx.arc(0,9*scale,23*scale,.12,3.02);ctx.stroke();for(let i=-4;i<=4;i++)rect(i*5*scale-1,17*scale,3*scale,7*scale,'#c9c1b0');ctx.restore();const rg=ctx.createRadialGradient(x,base-100,5,x,base-100,220*scale);rg.addColorStop(0,'rgba(0,0,0,.35)');rg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=rg;ctx.fillRect(x-230,base-330,460,500);if(smiler.glitch>0){ctx.globalAlpha=.65;rect(0,0,W,3,'#c7c0b2');rect(0,6,W,2,'#3e4548');ctx.globalAlpha=1;}}
 function drawParticles(){for(const q of particles)rect(q.x-cam,q.y,q.size,q.size,q.c);}
 function drawRain(){ctx.globalAlpha=.34;for(const r of rain){const x=r.x,y=r.y;line(x,y,x-7,y+r.len,'#687985',1);}ctx.globalAlpha=1;}
 function drawOpeningCell(){
@@ -278,7 +252,7 @@ function drawOpeningCell(){
  // rain outside window
  for(let i=0;i<18;i++){const rx=58+(i*19)%94,ry=242+(i*29)%90;line(rx,ry,rx-7,ry+15,'#465661',1);}
  // ceiling lamp, flickering
- const flick=(Math.sin(t*9)+Math.sin(t*21)>.6)?1:.35;rect(510,72,260,7,'#414545');rect(630,79,18,22,'#77786d');ctx.globalAlpha=flick*.32;ctx.fillStyle='#b7b39a';ctx.fillRect(520,92,240,90);ctx.globalAlpha=1;
+ const flick=(Math.sin(t*9)+Math.sin(t*21)>.6)?1:.22;rect(510,72,260,7,'#414545');rect(630,79,18,22,'#77786d');ctx.globalAlpha=flick*.32;ctx.fillStyle='#b7b39a';ctx.fillRect(520,92,240,90);ctx.globalAlpha=1;
  // door
  rect(1045,280,125,290,'#292d2e');rect(1053,288,109,282,'#202426');rect(1145,425,7,7,'#a7a18a');
  // player
@@ -287,7 +261,7 @@ function drawOpeningCell(){
  const px=p.x-cam+17,py=p.y+30;
  const g=ctx.createRadialGradient(px,py,10,px,py,380);g.addColorStop(0,p.light?'rgba(215,215,190,.22)':'rgba(0,0,0,0)');g.addColorStop(.5,p.light?'rgba(180,180,165,.06)':'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.72)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
  // heavy darkness around edges
- ctx.fillStyle='rgba(0,0,0,.42)';ctx.fillRect(0,0,W,720);
+ ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect(0,0,W,720);for(let i=0;i<95;i++){const dx=(i*83+t*3)%W,dy=(i*47+Math.sin(t+i)*8)%H;rect(dx,dy,1,1,i%3?'#1a1d1e':'#4a4b47');}
  if(p.light){ctx.globalCompositeOperation='destination-out';const hole=ctx.createRadialGradient(px,py,40,px,py,270);hole.addColorStop(0,'rgba(0,0,0,.55)');hole.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=hole;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';}
  txt('CELL A-17',38,42,12,'#666b69');if(startCell&&!cellKey)txt('SEARCH THE CELL',640,650,13,'#7e817b','center');
 }
@@ -316,7 +290,7 @@ function drawIntroVisual(){
  else {rect(0,0,W,H,'#040506');rect(0,545,W,175,'#0b0d0e');for(let x=0;x<W;x+=26)line(x,0,x+100,540,'#27333a',1);txt('CELL A-17',W/2,220,18,'#6d716f','center');txt('THE LOCK CLICKS OPEN',W/2,335,26,'#c6c1b7','center');txt('ESCAPE ALCATRAZ',W/2,380,17,'#8f8680','center');}
  const fade=Math.min(1,cutTimer/.5);ctx.fillStyle='rgba(0,0,0,'+(0.35+0.25*Math.sin(t*2)+')');ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(0,0,W,H);
 }
-function render(){ctx.save();if(shake>0){ctx.translate(rnd(-shake,shake),rnd(-shake,shake));shake*=.86;}if(mode==='intro'){drawIntroVisual();}else{drawWorld();}ctx.restore();if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash+')';ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.04);}}
+function render(){ctx.save();if(shake>0){ctx.translate(rnd(-shake,shake),rnd(-shake,shake));shake*=.86;}if(mode==='intro'){drawIntroVisual();}else{drawWorld();}ctx.restore();if(chapter==='ALCATRAZ'&&p.sanity<35){const a=(35-p.sanity)/180;ctx.fillStyle='rgba(30,0,0,'+a+')';ctx.fillRect(0,0,W,H);}if(smiler.active){ctx.fillStyle='rgba(0,0,0,'+(smiler.close?.16:.06)+')';ctx.fillRect(0,0,W,H);}if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash+')';ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-.04);}}
 function loop(ts){const dt=Math.min(.033,(ts-last)/1000||0);last=ts;if(mode==='intro'){cutTimer+=dt;if(cutTimer>2.2){cutTimer=0;nextCut();}}update(dt);render();requestAnimationFrame(loop);}
 function showNotice(){document.getElementById('pause').classList.add('hidden');document.getElementById('menu').classList.add('hidden');document.getElementById('notice').classList.remove('hidden');mode='notice';setTimeout(()=>document.getElementById('accept').focus(),0);}
 function enterGameFromNotice(){document.getElementById('notice').classList.add('hidden');document.getElementById('menu').classList.remove('hidden');mode='menu';setTimeout(()=>{const first=document.querySelector('[data-name=\"Julia\"]');if(first)first.focus();},0);}
