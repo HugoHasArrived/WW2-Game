@@ -33,7 +33,7 @@ const W=1280,H=720,G=570,WORLD=8200;
 const keys=new Set();
 const mouse={x:640,y:360,down:false};let audioCtx=null;
 function scareSound(close=false){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=close?42:28;g.gain.setValueAtTime(0.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(close?.035:.018,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+(close?1.1:1.8));o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+(close?1.2:1.9));}catch(e){}}
-let mode='notice',name='Julia',t=0,last=0,cam=0,shake=0,flash=0,lightning=0,heartbeat=0,ambientPulse=0;
+let mode='notice',name='Julia',t=0,last=0,cam=0,shake=0,flash=0,lightning=0,heartbeat=0,ambientPulse=0,lightFlicker=1;
 let objective='';let message='';let messageUntil=0;let prompt='';
 let zombies=[],vehicles=[],buildings=[],survivors=[],loot=[],bullets=[],particles=[],rain=[],shells=[],blood=[],doors=[],interior=null;
 let alcatrazEscaped=false,boatReady=false,fuel=0,alarm=0,hordeTimer=26,smilerTimer=11,smiler={active:false,x:0,ttl:0,phase:0,close:false,glitch:0,stare:0};
@@ -59,7 +59,6 @@ function addSurvivor(x,name,role){survivors.push({x,y:G-62,w:32,h:62,name,role,s
 function spawnZombie(x,type='walker',y=G-58,inside=null){if(chapter!=='SAN FRANCISCO')return null;if(zombies.filter(z=>!z.dead).length>=6)return null;let z={x,y,w:type==='brute'?58:type==='runner'?32:38,h:type==='brute'?78:60,type,hp:type==='brute'?170:type==='runner'?55:42,vx:0,vy:0,ground:true,attack:rnd(.2,1),anim:rnd(0,20),dead:false,inside,alert:0};zombies.push(z);return z;}
 function buildWorld(){
  buildings=[];vehicles=[];survivors=[];loot=[];zombies=[];doors=[];
- // A tighter, denser Alcatraz: short distances, lots of rooms, and two prison blocks packed with explorable cells.
  addBuilding(210,250,245,'Cell Block A','prison',true);
  addBuilding(535,250,245,'Cell Block B','prison',true);
  addBuilding(860,190,185,'Guard Station','office',true);
@@ -80,7 +79,6 @@ function buildWorld(){
  addBuilding(6100,330,285,'Hospital','hospital',true);
  addBuilding(6560,300,245,'Safehouse','safehouse',true);
  addBuilding(7000,350,270,'Research Facility','lab',true);
- // Vehicles are close enough to matter instead of being decorative dots across a huge island.
  addVehicle(80,G-34,100,'jeep',true,false);
  addVehicle(720,G-36,140,'truck',false,true);
  addVehicle(1250,G-34,110,'car',true,false);
@@ -93,7 +91,6 @@ function buildWorld(){
  addVehicle(6350,G-34,120,'car',true,false);
  addVehicle(6800,G-36,155,'truck',false,true);
  addVehicle(7480,G-25,220,'boat',true,false);
- // Exterior loot is deliberately distributed around the compact island.
  addLoot(760,G-24,'ammo','Ammunition',8); addLoot(1030,G-24,'medkit','Medical Kit');
  addLoot(1530,G-24,'ammo','Ammunition',12); addLoot(2140,G-24,'fuel','Fuel Can');
  addLoot(2580,G-24,'battery','Generator Battery'); addLoot(3190,G-24,'ammo','Ammunition',12);
@@ -101,7 +98,6 @@ function buildWorld(){
  addLoot(5000,G-24,'fuel','Fuel Can'); addLoot(5750,G-24,'ammo','Ammunition',15);
  addLoot(6240,G-24,'medkit','Medical Kit'); addLoot(6650,G-24,'fuel','Fuel Can');
  addLoot(6910,G-24,'medkit','Medical Kit');
- // Prison blocks contain many individual cells. They are empty but searchable; the opening cell is only one of many.
  for(const b of buildings.filter(q=>q.type==='prison')){
    b.cells=[];
    for(let i=0;i<10;i++)b.cells.push({id:i+1,opened:false,searched:false,loot:false});
@@ -118,8 +114,8 @@ function intro(){
  ];cutIndex=0;cutTimer=0;mode='intro';document.getElementById('cutscene').classList.remove('hidden');showCut();}
 function showCut(){const el=document.getElementById('cutline');el.textContent=cutLines[cutIndex]||'';}
 function nextCut(){cutIndex++;if(cutIndex>=cutLines.length)finishIntro();else{cutTimer=0;showCut();}}
-function finishIntro(){document.getElementById('cutscene').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');mode='play';buildWorld();p={...p,x:180,y:G-64,hp:100,stam:100,sanity:100,ammo:12,reload:0,grenades:2,kills:0,shots:0,invuln:0,light:false};cam=0;interior='OPENING_CELL';startCell=true;cellKey=false;cellDoorOpen=false;cellInspected={bed:false,window:false,note:false};gameStarted=true;alarm=0;setObj('Search the cell. Find a way out.');setMsg('Cold concrete. Rain beyond the bars. You are alone.',4);}
-function resetChapter(){document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');mode='play';buildWorld();p={x:180,y:G-64,w:34,h:64,vx:0,vy:0,ground:true,face:1,hp:100,stam:100,sanity:100,ammo:12,maxAmmo:12,reload:0,grenades:2,light:false,anim:0,kills:0,shots:0,run:false,invuln:0};cam=0;interior='OPENING_CELL';startCell=true;cellKey=false;cellDoorOpen=false;cellInspected={bed:false,window:false,note:false};alcatrazEscaped=false;boatReady=false;fuel=0;smiler.active=false;alarm=0;chapter='ALCATRAZ';worldFear=0;gameStarted=true;setObj('Search the cell. Find a way out.');setMsg('Chapter restarted.',2);}
+function finishIntro(){document.getElementById('cutscene').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');mode='play';buildWorld();p={...p,x:180,y:G-64,hp:100,stam:100,sanity:100,ammo:12,reload:0,grenades:2,kills:0,shots:0,invuln:0,light:false};cam=0;interior='OPENING_CELL';startCell=true;cellKey=false;cellDoorOpen=false;cellInspected={bed:false,window:false,note:false};gameStarted=true;alarm=0;fuel=2;boatReady=true;setObj('Search the cell. Find a way out.');setMsg('Cold concrete. Rain beyond the bars. You are alone.',4);}
+function resetChapter(){document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');mode='play';buildWorld();p={x:180,y:G-64,w:34,h:64,vx:0,vy:0,ground:true,face:1,hp:100,stam:100,sanity:100,ammo:12,maxAmmo:12,reload:0,grenades:2,light:false,anim:0,kills:0,shots:0,run:false,invuln:0};cam=0;interior='OPENING_CELL';startCell=true;cellKey=false;cellDoorOpen=false;cellInspected={bed:false,window:false,note:false};alcatrazEscaped=false;boatReady=true;fuel=2;smiler.active=false;alarm=0;chapter='ALCATRAZ';worldFear=0;gameStarted=true;setObj('Search the cell. Find a way out.');setMsg('Chapter restarted.',2);}
 function playerRect(){return {x:p.x,y:p.y,w:p.w,h:p.h};}
 function near(a,b,d){return Math.abs(a-b)<d;}
 function getBuilding(){let best=null,bd=99999;for(const b of buildings){const d=Math.abs((b.x+b.w/2)-p.x);if(d<bd&&d<b.w/2+65){best=b;bd=d;}}return best;}
@@ -136,7 +132,6 @@ function interact(){
   if(cellKey&&cx>=900){startCell=false;cellDoorOpen=true;interior=null;p.x=315;setObj('Explore the empty prison. Find the dock.');setMsg('The lock opens. The corridor is completely empty.',3);alarm=.12;return;}
   setMsg(cellKey?'Move to the cell door and press E.':'Search the bed, note, and window.',2);return;
  }
- // Interior mode: prison blocks contain ten individually searchable cells.
  if(interiorState){
   const b=interiorState.building;
   const l=getLoot();if(l){collectLoot(l);return;}
@@ -155,10 +150,10 @@ function interact(){
  }
  const l=getLoot();if(l){collectLoot(l);return;}
  const s=getSurvivor();if(s&&chapter==='SAN FRANCISCO'){s.talked=true;s.follow=true;p.sanity=clamp(p.sanity+8,0,100);setMsg(s.name+': “Keep moving. Do not let it see you.”',4);setObj('Help the survivors reach the safe location.');return;}
- if(chapter==='ALCATRAZ'&&p.x>7100&&fuel>=2&&!boatReady){boatReady=true;fuel-=2;setMsg('The boat engine coughs to life.',3);setObj('Board the boat.');shake=3;return;}
+ if(chapter==='ALCATRAZ'&&p.x>7100&&!boatReady){boatReady=true;fuel=2;setMsg('The escape boat is fully loaded. The engine is ready.',3);setObj('Board the escape boat.');shake=2;return;}
  const v=getVehicle();if(v){if(v.broken){if(fuel>0){fuel--;v.broken=false;v.usable=true;setMsg('Vehicle repaired with fuel.',3);}else setMsg('This vehicle needs fuel.',2);return;}if(v.usable){v.driving=!v.driving;setMsg(v.driving?'You drive into the rain.':'You stop the vehicle.',2);return;}}
  const b=getBuilding();if(b){enterBuilding(b);return;}
- if(chapter==='ALCATRAZ'&&p.x>7000&&fuel>=2){boatReady=true;setMsg('The boat is fueled. Escape Alcatraz.',3);setObj('Reach the escape boat.');}
+ if(chapter==='ALCATRAZ'&&p.x>7000){boatReady=true;fuel=2;setMsg('The escape boat is fully loaded and ready.',3);setObj('Reach the escape boat.');}
 }
 function collectLoot(l){l.got=true;if(l.type==='medkit'){p.hp=clamp(p.hp+40,0,100);setMsg('Medical supplies restored health.',2);}else if(l.type==='ammo'){p.ammo=clamp(p.ammo+l.amount,0,p.maxAmmo);setMsg('Ammunition collected.',2);}else if(l.type==='grenade'){p.grenades+=l.amount;setMsg('Grenades collected.',2);}else if(l.type==='fuel'){fuel++;setMsg('Fuel can collected. '+fuel+'/2 fuel.',2);}else if(l.type==='battery'){setMsg('Generator battery collected.',2);}}
 function nearestPrisonCell(){
@@ -182,14 +177,12 @@ function enterBuilding(b){
  interiorState={building:b,cellView:false,cell:null};interior=b.name;b.open=true;p.x=130;p.y=G-p.h;p.vx=0;p.vy=0;cam=0;
  if(b.type==='prison')setObj('Explore '+b.name+'. Search the cells.');else setObj('Search '+b.name+'. Press E at the exit door to leave.');
  setMsg('You enter '+b.name+'. The room is silent.',2.5);
- // Alcatraz interiors are empty of living enemies. San Francisco remains the only place with zombies/survivors.
  if(chapter==='SAN FRANCISCO'){
   const types=['ammo','medkit','ammo','grenade'];
   if(!b.insideLootCreated){b.insideLootCreated=true;for(let i=0;i<types.length;i++)addLoot(260+i*120,G-24,types[i],types[i].toUpperCase(),types[i]==='grenade'?1:types[i]==='ammo'?6:1,b.name);}
  }
 }
 function spawnFirstThreats(){
- // Intentionally empty: Alcatraz has ZERO zombies and ZERO survivors.
  setObj('Explore the empty prison. Find the dock.');setMsg('No undead. No survivors. Only the rain and the prison.',3);
 }
 function movePlayer(dt){
@@ -233,7 +226,7 @@ function updateParticles(dt){for(const q of particles){q.x+=q.vx*dt;q.y+=q.vy*dt
 function updateRain(dt){for(const r of rain){r.y+=r.v*dt;r.x-=r.v*0.035*dt;if(r.y>H+30){r.y=-30;r.x=rnd(0,W);}}
  lightning-=dt;if(lightning<=0&&Math.random()<dt*.018){lightning=.14;flash=Math.max(flash,.16);shake=Math.max(shake,.7);}
  heartbeat=Math.max(0,heartbeat-dt);if(p.sanity<32&&heartbeat<=0){heartbeat=1.15;scareSound(true);shake=Math.max(shake,.7);}
- ambientPulse+=dt;}
+ ambientPulse+=dt;const pulse=Math.sin(t*17)+Math.sin(t*31)*.55+Math.sin(t*67)*.25;if(Math.random()<dt*.11&&Math.random()<.18)lightFlicker=.08+Math.random()*.35;else lightFlicker+=(.88+Math.max(0,pulse)*.05-lightFlicker)*Math.min(1,dt*18);}
 function triggerHorde(){
  if(chapter!=='SAN FRANCISCO'||interiorState)return;
  const living=zombies.filter(z=>!z.dead).length;if(living>=6||t<hordeTimer)return;
@@ -254,7 +247,6 @@ function updateObjective(){if(!alcatrazEscaped&&p.x>2500){alcatrazEscaped=true;s
 function transitionToSanFrancisco(){
  chapter='SAN FRANCISCO';escapeTransition=1;interior=null;interiorState=null;boatReady=false;alcatrazEscaped=true;zombies=[];survivors=[];loot=[];buildings=[];vehicles=[];
  p.x=420;p.y=G-64;p.vx=0;p.vy=0;p.light=false;p.sanity=72;cam=0;
- // San Francisco is the ONLY location containing zombies and survivors.
  addBuilding(780,300,260,'Abandoned Apartment','city',false);
  addBuilding(1350,360,300,'Police Station','city',false);
  addBuilding(2050,430,330,'Hospital','medical',false);
@@ -264,7 +256,6 @@ function transitionToSanFrancisco(){
  addBuilding(5740,460,360,'Research Annex','lab',false);
  addVehicle(650,G-34,120,'car',true,false);addVehicle(1740,G-34,130,'jeep',true,false);addVehicle(3180,G-34,125,'truck',false,true);addVehicle(5050,G-34,140,'jeep',true,false);
  addLoot(880,G-24,'ammo','Ammunition',10);addLoot(1120,G-24,'medkit','Medical Kit');addLoot(1530,G-24,'ammo','Ammunition',12);addLoot(2480,G-24,'grenade','Grenade',1);addLoot(3400,G-24,'ammo','Ammunition',10);addLoot(4500,G-24,'medkit','Medical Kit');
- // Small, deliberate population. No zombie spawns near the arrival point.
  for(let i=0;i<4;i++)spawnZombie(1500+i*320,i===2?'runner':'walker');
  addSurvivor(980,'Mara','nurse');addSurvivor(2350,'Eli','soldier');addSurvivor(3900,'Noah','mechanic');
  smilerTimer=12;smiler.active=false;worldFear=.25;
@@ -292,12 +283,9 @@ function update(dt){
 function drawSky(){
  const sf=chapter==='SAN FRANCISCO';const g=ctx.createLinearGradient(0,0,0,G);g.addColorStop(0,sf?'#05070a':'#080d12');g.addColorStop(1,sf?'#15191c':'#111a20');ctx.fillStyle=g;ctx.fillRect(0,0,W,G);
  if(sf){
-  // Dense San Francisco skyline in layered pixel silhouettes.
   const skyline=[48,105,72,155,95,130,205,92,118,185,78,145,235,110,130,205,100,165];
   let sx=-(cam*.16%70);for(let i=0;i<26;i++){const bw=35+(i*17%45),bh=65+skyline[i%skyline.length];const y=G-70-bh;rect(sx,y,bw,bh,i%3===0?'#0a0d10':i%3===1?'#0c1013':'#0d1114');rect(sx+bw*.15,y-9,bw*.7,9,'#0b0e11');for(let wy=y+22;wy<G-85;wy+=28){for(let wx=sx+7;wx<sx+bw-5;wx+=13)if(((wx+wy+i*3)%5)<1)rect(wx,wy,5,7,'#625f4f');}sx+=bw+16;}
-  // Distant suspension bridge suggestion.
   line(820,360,1210,315,'#3c4547',3);line(900,250,900,370,'#444b4c',4);line(1130,220,1130,335,'#444b4c',4);for(let x=900;x<1130;x+=18)line(x,250+(x-900)*.11,x,360-(x-900)*.12,'#333a3c',1);
-  // Wet street lamps.
   for(let x=70;x<W;x+=210){line(x,G-90,x,G-12,'#4d5250',4);line(x,G-90,x+20,G-104,'#4d5250',3);ctx.globalAlpha=.5;rect(x+16,G-108,9,5,'#8d886c');ctx.globalAlpha=1;}
  }else{
   for(let i=0;i<28;i++){let x=i*72-(cam*.12%72);let h=55+(i*53%135);rect(x,G-115-h,48+(i%4)*14,h,'#10171c');if(i%3===0)rect(x+18,G-95-h,5,5,'#77735e');}
@@ -310,18 +298,15 @@ function drawBuilding(b){
  const x=b.x-cam;if(x+b.w<0||x>W)return;const top=G-b.h;
  const base=b.type==='prison'?'#303638':b.type==='medical'?'#394141':b.type==='lab'?'#30383a':'#353536';
  rect(x,top,b.w,b.h,base);rect(x+6,top+6,b.w-12,12,'#55595a');
- // brick blocks with depth
  for(let row=0;row<7;row++){const yy=top+28+row*42;for(let col=0;col<Math.ceil(b.w/52);col++){const xx=x+12+col*52+(row%2?26:0);if(xx>x+b.w-8)continue;rect(xx,yy,42,30,row%3===0?'#2b3031':'#292e30');line(xx,yy+30,xx+42,yy+30,'#4a4e4e',1);line(xx+42,yy,xx+42,yy+30,'#171a1b',1);}}
- // windows with individual panes
  for(let wx=x+24;wx<x+b.w-55;wx+=62){rect(wx,top+62,40,48,'#0a1013');rect(wx+4,top+66,15,17,'#1b3139');rect(wx+22,top+66,14,17,'#15272d');line(wx+20,top+64,wx+20,top+108,'#505455',2);line(wx+2,top+88,wx+38,top+88,'#45494a',1);}
  const doorX=x+b.w/2-27;rect(doorX+5,G-82,54,82,'#111516');rect(doorX+10,G-77,44,77,b.open?'#56635b':'#202426');rect(doorX+40,G-42,5,5,'#b7ad91');
- // roof silhouette and pipes
  rect(x-3,top-8,b.w+6,9,'#181b1c');line(x+20,top-8,x+40,top-30,'#4c5252',3);line(x+40,top-30,x+80,top-30,'#4c5252',3);
  textLabel(b.name,x+b.w/2,top-16);drawBuildingDetails(b,x,top);
 }
 function textLabel(s,x,y){txt(s,x,y,11,'#7f8587','center');}
 function drawBuildingDetails(b,x,top){if(b.type==='prison'){for(let i=0;i<6;i++)line(x+20+i*35,top+22,x+20+i*35,G-20,'#4d5354',2);}if(b.type==='medical'){rect(x+20,top+50,50,35,'#6d7370');rect(x+40,top+35,10,65,'#8a8d83');}if(b.type==='power'){for(let i=0;i<3;i++){rect(x+25+i*42,G-130,25,75,'#404648');rect(x+32+i*42,G-122,11,11,'#77725c');}}if(b.type==='church'){rect(x+b.w/2-8,top-38,16,45,'#3d4243');rect(x+b.w/2-24,top-20,48,9,'#3d4243');}}
-function drawVehicle(v){const x=v.x-cam,y=v.y; if(x+v.w<0||x>W)return; if(v.type==='boat'){rect(x,y+10,v.w,20,'#353c40');rect(x+18,y-2,55,15,'#596062');rect(x+35,y-12,4,12,'#777');line(x+37,y-12,x+65,y-25,'#777',2);return;}const body=v.broken?'#343738':'#4a554f';rect(x,y,v.w,v.h,body);rect(x+10,y-18,v.w-20,21,v.type==='tank'?'#353a39':'#3d4744');if(v.type==='tank'){rect(x+v.w-20,y-43,15,32,'#454b48');rect(x+v.w-5,y-38,58,7,'#555957');}else{rect(x+18,y-8,25,10,'#202426');rect(x+v.w-43,y-8,25,10,'#202426');}ctx.fillStyle='#111';if(v.type!=='tank'){ctx.beginPath();ctx.arc(x+20,y+v.h,14,0,Math.PI*2);ctx.arc(x+v.w-20,y+v.h,14,0,Math.PI*2);ctx.fill();}if(v.broken){txt('WRECK',x+v.w/2,y-26,10,'#777','center');for(let i=0;i<3;i++)line(x+rnd(5,v.w-5),y-rnd(20,50),x+rnd(5,v.w-5),y-rnd(25,60),'#555',1);}else txt('E',x+v.w/2,y-27,11,'#aaa','center');}
+function drawVehicle(v){const x=v.x-cam,y=v.y; if(x+v.w<0||x>W)return; if(v.type==='boat'){rect(x,y+10,v.w,20,'#353c40');rect(x+18,y-2,55,15,'#596062');rect(x+35,y-12,4,12,'#777');line(x+37,y-12,x+65,y-25,'#777',2);rect(x+92,y-2,42,8,'#1e2425');rect(x+98,y-12,30,8,'#353a38');rect(x+102,y-10,6,4,'#b8aa74');rect(x+112,y-10,6,4,'#b8aa74');rect(x+122,y-10,6,4,'#b8aa74');const pulse=.35+.25*Math.sin(t*5);ctx.globalAlpha=pulse;rect(x+8,y+5,8,3,'#b9a36d');ctx.globalAlpha=1;txt('READY',x+v.w/2,y-29,10,'#b9a36d','center');return;}const body=v.broken?'#343738':'#4a554f';rect(x,y,v.w,v.h,body);rect(x+10,y-18,v.w-20,21,v.type==='tank'?'#353a39':'#3d4744');if(v.type==='tank'){rect(x+v.w-20,y-43,15,32,'#454b48');rect(x+v.w-5,y-38,58,7,'#555957');}else{rect(x+18,y-8,25,10,'#202426');rect(x+v.w-43,y-8,25,10,'#202426');}ctx.fillStyle='#111';if(v.type!=='tank'){ctx.beginPath();ctx.arc(x+20,y+v.h,14,0,Math.PI*2);ctx.arc(x+v.w-20,y+v.h,14,0,Math.PI*2);ctx.fill();}if(v.broken){txt('WRECK',x+v.w/2,y-26,10,'#777','center');for(let i=0;i<3;i++)line(x+rnd(5,v.w-5),y-rnd(20,50),x+rnd(5,v.w-5),y-rnd(25,60),'#555',1);}else txt('E',x+v.w/2,y-27,11,'#aaa','center');}
 function drawLoot(l){if(l.got)return;const x=l.x-cam;if(x<-30||x>W+30)return;let c=l.type==='key'?'#c3aa54':l.type==='medkit'?'#a6534e':l.type==='ammo'?'#777f78':l.type==='fuel'?'#75684d':l.type==='grenade'?'#4d5a4d':'#7c7b68';rect(x-9,l.y-12,18,18,c);rect(x-5,l.y-8,10,10,'#202426');txt(l.type==='key'?'K':l.type==='medkit'?'+':l.type==='ammo'?'A':l.type==='fuel'?'F':l.type==='grenade'?'G':'B',x,l.y+1,11,'#ddd','center');}
 function drawSurvivor(s){const x=s.x-cam,bob=Math.sin(t*7+s.anim)*2;rect(x+9,s.y-42+bob,16,18,COLORS.skin);rect(x+5,s.y-25+bob,24,34,s.role==='soldier'?'#4d574b':'#51575a');rect(x,s.y+7+bob,9,25,'#252a2d');rect(x+24,s.y+7+bob,9,25,'#252a2d');line(x+5,s.y-8+bob,x-7,s.y+10+bob,'#3e4548',5);line(x+29,s.y-8+bob,x+41,s.y+10+bob,'#3e4548',5);txt(s.name,x+17,s.y-52,11,'#ddd','center');if(near(s.x,p.x,90))txt('E TALK',x+17,s.y-65,10,'#fff','center');}
 function drawPlayer(){
@@ -363,42 +348,26 @@ function drawSmiler(){if(!smiler.active)return;const x=smiler.x-cam;if(x<-180||x
 function drawParticles(){for(const q of particles)rect(q.x-cam,q.y,q.size,q.size,q.c);}
 function drawRain(){ctx.globalAlpha=.34;for(const r of rain){const x=r.x,y=r.y;line(x,y,x-7,y+r.len,'#687985',1);}ctx.globalAlpha=1;}
 function drawOpeningCell(){
- // Claustrophobic first-person-ish side-view cell. No zombies, no survivors.
  ctx.fillStyle='#050608';ctx.fillRect(0,0,W,H);
- // concrete walls
  rect(0,0,W,185,'#111416');rect(0,185,W,8,'#272b2b');rect(0,193,W,G-193,'#151819');
- // rear wall blocks
  for(let x=0;x<W;x+=82){line(x,193,x,570,'#202426',2);}
  for(let y=250;y<570;y+=70){line(0,y,W,y,'#101314',1);}
- // floor
  rect(0,G,W,H-G,'#0d1011');
  for(let x=0;x<W;x+=65)line(x,G,x+40,H,'#181b1c',1);
- // bars / cell front
  for(let x=520;x<=1010;x+=34){rect(x,130,8,440,'#363b3b');rect(x+3,130,3,440,'#555958');}
  rect(515,130,510,8,'#414646');
- // corridor beyond bars
  rect(1030,195,250,375,'#020304');
  for(let y=230;y<550;y+=55)line(1040,y,1270,y,'#090b0c',1);
- // mattress / bed
  rect(100,470,210,28,'#303232');rect(118,445,160,30,'#242829');rect(118,440,160,7,'#55504a');
- // tiny toilet
  rect(345,463,58,68,'#313536');rect(355,445,42,25,'#404545');rect(350,438,50,10,'#555958');
- // wall note
  if(!cellInspected.note){rect(250,300,22,32,'#c4b78e');txt('?',261,324,16,'#2b2921','center');}
- // window
  rect(50,230,110,115,'#080c10');rect(55,235,100,105,'#0d1820');line(105,235,105,340,'#353c40',3);line(55,287,155,287,'#353c40',3);
- // rain outside window
  for(let i=0;i<18;i++){const rx=58+(i*19)%94,ry=242+(i*29)%90;line(rx,ry,rx-7,ry+15,'#465661',1);}
- // ceiling lamp, flickering
- const flick=(Math.sin(t*9)+Math.sin(t*21)>.6)?1:(Math.sin(t*47)>0.82?.05:.18);rect(510,72,260,7,'#414545');rect(630,79,18,22,'#77786d');ctx.globalAlpha=flick*.32;ctx.fillStyle='#b7b39a';ctx.fillRect(520,92,240,90);ctx.globalAlpha=1;
- // door
+ const flick=Math.min(1,lightFlicker*(.72+.28*Math.max(0,Math.sin(t*9)+Math.sin(t*21))));rect(510,72,260,7,'#414545');rect(630,79,18,22,'#77786d');ctx.globalAlpha=flick*.32;ctx.fillStyle='#b7b39a';ctx.fillRect(520,92,240,90);ctx.globalAlpha=1;
  rect(1045,280,125,290,'#292d2e');rect(1053,288,109,282,'#202426');rect(1145,425,7,7,'#a7a18a');
- // player
  drawPlayer();
- // darkness / flashlight cone
  const px=p.x-cam+17,py=p.y+30;
  const g=ctx.createRadialGradient(px,py,10,px,py,380);g.addColorStop(0,p.light?'rgba(215,215,190,.22)':'rgba(0,0,0,0)');g.addColorStop(.5,p.light?'rgba(180,180,165,.06)':'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.72)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- // heavy darkness around edges
  ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect(0,0,W,720);for(let i=0;i<95;i++){const dx=(i*83+t*3)%W,dy=(i*47+Math.sin(t+i)*8)%H;rect(dx,dy,1,1,i%3?'#1a1d1e':'#4a4b47');}
  if(p.light){ctx.globalCompositeOperation='destination-out';const hole=ctx.createRadialGradient(px,py,40,px,py,270);hole.addColorStop(0,'rgba(0,0,0,.55)');hole.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=hole;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';}
  txt('CELL A-17',38,42,12,'#666b69');if(startCell&&!cellKey)txt('SEARCH THE CELL',640,650,13,'#7e817b','center');
@@ -407,13 +376,11 @@ function drawInterior(){
  const b=interiorState.building;
  if(b.type==='prison'){
   rect(0,0,W,H,'#171b1c');
-  // long prison corridor
   rect(0,70,W,500,'#202526');
   rect(0,520,W,50,'#101314');
   rect(0,570,W,150,'#0b0e0f');
   for(let x=0;x<W;x+=110){rect(x,70,7,500,'#111415');rect(x+7,70,4,500,'#3b4040');}
   for(let y=105;y<500;y+=52)line(0,y,W,y,'#2d3232',1);
-  // bars and ten cells
   for(let i=0;i<10;i++){
    const x=45+i*102;const opened=b.cells[i].opened;
    rect(x,155,82,345,opened?'#1b2020':'#252a2a');
@@ -422,17 +389,29 @@ function drawInterior(){
    rect(x+6,465,72,10,'#55524a');
    rect(x+18,425,45,9,'#3e3a34');
    if(opened){rect(x+8,175,66,5,'#51544d');txt('OPEN',x+41,495,8,'#777','center');}
-   else txt(String(i+1),x+41,495,10,'#777','center');
+   else {
+    txt(String(i+1),x+41,495,10,'#777','center');
+    const sx=x+39,sy=365;
+    ctx.globalAlpha=.72;
+    ctx.strokeStyle='#6f6b60';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(sx,sy-18,9,0,Math.PI*2);ctx.stroke();
+    line(sx,sy-8,sx,sy+42,'#6f6b60',3);line(sx,sy+5,sx-18,sy+24,'#6f6b60',3);line(sx,sy+5,sx+18,sy+24,'#6f6b60',3);line(sx,sy+42,sx-16,sy+70,'#6f6b60',3);line(sx,sy+42,sx+16,sy+70,'#6f6b60',3);
+    ctx.globalAlpha=1;
+   }
   }
-  // opposite-side bars create depth
   for(let x=30;x<W;x+=38)rect(x,95,3,60,'#505555');
   rect(0,535,W,7,'#555957');
-  // exit door
   rect(1080,180,150,390,'#0a0c0d');rect(1092,192,126,378,'#303435');rect(1180,370,8,8,'#aaa58f');
-  txt('CELL BLOCK',W/2,42,16,'#9b9a91','center');
+  for(let i=0;i<6;i++){const lx=80+i*220;const lf=clamp(lightFlicker*(.75+.25*Math.sin(t*11+i*2)),.03,1);ctx.globalAlpha=lf*.42;rect(lx,82,105,7,'#aaa58e');rect(lx+42,89,21,13,'#c7c0a4');ctx.globalAlpha=1;}txt('CELL BLOCK',W/2,42,16,'#9b9a91','center');
   txt('10 CELLS',W/2,62,10,'#666c6b','center');
+  const bloodPulse=.55+.12*Math.sin(t*2.2);
+  ctx.globalAlpha=bloodPulse;
+  txt('DON’T OPEN THE DOOR',155,135,12,'#713b3b');
+  txt('HE IS STILL HERE',690,135,12,'#713b3b');
+  txt('RUN',920,515,15,'#713b3b');
+  line(300,145,430,151,'#713b3b',3);line(430,151,470,137,'#713b3b',2);line(760,145,830,150,'#713b3b',3);
+  ctx.globalAlpha=1;
   if(interiorState.cellView){
-    // cell scene overlays the corridor with a close, claustrophobic view
     rect(0,0,W,H,'#111516');rect(0,80,W,12,'#343837');
     for(let y=110;y<500;y+=55)line(0,y,W,y,'#242929',1);
     rect(80,390,350,18,'#51463b');rect(105,408,18,120,'#312c28');rect(390,408,18,120,'#312c28');
@@ -445,7 +424,6 @@ function drawInterior(){
     txt('E NEAR A CELL — ENTER',W/2,H-25,11,'#777','center');
   }
  } else {
-  // High-detail pixel interior for every other building.
   const wall=b.type==='medical'?'#202a2a':b.type==='lab'?'#1d2529':'#242729';
   rect(0,0,W,H,wall);
   for(let x=0;x<W;x+=96){rect(x,0,7,G-130,'#111516');rect(x+7,0,3,G-130,'#34393a');}
@@ -453,8 +431,8 @@ function drawInterior(){
   for(let x=18;x<W;x+=54)line(x,70,x,520,'#1b2021',1);
   rect(0,G,W,H-G,'#141719');for(let x=-20;x<W+40;x+=54)line(x,G,x+42,H,'#2d3030',2);
   for(let y=G+18;y<H;y+=24)line(0,y,W,y,'#202324',1);
-  const flick=.25+.25*Math.max(0,Math.sin(t*13))*Math.max(0,Math.sin(t*5));
-  ctx.globalAlpha=flick;rect(455,35,370,6,'#8c8b78');rect(600,42,70,13,'#b4b09a');ctx.globalAlpha=1;
+  const flick=clamp(lightFlicker*(.55+.45*Math.max(0,Math.sin(t*13))*Math.max(0,Math.sin(t*5))),.04,1);
+  ctx.globalAlpha=flick*.8;rect(455,35,370,6,'#8c8b78');rect(600,42,70,13,'#b4b09a');ctx.globalAlpha=1;
   for(let i=0;i<4;i++){rect(75+i*250,210,150,18,'#4a4138');rect(85+i*250,228,10,155,'#38302b');rect(210+i*250,228,10,155,'#38302b');for(let j=0;j<4;j++)rect(100+i*250,250+j*28,95,16,j%2?'#51504a':'#383f3d');}
   rect(430,395,260,16,'#55483c');rect(450,411,14,110,'#302b27');rect(656,411,14,110,'#302b27');
   rect(1010,190,155,360,'#111415');rect(1022,202,130,348,'#292d2e');rect(1134,360,8,8,'#aaa58f');
@@ -463,12 +441,9 @@ function drawInterior(){
   if(b.type==='lab'){for(let i=0;i<5;i++){rect(260+i*115,315,70,45,'#202e32');rect(270+i*115,325,50,25,'#40565a');}}
   if(b.type==='hotel'){for(let i=0;i<5;i++){rect(90+i*210,170,150,24,'#4b413b');rect(100+i*210,194,8,80,'#332e2a');}}
  }
- // local loot
  for(const l of loot)if(!l.got&&l.inside===b.name)drawLoot(l);
  drawPlayer();
- // Interior flashlight / darkness
  const px=p.x-cam+17,py=p.y+30;const g=ctx.createRadialGradient(px,py,20,px,py,360);g.addColorStop(0,p.light?'rgba(235,235,210,.22)':'rgba(0,0,0,0)');g.addColorStop(.55,p.light?'rgba(210,210,190,.05)':'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.76)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- // dust motes
  for(let i=0;i<65;i++){const dx=(i*97+t*8)%W,dy=(i*53+Math.sin(t+i)*18)%540;rect(dx,dy,1,1,i%4?'#454b4a':'#77766b');}
  txt(b.name.toUpperCase(),24,38,13,'#9b9a91');txt('E AT EXIT DOOR',W-24,H-24,12,'#888','right');
 }
@@ -528,7 +503,6 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>keys.delete(e.key.length===1?e.key.toLowerCase():e.key));
 C.addEventListener('mousemove',e=>{const r=C.getBoundingClientRect();mouse.x=(e.clientX-r.left)*C.width/r.width;mouse.y=(e.clientY-r.top)*C.height/r.height;});
 C.addEventListener('mousedown',e=>{if(e.button===0){mouse.down=true;shoot();}});window.addEventListener('mouseup',()=>mouse.down=false);setInterval(()=>{if(mouse.down&&mode==='play')shoot();},110);
-// Initial title frame.
 ctx.fillStyle='#030405';ctx.fillRect(0,0,W,H);txt('ASHES OF THE DEAD',W/2,325,42,'#ddd','center');txt('THE SMILER IS ALWAYS WATCHING',W/2,365,15,'#8b7f7b','center');
 requestAnimationFrame(loop);
 </script>
@@ -544,1839 +518,6 @@ def health():
     return {"status":"ok","game":"Ashes of the Dead","chapter":"Alcatraz Escape"}
 
 
-# ============================================================================
-# ASHES OF THE DEAD — DESIGN / CONTENT REFERENCE
-# ============================================================================
-# The browser game above intentionally remains self-contained: Flask serves a
-# single HTML document containing the Canvas renderer and gameplay systems.
-# No Pygame, camera, microphone, geolocation, IP lookup, or external API is
-# required. The privacy notice is part of the actual game UI.
-#
-# STORY PRINCIPLES
-# 1. The game begins at Alcatraz, not in a generic open world.
-# 2. The player escapes the prison before the wider island opens up.
-# 3. The Smiler is a tall, dark, frightening creature that watches rather than
-#    behaving like an ordinary zombie.
-# 4. The player can encounter survivors and enter structures.
-# 5. Vehicles are part of the world rather than background-only decorations.
-# 6. The first launch includes a privacy disclaimer.
-# 7. Surveillance-style horror text is fictional and never uses personal data.
-# 8. Pixel art is intentionally rendered with imageSmoothingEnabled=false.
-# 9. The game is designed to run in a browser on Render through Flask/Gunicorn.
-# 10. The game does not require a native display server.
-#
-# NOTE FOR FUTURE ART PASSES
-# The renderer uses procedural pixel primitives now. A later asset pass can
-# replace individual drawing functions with sprite sheets without changing
-# the gameplay state model. Recommended sprite sheets include:
-#   Julia/May/Yumi idle, walk, run, jump, shoot, reload, hurt, death
-#   Walker idle/walk/attack/hurt/death
-#   Runner idle/run/attack/death
-#   Brute idle/walk/attack/hurt/death
-#   Smiler standing/watch/disappear/close-up
-#   Jeep/truck/tank/boat damaged and repaired states
-#   Prison doors, ladders, lockers, beds, desks, medical props, generators
-#   Rain, muzzle flash, shell casings, smoke, sparks, blood particles
-## CONTENT SLOT 0001: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0002: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0003: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0004: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0005: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0006: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0007: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0008: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0009: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0010: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0011: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0012: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0013: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0014: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0015: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0016: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0017: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0018: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0019: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0020: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0021: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0022: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0023: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0024: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0025: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0026: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0027: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0028: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0029: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0030: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0031: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0032: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0033: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0034: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0035: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0036: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0037: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0038: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0039: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0040: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0041: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0042: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0043: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0044: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0045: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0046: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0047: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0048: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0049: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0050: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0051: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0052: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0053: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0054: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0055: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0056: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0057: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0058: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0059: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0060: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0061: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0062: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0063: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0064: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0065: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0066: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0067: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0068: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0069: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0070: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0071: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0072: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0073: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0074: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0075: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0076: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0077: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0078: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0079: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0080: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0081: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0082: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0083: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0084: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0085: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0086: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0087: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0088: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0089: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0090: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0091: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0092: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0093: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0094: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0095: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0096: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0097: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0098: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0099: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0100: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0101: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0102: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0103: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0104: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0105: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0106: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0107: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0108: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0109: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0110: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0111: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0112: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0113: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0114: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0115: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0116: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0117: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0118: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0119: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0120: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0121: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0122: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0123: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0124: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0125: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0126: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0127: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0128: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0129: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0130: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0131: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0132: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0133: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0134: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0135: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0136: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0137: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0138: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0139: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0140: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0141: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0142: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0143: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0144: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0145: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0146: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0147: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0148: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0149: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0150: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0151: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0152: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0153: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0154: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0155: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0156: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0157: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0158: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0159: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0160: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0161: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0162: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0163: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0164: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0165: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0166: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0167: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0168: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0169: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0170: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0171: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0172: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0173: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0174: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0175: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0176: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0177: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0178: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0179: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0180: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0181: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0182: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0183: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0184: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0185: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0186: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0187: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0188: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0189: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0190: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0191: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0192: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0193: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0194: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0195: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0196: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0197: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0198: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0199: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0200: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0201: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0202: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0203: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0204: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0205: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0206: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0207: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0208: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0209: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0210: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0211: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0212: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0213: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0214: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0215: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0216: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0217: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0218: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0219: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0220: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0221: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0222: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0223: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0224: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0225: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0226: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0227: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0228: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0229: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0230: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0231: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0232: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0233: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0234: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0235: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0236: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0237: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0238: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0239: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0240: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0241: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0242: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0243: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0244: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0245: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0246: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0247: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0248: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0249: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0250: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0251: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0252: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0253: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0254: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0255: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0256: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0257: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0258: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0259: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0260: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0261: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0262: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0263: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0264: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0265: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0266: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0267: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0268: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0269: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0270: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0271: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0272: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0273: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0274: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0275: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0276: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0277: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0278: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0279: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0280: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0281: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0282: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0283: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0284: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0285: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0286: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0287: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0288: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0289: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0290: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0291: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0292: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0293: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0294: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0295: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0296: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0297: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0298: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0299: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0300: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0301: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0302: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0303: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0304: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0305: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0306: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0307: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0308: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0309: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0310: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0311: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0312: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0313: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0314: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0315: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0316: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0317: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0318: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0319: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0320: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0321: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0322: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0323: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0324: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0325: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0326: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0327: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0328: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0329: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0330: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0331: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0332: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0333: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0334: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0335: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0336: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0337: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0338: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0339: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0340: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0341: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0342: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0343: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0344: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0345: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0346: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0347: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0348: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0349: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0350: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0351: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0352: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0353: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0354: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0355: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0356: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0357: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0358: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0359: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0360: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0361: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0362: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0363: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0364: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0365: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0366: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0367: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0368: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0369: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0370: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0371: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0372: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0373: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0374: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0375: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0376: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0377: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0378: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0379: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0380: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0381: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0382: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0383: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0384: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0385: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0386: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0387: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0388: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0389: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0390: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0391: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0392: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0393: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0394: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0395: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0396: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0397: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0398: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0399: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0400: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0401: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0402: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0403: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0404: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0405: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0406: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0407: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0408: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0409: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0410: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0411: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0412: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0413: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0414: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0415: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0416: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0417: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0418: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0419: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0420: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0421: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0422: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0423: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0424: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0425: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0426: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0427: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0428: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0429: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0430: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0431: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0432: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0433: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0434: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0435: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0436: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0437: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0438: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0439: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0440: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0441: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0442: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0443: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0444: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0445: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0446: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0447: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0448: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0449: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0450: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0451: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0452: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0453: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0454: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0455: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0456: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0457: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0458: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0459: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0460: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0461: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0462: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0463: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0464: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0465: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0466: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0467: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0468: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0469: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0470: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0471: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0472: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0473: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0474: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0475: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0476: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0477: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0478: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0479: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0480: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0481: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0482: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0483: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0484: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0485: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0486: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0487: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0488: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0489: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0490: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0491: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0492: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0493: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0494: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0495: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0496: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0497: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0498: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0499: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0500: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0501: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0502: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0503: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0504: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0505: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0506: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0507: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0508: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0509: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0510: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0511: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0512: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0513: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0514: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0515: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0516: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0517: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0518: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0519: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0520: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0521: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0522: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0523: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0524: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0525: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0526: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0527: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0528: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0529: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0530: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0531: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0532: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0533: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0534: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0535: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0536: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0537: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0538: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0539: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0540: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0541: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0542: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0543: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0544: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0545: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0546: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0547: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0548: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0549: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0550: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0551: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0552: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0553: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0554: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0555: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0556: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0557: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0558: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0559: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0560: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0561: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0562: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0563: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0564: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0565: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0566: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0567: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0568: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0569: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0570: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0571: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0572: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0573: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0574: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0575: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0576: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0577: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0578: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0579: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0580: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0581: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0582: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0583: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0584: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0585: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0586: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0587: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0588: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0589: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0590: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0591: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0592: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0593: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0594: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0595: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0596: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0597: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0598: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0599: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0600: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0601: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0602: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0603: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0604: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0605: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0606: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0607: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0608: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0609: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0610: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0611: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0612: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0613: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0614: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0615: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0616: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0617: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0618: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0619: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0620: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0621: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0622: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0623: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0624: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0625: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0626: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0627: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0628: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0629: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0630: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0631: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0632: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0633: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0634: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0635: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0636: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0637: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0638: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0639: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0640: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0641: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0642: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0643: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0644: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0645: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0646: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0647: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0648: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0649: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0650: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0651: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0652: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0653: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0654: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0655: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0656: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0657: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0658: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0659: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0660: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0661: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0662: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0663: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0664: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0665: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0666: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0667: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0668: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0669: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0670: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0671: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0672: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0673: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0674: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0675: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0676: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0677: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0678: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0679: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0680: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0681: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0682: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0683: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0684: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0685: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0686: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0687: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0688: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0689: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0690: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0691: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0692: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0693: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0694: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0695: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0696: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0697: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0698: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0699: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0700: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0701: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0702: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0703: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0704: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0705: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0706: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0707: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0708: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0709: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0710: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0711: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0712: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0713: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0714: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0715: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0716: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0717: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0718: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0719: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0720: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0721: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0722: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0723: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0724: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0725: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0726: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0727: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0728: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0729: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0730: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0731: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0732: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0733: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0734: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0735: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0736: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0737: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0738: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0739: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0740: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0741: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0742: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0743: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0744: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0745: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0746: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0747: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0748: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0749: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0750: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0751: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0752: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0753: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0754: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0755: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0756: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0757: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0758: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0759: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0760: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0761: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0762: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0763: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0764: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0765: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0766: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0767: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0768: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0769: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0770: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0771: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0772: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0773: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0774: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0775: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0776: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0777: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0778: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0779: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0780: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0781: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0782: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0783: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0784: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0785: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0786: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0787: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0788: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0789: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0790: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0791: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0792: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0793: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0794: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0795: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0796: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0797: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0798: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0799: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0800: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0801: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0802: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0803: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0804: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0805: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0806: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0807: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0808: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0809: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0810: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0811: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0812: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0813: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0814: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0815: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0816: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0817: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0818: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0819: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0820: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0821: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0822: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0823: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0824: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0825: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0826: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0827: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0828: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0829: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0830: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0831: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0832: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0833: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0834: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0835: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0836: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0837: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0838: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0839: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0840: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0841: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0842: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0843: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0844: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0845: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0846: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0847: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0848: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0849: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0850: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0851: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0852: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0853: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0854: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0855: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0856: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0857: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0858: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0859: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0860: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0861: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0862: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0863: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0864: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0865: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0866: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0867: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0868: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0869: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0870: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0871: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0872: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0873: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0874: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0875: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0876: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0877: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0878: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0879: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0880: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0881: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0882: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0883: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0884: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0885: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0886: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0887: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0888: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0889: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0890: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0891: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0892: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0893: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0894: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0895: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0896: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0897: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0898: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0899: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0900: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0901: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0902: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0903: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0904: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0905: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0906: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0907: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0908: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0909: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0910: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0911: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0912: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0913: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0914: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0915: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0916: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0917: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0918: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0919: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0920: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0921: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0922: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0923: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0924: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0925: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0926: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0927: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0928: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0929: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0930: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0931: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0932: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0933: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0934: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0935: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0936: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0937: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0938: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0939: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0940: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0941: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0942: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0943: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0944: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0945: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0946: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0947: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0948: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0949: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0950: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0951: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0952: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0953: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0954: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0955: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0956: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0957: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0958: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0959: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0960: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0961: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0962: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0963: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0964: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0965: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0966: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0967: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0968: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0969: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0970: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0971: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0972: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0973: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0974: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0975: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0976: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0977: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0978: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0979: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0980: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0981: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0982: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0983: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0984: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0985: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0986: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0987: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0988: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0989: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0990: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0991: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0992: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0993: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0994: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0995: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0996: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0997: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0998: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 0999: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1000: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1001: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1002: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1003: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1004: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1005: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1006: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1007: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1008: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1009: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1010: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1011: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1012: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1013: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1014: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1015: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1016: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1017: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1018: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1019: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1020: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1021: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1022: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1023: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1024: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1025: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1026: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1027: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1028: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1029: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1030: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1031: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1032: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1033: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1034: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1035: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1036: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1037: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1038: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1039: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1040: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1041: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1042: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1043: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1044: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1045: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1046: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1047: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1048: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1049: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1050: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1051: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1052: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1053: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1054: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1055: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1056: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1057: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1058: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1059: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1060: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1061: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1062: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1063: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1064: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1065: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1066: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1067: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1068: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1069: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1070: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1071: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1072: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1073: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1074: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1075: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1076: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1077: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1078: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1079: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1080: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1081: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1082: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1083: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1084: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1085: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1086: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1087: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1088: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1089: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1090: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1091: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1092: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1093: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1094: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1095: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1096: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1097: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1098: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1099: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1100: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1101: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1102: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1103: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1104: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1105: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1106: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1107: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1108: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1109: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1110: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1111: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1112: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1113: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1114: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1115: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1116: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1117: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1118: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1119: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1120: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1121: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1122: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1123: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1124: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1125: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1126: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1127: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1128: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1129: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1130: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1131: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1132: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1133: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1134: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1135: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1136: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1137: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1138: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1139: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1140: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1141: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1142: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1143: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1144: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1145: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1146: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1147: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1148: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1149: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1150: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1151: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1152: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1153: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1154: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1155: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1156: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1157: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1158: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1159: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1160: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1161: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1162: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1163: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1164: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1165: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1166: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1167: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1168: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1169: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1170: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1171: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1172: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1173: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1174: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1175: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1176: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1177: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1178: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1179: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1180: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1181: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1182: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1183: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1184: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1185: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1186: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1187: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1188: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1189: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1190: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1191: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1192: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1193: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1194: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1195: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1196: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1197: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1198: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1199: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1200: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1201: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1202: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1203: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1204: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1205: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1206: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1207: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1208: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1209: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1210: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1211: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1212: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1213: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1214: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1215: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1216: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1217: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1218: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1219: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1220: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1221: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1222: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1223: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1224: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1225: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1226: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1227: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1228: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1229: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1230: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1231: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1232: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1233: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1234: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1235: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1236: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1237: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1238: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1239: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1240: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1241: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1242: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1243: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1244: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1245: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1246: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1247: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1248: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1249: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1250: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1251: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1252: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1253: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1254: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1255: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1256: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1257: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1258: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1259: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1260: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1261: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1262: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1263: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1264: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1265: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1266: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1267: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1268: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1269: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1270: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1271: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1272: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1273: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1274: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1275: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1276: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1277: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1278: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1279: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1280: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1281: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1282: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1283: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1284: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1285: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1286: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1287: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1288: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1289: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1290: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1291: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1292: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1293: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1294: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1295: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1296: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1297: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1298: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1299: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1300: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1301: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1302: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1303: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1304: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1305: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1306: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1307: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1308: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1309: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1310: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1311: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1312: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1313: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1314: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1315: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1316: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1317: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1318: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1319: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1320: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1321: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1322: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1323: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1324: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1325: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1326: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1327: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1328: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1329: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1330: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1331: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1332: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1333: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1334: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1335: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1336: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1337: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1338: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1339: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1340: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1341: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1342: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1343: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1344: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1345: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1346: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1347: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1348: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1349: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1350: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1351: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1352: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1353: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1354: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1355: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1356: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1357: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1358: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1359: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1360: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1361: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1362: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1363: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1364: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1365: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1366: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1367: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1368: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1369: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1370: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1371: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1372: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1373: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1374: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1375: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1376: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1377: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1378: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1379: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1380: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1381: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1382: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1383: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1384: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1385: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1386: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1387: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1388: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1389: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1390: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1391: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1392: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1393: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1394: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1395: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1396: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1397: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1398: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1399: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1400: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1401: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1402: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1403: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1404: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1405: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1406: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1407: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1408: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1409: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1410: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1411: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1412: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1413: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1414: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1415: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1416: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1417: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1418: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1419: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1420: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1421: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1422: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1423: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1424: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1425: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1426: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1427: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1428: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1429: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1430: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1431: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1432: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1433: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1434: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1435: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1436: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1437: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1438: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1439: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1440: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1441: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1442: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1443: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1444: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1445: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1446: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1447: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1448: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1449: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1450: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1451: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1452: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1453: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1454: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1455: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1456: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1457: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1458: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1459: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1460: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1461: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1462: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1463: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1464: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1465: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1466: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1467: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1468: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1469: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1470: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1471: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1472: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1473: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1474: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1475: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1476: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1477: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1478: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1479: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1480: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1481: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1482: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1483: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1484: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1485: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1486: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1487: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1488: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1489: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1490: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1491: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1492: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1493: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1494: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1495: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1496: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1497: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1498: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1499: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1500: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1501: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1502: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1503: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1504: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1505: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1506: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1507: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1508: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1509: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1510: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1511: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1512: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1513: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1514: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1515: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1516: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1517: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1518: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1519: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1520: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1521: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1522: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1523: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1524: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1525: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1526: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1527: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1528: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1529: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1530: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1531: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1532: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1533: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1534: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1535: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1536: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1537: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1538: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1539: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1540: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1541: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1542: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1543: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1544: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1545: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1546: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1547: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1548: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1549: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1550: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1551: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1552: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1553: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1554: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1555: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1556: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1557: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1558: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1559: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1560: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1561: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1562: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1563: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1564: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1565: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1566: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1567: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1568: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1569: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1570: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1571: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1572: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1573: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1574: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1575: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1576: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1577: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1578: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1579: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1580: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1581: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1582: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1583: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1584: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1585: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1586: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1587: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1588: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1589: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1590: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1591: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1592: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1593: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1594: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1595: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1596: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1597: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1598: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1599: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1600: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1601: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1602: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1603: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1604: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1605: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1606: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1607: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1608: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1609: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1610: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1611: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1612: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1613: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1614: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1615: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1616: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1617: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1618: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1619: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1620: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1621: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1622: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1623: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1624: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1625: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1626: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1627: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1628: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1629: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1630: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1631: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1632: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1633: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1634: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1635: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1636: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1637: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1638: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1639: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1640: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1641: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1642: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1643: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1644: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1645: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1646: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1647: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1648: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1649: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1650: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1651: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1652: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1653: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1654: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1655: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1656: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1657: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1658: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1659: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1660: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1661: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1662: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1663: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1664: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1665: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1666: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1667: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1668: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1669: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1670: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1671: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1672: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1673: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1674: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1675: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1676: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1677: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1678: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1679: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1680: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1681: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1682: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1683: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1684: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1685: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1686: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1687: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1688: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1689: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1690: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1691: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1692: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1693: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1694: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1695: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1696: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1697: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1698: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1699: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1700: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1701: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1702: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1703: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1704: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1705: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1706: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1707: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1708: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1709: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1710: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1711: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1712: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1713: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1714: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1715: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1716: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1717: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1718: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1719: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1720: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1721: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1722: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1723: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1724: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1725: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1726: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1727: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1728: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1729: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1730: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1731: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1732: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1733: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1734: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1735: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1736: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1737: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1738: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1739: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1740: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1741: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1742: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1743: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1744: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1745: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1746: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1747: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1748: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1749: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1750: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1751: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1752: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1753: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1754: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1755: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1756: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1757: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1758: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1759: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1760: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1761: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1762: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1763: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1764: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1765: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1766: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1767: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1768: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1769: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1770: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1771: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1772: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1773: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1774: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1775: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1776: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1777: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1778: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1779: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1780: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1781: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1782: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1783: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1784: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1785: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1786: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1787: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1788: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1789: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1790: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1791: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1792: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1793: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1794: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1795: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1796: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1797: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1798: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1799: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
-# CONTENT SLOT 1800: reserved for future pixel-art asset, animation frame, level prop, dialogue beat, or encounter tuning.
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
