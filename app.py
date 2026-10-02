@@ -1,8 +1,15 @@
 # Render-safe environment setup.
 # Native Pygame remains intact; on Render there is no physical display/audio device.
 import os
-if os.environ.get("RENDER") or os.environ.get("HEADLESS") or os.environ.get("GUNICORN_CMD_ARGS"):
-    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+
+# Flask is defined before the game engine so Gunicorn can always find app:app.
+from flask import Flask, jsonify, render_template_string
+
+app = Flask(__name__)
+
+# Render/Linux web workers do not have a desktop display or audio device.
+# Dummy SDL drivers let the full Pygame source import safely under Gunicorn.
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 """
@@ -13898,12 +13905,9 @@ if os.environ.get("ASHES_PRISON_CHAPTER") == "1":
 # ===========================================================================
 # RENDER / GUNICORN WEB ENTRY POINT
 # ===========================================================================
-# The entire original Pygame game remains in this same file.  Flask is added
-# at the bottom so Render can load `app:app` without needing a second game.py.
+# The entire original Pygame game remains in this same file. Flask is defined
+# near the top so Gunicorn can load app:app without a second game.py.
 
-from flask import Flask, jsonify, render_template_string
-
-app = Flask(__name__)
 VERSION = "2.0.0 - FINAL EXPANDED EDITION"
 
 PAGE = r"""<!doctype html>
