@@ -29,7 +29,7 @@ const ctx=C.getContext('2d');
 ctx.imageSmoothingEnabled=false;
 const MAP=document.getElementById('map');
 const mctx=MAP.getContext('2d');
-const W=1280,H=720,G=570,WORLD=12800;
+const W=1280,H=720,G=570,WORLD=8200;
 const keys=new Set();
 const mouse={x:640,y:360,down:false};let audioCtx=null;
 function scareSound(close=false){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=close?42:28;g.gain.setValueAtTime(0.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(close?.035:.018,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+(close?1.1:1.8));o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+(close?1.2:1.9));}catch(e){}}
@@ -59,48 +59,53 @@ function addSurvivor(x,name,role){survivors.push({x,y:G-62,w:32,h:62,name,role,s
 function spawnZombie(x,type='walker',y=G-58,inside=null){if(chapter!=='SAN FRANCISCO')return null;if(zombies.filter(z=>!z.dead).length>=6)return null;let z={x,y,w:type==='brute'?58:type==='runner'?32:38,h:type==='brute'?78:60,type,hp:type==='brute'?170:type==='runner'?55:42,vx:0,vy:0,ground:true,attack:rnd(.2,1),anim:rnd(0,20),dead:false,inside,alert:0};zombies.push(z);return z;}
 function buildWorld(){
  buildings=[];vehicles=[];survivors=[];loot=[];zombies=[];doors=[];
- // Alcatraz prison complex and island structures.
- addBuilding(260,280,250,'Cell Block A','prison',true);
- addBuilding(620,250,230,'Cell Block B','prison',true);
- addBuilding(970,220,190,'Guard Station','office',true);
- addBuilding(1280,310,250,'Medical Wing','medical',true);
- addBuilding(1710,260,205,'Kitchen & Cafeteria','cafeteria',true);
- addBuilding(2050,250,225,'Workshop','workshop',true);
- addBuilding(2390,300,260,'Armory','armory',true);
- addBuilding(2810,240,210,'Power Station','power',true);
- addBuilding(3230,310,235,'Dock Warehouse','warehouse',true);
- addBuilding(3720,220,180,'Barracks','barracks',true);
- addBuilding(4200,350,270,'Island Command','office',true);
- addBuilding(4900,290,210,'Quarantine Clinic','medical',true);
- addBuilding(5480,330,240,'Coast Guard House','house',true);
- addBuilding(6120,390,290,'Ruined Village House','house',true);
- addBuilding(6840,360,250,'Abandoned Hotel','hotel',true);
- addBuilding(7650,440,300,'Military Depot','military',true);
- addBuilding(8580,390,260,'Church','church',true);
- addBuilding(9510,430,310,'Hospital','hospital',true);
- addBuilding(10600,360,260,'Safehouse','safehouse',true);
- addBuilding(11600,420,280,'Research Facility','lab',true);
- // vehicles
- addVehicle(112,G-34,105,'jeep',true,false);
- addVehicle(760,G-36,145,'truck',false,true);
- addVehicle(1480,G-34,110,'car',true,false);
- addVehicle(2170,G-36,145,'truck',true,false);
- addVehicle(2560,G-42,180,'tank',true,false);
- addVehicle(3350,G-34,130,'jeep',false,true);
- addVehicle(3880,G-34,115,'car',true,false);
- addVehicle(4520,G-36,145,'truck',true,false);
- addVehicle(5630,G-34,115,'jeep',true,false);
- addVehicle(7040,G-34,125,'car',true,false);
- addVehicle(7760,G-36,160,'truck',false,true);
- addVehicle(8670,G-34,130,'jeep',true,false);
- addVehicle(9720,G-34,120,'car',true,false);
- addVehicle(10800,G-36,155,'truck',false,true);
- addVehicle(12120,G-25,220,'boat',true,false);
- // No survivors or zombies are present at the opening. The prison feels abandoned.
- // They are introduced only after the player leaves the opening cell.
- // exterior loot
- addLoot(870,G-24,'ammo','Ammunition',8); addLoot(1190,G-24,'medkit','Medical Kit'); addLoot(1540,G-24,'ammo','Ammunition',12); addLoot(2290,G-24,'fuel','Fuel Can'); addLoot(2990,G-24,'battery','Generator Battery'); addLoot(3480,G-24,'ammo','Ammunition',12); addLoot(4380,G-24,'grenade','Grenade',2); addLoot(5230,G-24,'medkit','Medical Kit'); addLoot(5800,G-24,'fuel','Fuel Can'); addLoot(7200,G-24,'ammo','Ammunition',15); addLoot(8020,G-24,'medkit','Medical Kit'); addLoot(9000,G-24,'ammo','Ammunition',20); addLoot(10040,G-24,'fuel','Fuel Can'); addLoot(11080,G-24,'medkit','Medical Kit');
- // Interior zombie pockets are created when entering structures.
+ // A tighter, denser Alcatraz: short distances, lots of rooms, and two prison blocks packed with explorable cells.
+ addBuilding(210,250,245,'Cell Block A','prison',true);
+ addBuilding(535,250,245,'Cell Block B','prison',true);
+ addBuilding(860,190,185,'Guard Station','office',true);
+ addBuilding(1110,270,235,'Medical Wing','medical',true);
+ addBuilding(1450,240,200,'Kitchen & Cafeteria','cafeteria',true);
+ addBuilding(1760,230,215,'Workshop','workshop',true);
+ addBuilding(2050,270,250,'Armory','armory',true);
+ addBuilding(2390,220,205,'Power Station','power',true);
+ addBuilding(2690,270,220,'Dock Warehouse','warehouse',true);
+ addBuilding(3030,210,175,'Barracks','barracks',true);
+ addBuilding(3340,300,255,'Island Command','office',true);
+ addBuilding(3720,250,205,'Quarantine Clinic','medical',true);
+ addBuilding(4050,280,225,'Coast Guard House','house',true);
+ addBuilding(4410,300,250,'Ruined Village House','house',true);
+ addBuilding(4790,300,245,'Abandoned Hotel','hotel',true);
+ addBuilding(5200,340,275,'Military Depot','military',true);
+ addBuilding(5670,300,250,'Church','church',true);
+ addBuilding(6100,330,285,'Hospital','hospital',true);
+ addBuilding(6560,300,245,'Safehouse','safehouse',true);
+ addBuilding(7000,350,270,'Research Facility','lab',true);
+ // Vehicles are close enough to matter instead of being decorative dots across a huge island.
+ addVehicle(80,G-34,100,'jeep',true,false);
+ addVehicle(720,G-36,140,'truck',false,true);
+ addVehicle(1250,G-34,110,'car',true,false);
+ addVehicle(1870,G-42,170,'tank',true,false);
+ addVehicle(2840,G-34,125,'jeep',false,true);
+ addVehicle(3460,G-36,140,'truck',true,false);
+ addVehicle(4300,G-34,115,'car',true,false);
+ addVehicle(5050,G-36,150,'truck',false,true);
+ addVehicle(5860,G-34,125,'jeep',true,false);
+ addVehicle(6350,G-34,120,'car',true,false);
+ addVehicle(6800,G-36,155,'truck',false,true);
+ addVehicle(7480,G-25,220,'boat',true,false);
+ // Exterior loot is deliberately distributed around the compact island.
+ addLoot(760,G-24,'ammo','Ammunition',8); addLoot(1030,G-24,'medkit','Medical Kit');
+ addLoot(1530,G-24,'ammo','Ammunition',12); addLoot(2140,G-24,'fuel','Fuel Can');
+ addLoot(2580,G-24,'battery','Generator Battery'); addLoot(3190,G-24,'ammo','Ammunition',12);
+ addLoot(3910,G-24,'grenade','Grenade',2); addLoot(4560,G-24,'medkit','Medical Kit');
+ addLoot(5000,G-24,'fuel','Fuel Can'); addLoot(5750,G-24,'ammo','Ammunition',15);
+ addLoot(6240,G-24,'medkit','Medical Kit'); addLoot(6650,G-24,'fuel','Fuel Can');
+ addLoot(6910,G-24,'medkit','Medical Kit');
+ // Prison blocks contain many individual cells. They are empty but searchable; the opening cell is only one of many.
+ for(const b of buildings.filter(q=>q.type==='prison')){
+   b.cells=[];
+   for(let i=0;i<10;i++)b.cells.push({id:i+1,opened:false,searched:false,loot:false});
+ }
  rain=[];for(let i=0;i<260;i++)rain.push({x:rnd(0,W),y:rnd(-700,H),v:rnd(330,560),len:rnd(10,22)});
 }
 function intro(){
@@ -120,7 +125,7 @@ function near(a,b,d){return Math.abs(a-b)<d;}
 function getBuilding(){let best=null,bd=99999;for(const b of buildings){const d=Math.abs((b.x+b.w/2)-p.x);if(d<bd&&d<b.w/2+65){best=b;bd=d;}}return best;}
 function getVehicle(){let best=null,bd=99999;for(const v of vehicles){const d=Math.abs(v.x+v.w/2-p.x);if(d<bd&&d<100){best=v;bd=d;}}return best;}
 function getSurvivor(){let best=null,bd=99999;for(const s of survivors){const d=Math.abs(s.x-p.x);if(d<bd&&d<90){best=s;bd=d;}}return best;}
-function getLoot(){let best=null,bd=99999;for(const l of loot){if(l.got||l.inside&&l.inside!==interior)continue;const d=Math.abs(l.x-p.x);if(d<bd&&d<65){best=l;bd=d;}}return best;}
+function getLoot(){let best=null,bd=99999;for(const l of loot){if(l.got)continue;if(l.inside){const ok=l.inside===interior||(interiorState&&interiorState.cellView&&l.inside===interior+'#'+interiorState.cell.id);if(!ok)continue;}const d=Math.abs(l.x-p.x);if(d<bd&&d<65){best=l;bd=d;}}return best;}
 function interact(){
  if(mode!=='play')return;
  if(startCell){
@@ -131,24 +136,53 @@ function interact(){
   if(cellKey&&cx>=900){startCell=false;cellDoorOpen=true;interior=null;p.x=315;setObj('Explore the empty prison. Find the dock.');setMsg('The lock opens. The corridor is completely empty.',3);alarm=.12;return;}
   setMsg(cellKey?'Move to the cell door and press E.':'Search the bed, note, and window.',2);return;
  }
- // Interior mode: E at the exit door returns outside.
+ // Interior mode: prison blocks contain ten individually searchable cells.
  if(interiorState){
-  if(p.x>940){const b=interiorState.building;const outside=b.x+b.w/2+70;interiorState=null;interior=null;p.x=outside;cam=clamp(p.x-390,0,WORLD-W);setObj(chapter==='SAN FRANCISCO'?'Search San Francisco.':'Explore the empty prison.');setMsg('You step back outside.',2);return;}
+  const b=interiorState.building;
   const l=getLoot();if(l){collectLoot(l);return;}
+  if(b.type==='prison'){
+   if(interiorState.cellView){
+    if(p.x>940){leavePrisonCell();return;}
+    setMsg('Search the bunk, sink and wall scratches. The cell is empty.',1.5);return;
+   }
+   const cell=nearestPrisonCell();
+   if(cell){enterPrisonCell(cell);return;}
+   if(p.x>1050){const outside=b.x+b.w/2+70;interiorState=null;interior=null;p.x=outside;cam=clamp(p.x-390,0,WORLD-W);setObj('Explore the empty prison. Search the other block and find the dock.');setMsg('You step back into the rain.',2);return;}
+   setMsg('TEN CELLS. Check them one by one.',1.8);return;
+  }
+  if(p.x>940){const outside=b.x+b.w/2+70;interiorState=null;interior=null;p.x=outside;cam=clamp(p.x-390,0,WORLD-W);setObj(chapter==='SAN FRANCISCO'?'Search San Francisco.':'Explore the empty prison.');setMsg('You step back outside.',2);return;}
   setMsg('The building is empty. Search carefully.',2);return;
  }
  const l=getLoot();if(l){collectLoot(l);return;}
  const s=getSurvivor();if(s&&chapter==='SAN FRANCISCO'){s.talked=true;s.follow=true;p.sanity=clamp(p.sanity+8,0,100);setMsg(s.name+': “Keep moving. Do not let it see you.”',4);setObj('Help the survivors reach the safe location.');return;}
- if(chapter==='ALCATRAZ'&&p.x>11600&&fuel>=2&&!boatReady){boatReady=true;fuel-=2;setMsg('The boat engine coughs to life.',3);setObj('Board the boat.');shake=3;return;}
+ if(chapter==='ALCATRAZ'&&p.x>7100&&fuel>=2&&!boatReady){boatReady=true;fuel-=2;setMsg('The boat engine coughs to life.',3);setObj('Board the boat.');shake=3;return;}
  const v=getVehicle();if(v){if(v.broken){if(fuel>0){fuel--;v.broken=false;v.usable=true;setMsg('Vehicle repaired with fuel.',3);}else setMsg('This vehicle needs fuel.',2);return;}if(v.usable){v.driving=!v.driving;setMsg(v.driving?'You drive into the rain.':'You stop the vehicle.',2);return;}}
  const b=getBuilding();if(b){enterBuilding(b);return;}
- if(chapter==='ALCATRAZ'&&p.x>11650&&fuel>=2){boatReady=true;setMsg('The boat is fueled. Escape Alcatraz.',3);setObj('Reach the escape boat.');}
+ if(chapter==='ALCATRAZ'&&p.x>7000&&fuel>=2){boatReady=true;setMsg('The boat is fueled. Escape Alcatraz.',3);setObj('Reach the escape boat.');}
 }
 function collectLoot(l){l.got=true;if(l.type==='medkit'){p.hp=clamp(p.hp+40,0,100);setMsg('Medical supplies restored health.',2);}else if(l.type==='ammo'){p.ammo=clamp(p.ammo+l.amount,0,p.maxAmmo);setMsg('Ammunition collected.',2);}else if(l.type==='grenade'){p.grenades+=l.amount;setMsg('Grenades collected.',2);}else if(l.type==='fuel'){fuel++;setMsg('Fuel can collected. '+fuel+'/2 fuel.',2);}else if(l.type==='battery'){setMsg('Generator battery collected.',2);}}
+function nearestPrisonCell(){
+ if(!interiorState||interiorState.building.type!=='prison'||interiorState.cellView)return null;
+ let best=null,bd=99999;
+ for(const c of interiorState.building.cells){const cx=145+(c.id-1)*92;const d=Math.abs(p.x-cx);if(d<bd&&d<62){best=c;bd=d;}}
+ return best;
+}
+function enterPrisonCell(cell){
+ if(!interiorState||interiorState.building.type!=='prison'||!cell)return;
+ interiorState.cellView=true;interiorState.cell=cell;interiorState.cellX=130;p.x=130;p.y=G-p.h;p.vx=0;p.vy=0;
+ if(!cell.opened){cell.opened=true;setMsg('The cell door groans open. Dust. A bunk. Someone left in a hurry.',2.8);}
+ else setMsg('You step back into Cell '+cell.id+'. Nothing moves.',2.2);
+ if(!cell.loot){cell.loot=true;const roll=cell.id%4;const type=roll===0?'ammo':roll===1?'medkit':roll===2?'battery':'grenade';addLoot(360,G-24,type,type==='ammo'?'Ammunition':type==='medkit'?'Medical Kit':type==='battery'?'Battery':'Grenade',type==='ammo'?4:type==='grenade'?1:1,interiorState.building.name+'#'+cell.id);}
+ setObj('Search Cell '+cell.id+'. Press E at the door to return to the cell block.');
+}
+function leavePrisonCell(){
+ const b=interiorState.building;interiorState.cellView=false;interiorState.cell=null;p.x=130;p.vx=0;setObj('Explore '+b.name+'. Search the other cells.');setMsg('Back in the cell corridor.',2);
+}
 function enterBuilding(b){
- interiorState={building:b};interior=b.name;b.open=true;p.x=130;p.y=G-p.h;p.vx=0;p.vy=0;cam=0;
- setObj('Search '+b.name+'. Press E at the exit door to leave.');setMsg('You enter '+b.name+'. The room is silent.',2.5);
- // Interiors are empty on Alcatraz. San Francisco is the only chapter containing zombies/survivors.
+ interiorState={building:b,cellView:false,cell:null};interior=b.name;b.open=true;p.x=130;p.y=G-p.h;p.vx=0;p.vy=0;cam=0;
+ if(b.type==='prison')setObj('Explore '+b.name+'. Search the cells.');else setObj('Search '+b.name+'. Press E at the exit door to leave.');
+ setMsg('You enter '+b.name+'. The room is silent.',2.5);
+ // Alcatraz interiors are empty of living enemies. San Francisco remains the only place with zombies/survivors.
  if(chapter==='SAN FRANCISCO'){
   const types=['ammo','medkit','ammo','grenade'];
   if(!b.insideLootCreated){b.insideLootCreated=true;for(let i=0;i<types.length;i++)addLoot(260+i*120,G-24,types[i],types[i].toUpperCase(),types[i]==='grenade'?1:types[i]==='ammo'?6:1,b.name);}
@@ -216,7 +250,7 @@ function updateSanity(dt){
  const darkness=(p.light?0:1);p.sanity=clamp(p.sanity-dt*(.15+darkness*.22),0,100);
  if(p.sanity<25&&Math.random()<dt*.7){setMsg('You hear breathing behind you.',1.5);}
 }
-function updateObjective(){if(!alcatrazEscaped&&p.x>3850){alcatrazEscaped=true;setObj('The mainland route is blocked. Reach the dock and find a boat.');setMsg('The prison is behind you. The island is not safe.',4);}if(alcatrazEscaped&&p.x>11300&&fuel<2)setObj('Find 2 fuel cans and reach the escape boat.');if(alcatrazEscaped&&p.x>11300&&fuel>=2&&!boatReady)setObj('Fuel the escape boat with E.');if(boatReady&&p.x>11900&&chapter==='ALCATRAZ')transitionToSanFrancisco();}
+function updateObjective(){if(!alcatrazEscaped&&p.x>2500){alcatrazEscaped=true;setObj('The mainland route is blocked. Reach the dock and find a boat.');setMsg('The prison is behind you. The island feels smaller now. The dock is close.',4);}if(alcatrazEscaped&&p.x>6650&&fuel<2)setObj('Find 2 fuel cans and reach the escape boat.');if(alcatrazEscaped&&p.x>6650&&fuel>=2&&!boatReady)setObj('Fuel the escape boat with E.');if(boatReady&&p.x>7350&&chapter==='ALCATRAZ')transitionToSanFrancisco();}
 function transitionToSanFrancisco(){
  chapter='SAN FRANCISCO';escapeTransition=1;interior=null;interiorState=null;boatReady=false;alcatrazEscaped=true;zombies=[];survivors=[];loot=[];buildings=[];vehicles=[];
  p.x=420;p.y=G-64;p.vx=0;p.vy=0;p.light=false;p.sanity=72;cam=0;
@@ -249,7 +283,7 @@ function update(dt){
  document.getElementById('hp').style.width=p.hp+'%';document.getElementById('stam').style.width=p.stam+'%';document.getElementById('san').style.width=p.sanity+'%';document.getElementById('ammo').textContent='AMMO '+p.ammo+' / '+p.maxAmmo+(p.reload>0?' — RELOADING':'');document.getElementById('watch').textContent=smiler.active?'THE SMILER IS WATCHING YOU':'THE SMILER IS ALWAYS WATCHING';
  const l=getLoot(),b=getBuilding(),s=getSurvivor(),v=getVehicle();let pr='';
  if(startCell){if(!cellInspected.bed&&p.x<300)pr='E — SEARCH BED';else if(!cellInspected.note&&p.x>=300&&p.x<520)pr='E — INSPECT LOOSE NOTE';else if(!cellInspected.window&&p.x>=520&&p.x<700)pr='E — LOOK OUT WINDOW';else if(cellKey&&p.x>=900)pr='E — UNLOCK CELL DOOR';else pr='A / D — MOVE   •   F — FLASHLIGHT';}
- else if(interiorState){if(l)pr='E — TAKE '+l.label;else if(p.x>940)pr='E — EXIT '+interiorState.building.name;else pr='SEARCH THE ROOM';}
+ else if(interiorState){if(l)pr='E — TAKE '+l.label;else if(interiorState.building.type==='prison'&&interiorState.cellView&&p.x>940)pr='E — EXIT CELL '+interiorState.cell.id;else if(interiorState.building.type==='prison'&&!interiorState.cellView&&nearestPrisonCell())pr='E — ENTER CELL '+nearestPrisonCell().id;else if(p.x>1050&&interiorState.building.type==='prison')pr='E — EXIT '+interiorState.building.name;else if(p.x>940)pr='E — EXIT '+interiorState.building.name;else pr='SEARCH THE ROOM';}
  else {if(l)pr='E — TAKE '+l.label;else if(s)pr='E — TALK TO '+s.name;else if(b)pr='E — ENTER '+b.name;else if(v)pr='E — INTERACT WITH '+v.type.toUpperCase();}
  document.getElementById('prompt').textContent=pr;
  document.getElementById('message').textContent=t<messageUntil?message:'';
@@ -371,32 +405,64 @@ function drawOpeningCell(){
 }
 function drawInterior(){
  const b=interiorState.building;
- // High-detail pixel interior: separate room, not the exterior building.
- const wall=b.type==='medical'?'#202a2a':b.type==='lab'?'#1d2529':'#242729';
- rect(0,0,W,H,wall);
- // ceiling beams
- for(let x=0;x<W;x+=96){rect(x,0,7,G-130,'#111516');rect(x+7,0,3,G-130,'#34393a');}
- // tiled / plank wall texture
- for(let y=70;y<520;y+=46){line(0,y,W,y,b.type==='medical'?'#303b3a':'#303436',1);}
- for(let x=18;x<W;x+=54){line(x,70,x,520,'#1b2021',1);}
- // floor perspective pixels
- rect(0,G,W,H-G,'#141719');for(let x=-20;x<W+40;x+=54){line(x,G,x+42,H,'#2d3030',2);}
- for(let y=G+18;y<H;y+=24)line(0,y,W,y,'#202324',1);
- // overhead lamp with broken flicker
- const flick=.25+.25*Math.max(0,Math.sin(t*13))*Math.max(0,Math.sin(t*5));
- ctx.globalAlpha=flick;rect(455,35,370,6,'#8c8b78');rect(600,42,70,13,'#b4b09a');ctx.globalAlpha=1;
- // back shelves / furniture
- for(let i=0;i<4;i++){rect(75+i*250,210,150,18,'#4a4138');rect(85+i*250,228,10,155,'#38302b');rect(210+i*250,228,10,155,'#38302b');for(let j=0;j<4;j++)rect(100+i*250,250+j*28,95,16,j%2?'#51504a':'#383f3d');}
- // central table
- rect(430,395,260,16,'#55483c');rect(450,411,14,110,'#302b27');rect(656,411,14,110,'#302b27');
- // exit door
- rect(1010,190,155,360,'#111415');rect(1022,202,130,348,'#292d2e');rect(1134,360,8,8,'#aaa58f');
- // emergency sign
- rect(1000,145,180,30,'#3d2927');txt('EXIT',1090,167,18,'#c7bca9','center');
- // building-specific props
- if(b.type==='medical'){for(let i=0;i<3;i++){rect(300+i*120,320,85,10,'#72756e');rect(310+i*120,330,8,55,'#565a56');rect(365+i*120,330,8,55,'#565a56');}}
- if(b.type==='lab'){for(let i=0;i<5;i++){rect(260+i*115,315,70,45,'#202e32');rect(270+i*115,325,50,25,'#40565a');}}
- if(b.type==='hotel'){for(let i=0;i<5;i++){rect(90+i*210,170,150,24,'#4b413b');rect(100+i*210,194,8,80,'#332e2a');}}
+ if(b.type==='prison'){
+  rect(0,0,W,H,'#171b1c');
+  // long prison corridor
+  rect(0,70,W,500,'#202526');
+  rect(0,520,W,50,'#101314');
+  rect(0,570,W,150,'#0b0e0f');
+  for(let x=0;x<W;x+=110){rect(x,70,7,500,'#111415');rect(x+7,70,4,500,'#3b4040');}
+  for(let y=105;y<500;y+=52)line(0,y,W,y,'#2d3232',1);
+  // bars and ten cells
+  for(let i=0;i<10;i++){
+   const x=45+i*102;const opened=b.cells[i].opened;
+   rect(x,155,82,345,opened?'#1b2020':'#252a2a');
+   rect(x+8,175,66,285,'#0d1112');
+   for(let k=0;k<5;k++){rect(x+12+k*12,170,4,300,'#464b4b');rect(x+14+k*12,170,2,300,'#222728');}
+   rect(x+6,465,72,10,'#55524a');
+   rect(x+18,425,45,9,'#3e3a34');
+   if(opened){rect(x+8,175,66,5,'#51544d');txt('OPEN',x+41,495,8,'#777','center');}
+   else txt(String(i+1),x+41,495,10,'#777','center');
+  }
+  // opposite-side bars create depth
+  for(let x=30;x<W;x+=38)rect(x,95,3,60,'#505555');
+  rect(0,535,W,7,'#555957');
+  // exit door
+  rect(1080,180,150,390,'#0a0c0d');rect(1092,192,126,378,'#303435');rect(1180,370,8,8,'#aaa58f');
+  txt('CELL BLOCK',W/2,42,16,'#9b9a91','center');
+  txt('10 CELLS',W/2,62,10,'#666c6b','center');
+  if(interiorState.cellView){
+    // cell scene overlays the corridor with a close, claustrophobic view
+    rect(0,0,W,H,'#111516');rect(0,80,W,12,'#343837');
+    for(let y=110;y<500;y+=55)line(0,y,W,y,'#242929',1);
+    rect(80,390,350,18,'#51463b');rect(105,408,18,120,'#312c28');rect(390,408,18,120,'#312c28');
+    rect(95,365,315,28,'#353331');rect(120,350,260,18,'#4c4842');
+    rect(600,160,300,350,'#0b0e0f');
+    for(let x=620;x<890;x+=32)rect(x,150,7,370,'#4c5050');
+    rect(1030,180,150,390,'#292d2e');rect(1142,370,8,8,'#aaa58f');
+    txt('CELL '+interiorState.cell.id,30,42,16,'#aaa59a');txt('E AT DOOR — RETURN',W-30,H-24,11,'#777','right');
+  } else {
+    txt('E NEAR A CELL — ENTER',W/2,H-25,11,'#777','center');
+  }
+ } else {
+  // High-detail pixel interior for every other building.
+  const wall=b.type==='medical'?'#202a2a':b.type==='lab'?'#1d2529':'#242729';
+  rect(0,0,W,H,wall);
+  for(let x=0;x<W;x+=96){rect(x,0,7,G-130,'#111516');rect(x+7,0,3,G-130,'#34393a');}
+  for(let y=70;y<520;y+=46)line(0,y,W,y,b.type==='medical'?'#303b3a':'#303436',1);
+  for(let x=18;x<W;x+=54)line(x,70,x,520,'#1b2021',1);
+  rect(0,G,W,H-G,'#141719');for(let x=-20;x<W+40;x+=54)line(x,G,x+42,H,'#2d3030',2);
+  for(let y=G+18;y<H;y+=24)line(0,y,W,y,'#202324',1);
+  const flick=.25+.25*Math.max(0,Math.sin(t*13))*Math.max(0,Math.sin(t*5));
+  ctx.globalAlpha=flick;rect(455,35,370,6,'#8c8b78');rect(600,42,70,13,'#b4b09a');ctx.globalAlpha=1;
+  for(let i=0;i<4;i++){rect(75+i*250,210,150,18,'#4a4138');rect(85+i*250,228,10,155,'#38302b');rect(210+i*250,228,10,155,'#38302b');for(let j=0;j<4;j++)rect(100+i*250,250+j*28,95,16,j%2?'#51504a':'#383f3d');}
+  rect(430,395,260,16,'#55483c');rect(450,411,14,110,'#302b27');rect(656,411,14,110,'#302b27');
+  rect(1010,190,155,360,'#111415');rect(1022,202,130,348,'#292d2e');rect(1134,360,8,8,'#aaa58f');
+  rect(1000,145,180,30,'#3d2927');txt('EXIT',1090,167,18,'#c7bca9','center');
+  if(b.type==='medical'){for(let i=0;i<3;i++){rect(300+i*120,320,85,10,'#72756e');rect(310+i*120,330,8,55,'#565a56');rect(365+i*120,330,8,55,'#565a56');}}
+  if(b.type==='lab'){for(let i=0;i<5;i++){rect(260+i*115,315,70,45,'#202e32');rect(270+i*115,325,50,25,'#40565a');}}
+  if(b.type==='hotel'){for(let i=0;i<5;i++){rect(90+i*210,170,150,24,'#4b413b');rect(100+i*210,194,8,80,'#332e2a');}}
+ }
  // local loot
  for(const l of loot)if(!l.got&&l.inside===b.name)drawLoot(l);
  drawPlayer();
