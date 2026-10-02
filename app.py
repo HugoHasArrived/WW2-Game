@@ -35,7 +35,13 @@ split into sprites, animations, maps, sounds, and data files.
 import math
 import random
 import sys
+import os
 from dataclasses import dataclass, field
+
+# Render/headless safety: never require a physical display or audio device.
+if os.environ.get("RENDER") or os.environ.get("HEADLESS"):
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 from enum import Enum, auto
 
 import os
