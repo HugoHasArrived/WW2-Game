@@ -2389,6 +2389,55 @@ draw=function(){
  }
 };
 
+
+function ferryZone(){
+ if(chapter!=='ALCATRAZ'||interior)return false;
+ return Math.abs(player.x-finalBoat.x)<250;
+}
+function ferryStatusPrompt(){
+ if(chapter!=='ALCATRAZ'||interior)return '';
+ const d=Math.abs(player.x-finalBoat.x);
+ if(d>290)return '';
+ if(!state.dockPass)return 'E — NEED DOCK PASS';
+ if(finalBoat.signal===0)return 'E — LIGHT FERRY BEACON';
+ if(d<165)return 'E — BOARD FERRY';
+ return 'MOVE CLOSER TO THE FERRY';
+}
+function boardFerryNow(){
+ if(chapter!=='ALCATRAZ'||interior)return false;
+ if(!state.dockPass){setMsg('You need the dock pass from Cell B-4.',1.8);showWarning('DOCK PASS REQUIRED');tone(74,.25,'square',.025,-20);return true;}
+ const d=Math.abs(player.x-finalBoat.x);
+ if(d>250){setMsg('The ferry is farther down the pier.',1.2);return true;}
+ if(finalBoat.signal===0){finalBoat.signal=1;finalBoat.lit=true;objectiveStep=5;setObjective();setMsg('FERRY BEACON LIT. The engine starts in the fog.',2.4);stepParticles(finalBoat.x,finalBoat.y,18,'spark');tone(180,.3,'triangle',.035,50);shake=3;return true;}
+ if(d<=175){setMsg('BOARDING FERRY...',1.1);tone(92,.55,'square',.035,-22);stepParticles(player.x,GROUND-2,18,'water');shake=6;finalBoat.signal=2;setTimeout(()=>{if(mode==='play')finalEnterSFV2();},650);return true;}
+ setMsg('Move closer to the ferry ladder.',1.1);return true;
+}
+function ferryAwareInteract(){
+ if(mode!=='play'||gadgetOpen||chestUIOpen)return;
+ if(ferryZone()){boardFerryNow();return;}
+ finalInteractV2();
+}
+interact=ferryAwareInteract;
+const ferryAwareUpdateBase=update;
+update=function(dt){
+ ferryAwareUpdateBase(dt);
+ if(mode!=='play'||chapter!=='ALCATRAZ'||interior)return;
+ if(finalBoat.signal===1){finalBoat.lit=true;finalBoat.signal=1;}
+};
+const ferryAwareDrawBase=draw;
+draw=function(){
+ ferryAwareDrawBase();
+ if(mode==='play'&&chapter==='ALCATRAZ'&&!interior){
+  const prompt=ferryStatusPrompt();
+  if(prompt){ctx.save();ctx.globalAlpha=.92;ctx.font='bold 12px Consolas';ctx.fillStyle=state.dockPass?'#ddd2a2':'#a58c86';ctx.fillText(prompt,Math.max(18,Math.min(W-270,finalBoat.x-camera-100)),GROUND-174);ctx.restore();}
+  const near=Math.abs(player.x-finalBoat.x)<180&&state.dockPass;
+  if(near&&finalBoat.signal===1){ctx.save();ctx.globalAlpha=.16;ctx.strokeStyle='#e3cf8b';ctx.strokeRect(finalBoat.x-camera-90,GROUND-145,180,96);ctx.restore();}
+ }
+};
+const ferryTapHandler=()=>{if(mode==='play'&&ferryZone())boardFerryNow();};
+canvas.addEventListener('dblclick',ferryTapHandler);
+document.querySelectorAll('#mobileControls button').forEach(btn=>btn.addEventListener('pointerup',()=>{if(mode==='play'&&ferryZone()&&btn.dataset.key==='e')boardFerryNow();}));
+
 renderLoop();
 
 </script>
