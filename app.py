@@ -1152,6 +1152,7 @@ canvas.setAttribute('tabindex','0');
 canvas.addEventListener('click',()=>canvas.focus());
 window.addEventListener('pointerdown',()=>{if(mode==='play')canvas.focus();});
 document.querySelectorAll('[data-char]').forEach(b=>b.addEventListener('click',()=>{closeModePicker();audio();startGame(b.dataset.char);}));
+document.getElementById('cutscene').addEventListener('click',()=>{if(mode==='intro')nextCut();});
 document.getElementById('resume').onclick=resumeGame;
 document.getElementById('restart').onclick=restart;
 document.getElementById('backMenu').onclick=()=>{mode='menu';hide('pause');hide('hud');show('menu');};
@@ -1394,7 +1395,6 @@ function drawWorld(){drawEnhancedSky();drawEnhancedGround();chapter==='SAN FRANC
 function drawInterior(){drawEnhancedInterior();drawInteriorLoot();drawEnhancedInteriorPlayer();}
 function drawWeather(){if(interior)return;for(let i=0;i<240;i++){const x=(i*43+totalTime*270-camera*.65)%W;const y=(i*71+totalTime*430)%H;line(x,y,x-6,y+17,'rgba(174,188,195,.35)',1);}for(let i=0;i<60;i++){const x=(i*91-camera*.8)%W;const y=430+(i*57)%250;px(x,y,2,2,i%3?'#2e3333':'#555956');}}
 function drawSmiler(){drawEnhancedSmiler();}
-renderLoop();
 
 function openPrivacyDashboard(){const p=document.getElementById('privacyDashboard');
 if(!p)return;
@@ -1431,11 +1431,11 @@ const details=document.getElementById('privacyDetails');
 const close=document.getElementById('privacyClose');
 if(!gate)return;
 gate.style.display='flex';
-if(accept)accept.onclick=()=>{localStorage.setItem('ashesofthedead_privacy_v4','1');gate.style.setProperty('display','none','important');gate.style.pointerEvents='none';};
+if(accept)accept.onclick=()=>{localStorage.setItem('ashesofthedead_privacy_v4','1');gate.style.setProperty('display','none','important');gate.style.pointerEvents='none';closeModePicker();hide('cutscene');hide('hud');hide('pause');hide('ending');hide('death');show('menu');mode='menu';};
 if(details)details.onclick=()=>openPrivacyDashboard();
 if(close)close.onclick=()=>closePrivacyDashboard();
  const reopen=document.getElementById('privacyReopen');
- if(reopen)reopen.onclick=()=>{gate.style.display='flex';};
+ if(reopen)reopen.onclick=()=>{gate.style.setProperty('display','flex','important');gate.style.pointerEvents='auto';};
 }
 setupPrivacyUi();
 
@@ -1765,10 +1765,9 @@ function setupModeUi(){
 setupModeUi();
 
 
-const oldAccept=document.getElementById('privacyAccept');
-if(oldAccept)oldAccept.onclick=()=>{localStorage.setItem('ashesofthedead_privacy_v4','1');const gate=document.getElementById('privacyGate');if(gate){gate.style.setProperty('display','none','important');gate.style.pointerEvents='none';}closeModePicker();hide('cutscene');hide('hud');hide('pause');hide('ending');hide('death');show('menu');mode='menu';};
 document.getElementById('privacyClose').onclick=closePrivacyDashboard;
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();mouse.down=false;}});
+renderLoop();
 
 </script>
 </div>
