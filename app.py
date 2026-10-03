@@ -1766,7 +1766,7 @@ setupModeUi();
 
 
 const oldAccept=document.getElementById('privacyAccept');
-if(oldAccept)oldAccept.addEventListener('click',()=>{setControlMode(controlMode);openModePicker();});
+if(oldAccept)oldAccept.onclick=()=>{localStorage.setItem('ashesofthedead_privacy_v4','1');const gate=document.getElementById('privacyGate');if(gate){gate.style.setProperty('display','none','important');gate.style.pointerEvents='none';}closeModePicker();hide('cutscene');hide('hud');hide('pause');hide('ending');hide('death');show('menu');mode='menu';};
 document.getElementById('privacyClose').onclick=closePrivacyDashboard;
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();mouse.down=false;}});
 
