@@ -1126,8 +1126,10 @@ draw();
 }
 window.addEventListener('keydown',e=>{
 const k=e.key.length===1?e.key.toLowerCase():e.key;
+const code=e.code||'';
+const mapped=code==='KeyA'?'a':code==='KeyD'?'d':code==='KeyW'?'w':code==='KeyS'?'s':code==='ArrowLeft'?'ArrowLeft':code==='ArrowRight'?'ArrowRight':code==='ArrowUp'?'ArrowUp':code==='ArrowDown'?'ArrowDown':code==='ShiftLeft'||code==='ShiftRight'?'Shift':k;
 const movement=['a','d','w','s','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Shift'];
-if(movement.includes(k))e.preventDefault();
+if(movement.includes(mapped))e.preventDefault();
 if(mode==='menu')return;
 if(mode==='intro'&&(k==='Enter'||k===' ')){nextCut();return;}
 if(k==='Escape'){
@@ -1147,14 +1149,20 @@ if(k==='h'){useItem();return}
 if(k==='f'){state.light=!state.light;setMsg(state.light?'Flashlight on.':'Flashlight off.',1);return}
 if(k==='q'){for(const z of zombies){if(!z.dead&&Math.abs(z.x-player.x)<82){z.hp-=55;z.hit=.15;shake=4;if(z.hp<=0)z.dead=true;setMsg('MELEE HIT',.5);}}return}
 if(k==='g'&&state.grenades>0){state.grenades--;for(const z of zombies){if(!z.dead&&Math.abs(z.x-player.x)<250)z.hp-=110;}flash=.18;shake=10;tone(70,.4,'sawtooth',.08,-30);setMsg('GRENADE',1);return}
-keys.add(k);
+keys.add(mapped);
+if(mapped==='a'||mapped==='ArrowLeft')inputState.left=true;
+if(mapped==='d'||mapped==='ArrowRight')inputState.right=true;
+if(mapped==='s'||mapped==='ArrowDown')inputState.down=true;
+if(mapped==='Shift')inputState.run=true;
+if(mapped==='w'||mapped==='ArrowUp'||mapped===' ')inputState.jump=true;
 });
-window.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys.delete(k);});
-window.addEventListener('blur',()=>{keys.clear();mouse.down=false;});
+window.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;const code=e.code||'';const mapped=code==='KeyA'?'a':code==='KeyD'?'d':code==='KeyW'?'w':code==='KeyS'?'s':code==='ArrowLeft'?'ArrowLeft':code==='ArrowRight'?'ArrowRight':code==='ArrowUp'?'ArrowUp':code==='ArrowDown'?'ArrowDown':code==='ShiftLeft'||code==='ShiftRight'?'Shift':k;keys.delete(mapped);if(mapped==='a'||mapped==='ArrowLeft')inputState.left=false;if(mapped==='d'||mapped==='ArrowRight')inputState.right=false;if(mapped==='s'||mapped==='ArrowDown')inputState.down=false;if(mapped==='Shift')inputState.run=false;if(mapped==='w'||mapped==='ArrowUp'||mapped===' ')inputState.jump=false;});
+window.addEventListener('blur',()=>{keys.clear();mouse.down=false;inputState.left=false;inputState.right=false;inputState.down=false;inputState.run=false;inputState.jump=false;});
 window.addEventListener('visibilitychange',()=>{if(document.hidden)keys.clear();});
 canvas.setAttribute('tabindex','0');
 canvas.addEventListener('click',()=>canvas.focus());
 window.addEventListener('pointerdown',()=>{if(mode==='play')canvas.focus();});
+window.addEventListener('pointerup',()=>{if(mode==='play'){keys.delete('a');keys.delete('d');keys.delete('s');keys.delete('ArrowLeft');keys.delete('ArrowRight');keys.delete('ArrowDown');}});
 document.querySelectorAll('[data-char]').forEach(b=>b.addEventListener('click',()=>{closeModePicker();audio();startGame(b.dataset.char);}));
 document.getElementById('cutscene').addEventListener('click',()=>{if(mode==='intro')nextCut();});
 document.getElementById('objectiveTab').onclick=()=>{const panel=document.getElementById('objectivePanel');if(!panel)return;const open=panel.classList.toggle('open');panel.setAttribute('aria-hidden',open?'false':'true');if(open)renderObjectivePanel();};document.getElementById('objectiveClose').onclick=()=>{const panel=document.getElementById('objectivePanel');if(panel){panel.classList.remove('open');panel.setAttribute('aria-hidden','true');}};
@@ -1436,7 +1444,7 @@ const details=document.getElementById('privacyDetails');
 const close=document.getElementById('privacyClose');
 if(!gate)return;
 gate.style.display='flex';
-if(accept)accept.onclick=()=>{localStorage.setItem('ashesofthedead_privacy_v4','1');gate.style.setProperty('display','none','important');gate.style.pointerEvents='none';closeModePicker();hide('cutscene');hide('hud');hide('pause');hide('ending');hide('death');show('menu');mode='menu';};
+if(accept)accept.onclick=()=>{gate.style.setProperty('display','none','important');gate.style.pointerEvents='none';closeModePicker();hide('cutscene');hide('hud');hide('pause');hide('ending');hide('death');show('menu');mode='menu';};
 if(details)details.onclick=()=>openPrivacyDashboard();
 if(close)close.onclick=()=>closePrivacyDashboard();
  const reopen=document.getElementById('privacyReopen');
@@ -1454,13 +1462,13 @@ function resolveWorldX(oldX,newX){const half=player.w*.42;let x=clamp(newX,22,(c
 function stepParticles(x,y,count,type='dust'){for(let i=0;i<count;i++){if(particles.length>190)particles.shift();if(type==='rain'){particles.push({x:x+rand(-8,8),y:y,life:rand(.35,.8),vx:rand(-25,25),vy:rand(80,160),size:randi(1,3),c:'#7d8788'});}else if(type==='spark'){particles.push({x:x+rand(-4,4),y:y+rand(-4,4),life:rand(.18,.42),vx:rand(-90,90),vy:rand(-120,-20),size:randi(1,3),c:'#d1a95c'});}else{particles.push({x:x+rand(-8,8),y:y+rand(-2,2),life:rand(.25,.6),vx:rand(-25,25),vy:rand(-60,-10),size:randi(1,3),c:type==='debris'?'#5e625f':'#777a76'});}}}
 function updatePlayer(dt){
 if(!physicsState)physicsState={coyote:0,jumpBuffer:0,fallSpeed:0,landKick:0,stepClock:0,impact:0};
-const left=keys.has('a')||keys.has('ArrowLeft');
-const right=keys.has('d')||keys.has('ArrowRight');
-const down=keys.has('s')||keys.has('ArrowDown');
+const left=inputState.left||keys.has('a')||keys.has('ArrowLeft');
+const right=inputState.right||keys.has('d')||keys.has('ArrowRight');
+const down=inputState.down||keys.has('s')||keys.has('ArrowDown');
 let dir=(right?1:0)-(left?1:0);
 if(dir)player.facing=dir;
 const moving=Math.abs(player.vx)>18&&dir!==0;
-const running=keys.has('Shift')&&state.stamina>1&&dir!==0&&!down;
+const running=inputState.run&&state.stamina>1&&dir!==0&&!down || keys.has('Shift')&&state.stamina>1&&dir!==0&&!down;
 const target=running?360:235;
 const accel=running?1550:1240;
 player.vx+=(dir*target-player.vx)*Math.min(1,accel*dt/Math.max(1,target));
@@ -1470,9 +1478,9 @@ if(running)state.stamina=Math.max(0,state.stamina-30*dt);else state.stamina=Math
 if(interior){
  player.vy+=1450*dt;
  physicsState.coyote=player.onGround?.09:Math.max(0,physicsState.coyote-dt);
- if(keys.has('w')||keys.has('ArrowUp')||keys.has(' '))physicsState.jumpBuffer=.12;else physicsState.jumpBuffer=Math.max(0,physicsState.jumpBuffer-dt);
+ if(inputState.jump||keys.has('w')||keys.has('ArrowUp')||keys.has(' '))physicsState.jumpBuffer=.12;else physicsState.jumpBuffer=Math.max(0,physicsState.jumpBuffer-dt);
  if(physicsState.jumpBuffer>0&&(player.onGround||physicsState.coyote>0)){player.vy=-500;player.onGround=false;physicsState.jumpBuffer=0;physicsState.coyote=0;tone(115,.07,'triangle',.022,40);stepParticles(player.x,player.y+player.h-2,5,'dust');}
- if(!(keys.has('w')||keys.has('ArrowUp')||keys.has(' '))&&player.vy<-170)player.vy+=1250*dt;
+ if(!(inputState.jump||keys.has('w')||keys.has('ArrowUp')||keys.has(' '))&&player.vy<-170)player.vy+=1250*dt;
  const oldX=player.x;player.x=clamp(player.x+player.vx*dt,40,1200);if(player.x<=40&&player.vx<0){player.vx=0;}if(player.x>=1200&&player.vx>0){player.vx=0;}
  const oldY=player.y;player.y+=player.vy*dt;
  if(player.y+player.h>=GROUND){const falling=player.vy;player.y=GROUND-player.h;player.vy=0;if(!player.onGround&&falling>430){physicsState.impact=Math.min(1,(falling-430)/700);stepParticles(player.x,GROUND-3,8,'dust');shake=Math.max(shake,physicsState.impact*4);}player.onGround=true;}else{player.onGround=false;}
@@ -1485,9 +1493,9 @@ if(interior){
 }
 player.vy+=1500*dt;
 if(player.onGround)physicsState.coyote=.1;else physicsState.coyote=Math.max(0,physicsState.coyote-dt);
-if(keys.has('w')||keys.has('ArrowUp')||keys.has(' '))physicsState.jumpBuffer=.12;else physicsState.jumpBuffer=Math.max(0,physicsState.jumpBuffer-dt);
+if(inputState.jump||keys.has('w')||keys.has('ArrowUp')||keys.has(' '))physicsState.jumpBuffer=.12;else physicsState.jumpBuffer=Math.max(0,physicsState.jumpBuffer-dt);
 if(physicsState.jumpBuffer>0&&(player.onGround||physicsState.coyote>0)){player.vy=running?-535:-505;player.onGround=false;physicsState.jumpBuffer=0;physicsState.coyote=0;tone(108,.07,'triangle',.023,42);stepParticles(player.x,GROUND-3,6,'dust');}
-if(!(keys.has('w')||keys.has('ArrowUp')||keys.has(' '))&&player.vy<-190)player.vy+=1400*dt;
+if(!(inputState.jump||keys.has('w')||keys.has('ArrowUp')||keys.has(' '))&&player.vy<-190)player.vy+=1400*dt;
 const oldX=player.x;
 let proposed=player.x+player.vx*dt;
 player.x=resolveWorldX(oldX,proposed);
@@ -1535,7 +1543,6 @@ function setControlMode(next){
  document.body.dataset.controlMode=controlMode;
  const mob=document.getElementById('mobileControls');
  if(mob)mob.classList.toggle('hidden',controlMode!=='mobile'||mode!=='play');
- localStorage.setItem('ashesofthedead_control_mode',controlMode);
 }
 function openModePicker(){
  const p=document.getElementById('modePicker');
@@ -1546,8 +1553,7 @@ function closeModePicker(){
  if(p)p.classList.add('hidden');
  setControlMode(controlMode);
 }
-const savedControlMode=localStorage.getItem('ashesofthedead_control_mode');
-if(savedControlMode==='mobile'||savedControlMode==='laptop')controlMode=savedControlMode;
+const savedControlMode=null;
 function addMobileKey(key,pressed){
  const k=key==='shift'?'Shift':key==='space'?' ':key;
  if(pressed)keys.add(k);else keys.delete(k);
@@ -2182,7 +2188,7 @@ function finalInteractV2(){
 }
 interact=finalInteractV2;
 
-function finalStartGameV2(name){selectedCharacter=name;resetWorld();buildAlcatraz();positionAtCell();mode='intro';cutIndex=0;cutTimer=0;hide('menu');hide('hud');hide('pause');hide('ending');hide('death');hide('modePicker');show('cutscene');const line=document.getElementById('cutline');if(line)line.textContent=cutsceneLines[0];setControlMode(controlMode);enhancedStartAudio();}
+function finalStartGameV2(name){selectedCharacter=name;resetWorld();buildAlcatraz();positionAtCell();keys.clear();inputState.left=false;inputState.right=false;inputState.down=false;inputState.run=false;inputState.jump=false;mode='intro';cutIndex=0;cutTimer=0;hide('menu');hide('hud');hide('pause');hide('ending');hide('death');hide('modePicker');show('cutscene');const line=document.getElementById('cutline');if(line)line.textContent=cutsceneLines[0];setControlMode(controlMode);enhancedStartAudio();}
 startGame=finalStartGameV2;
 
 function finalEnterSFV2(){if(chapter!=='ALCATRAZ'||!state.dockPass)return;chapter='SAN FRANCISCO';finalBoat.signal=2;player.x=150;player.y=GROUND-player.h;player.vx=0;player.vy=0;camera=0;buildSanFrancisco();objectiveStep=0;setObjective();setMsg('SAN FRANCISCO. The ferry is gone. Something else arrived.',2.8);finalHorrorPulse=1;scareSound();}
