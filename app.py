@@ -2253,6 +2253,142 @@ if(!document.getElementById('privacyGate')){
  const gate=document.createElement('div');gate.id='privacyGate';gate.innerHTML='<div class="privacyBox"><h1>NIGHTWATCH SECURITY TERMINAL</h1><p class="privacyLead">ASHES OF THE DEAD — DEVICE INFORMATION NOTICE</p><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser, platform, screen, language, timezone, network hints, CPU threads, touch support, cookies state and server-seen network address.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>No passwords, personal files, photos, contacts, saved documents or account contents.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera and microphone require separate browser permission.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV, tracking alerts and The Smiler are fictional game elements.</div></div><div class="privacyNotice">The server sees only the network address that reaches it. A proxy, VPN or carrier network can change it.</div><div style="margin-top:18px"><button id="privacyAccept">ENTER ASHES OF THE DEAD</button></div></div></div>';document.body.appendChild(gate);gate.querySelector('#privacyAccept').onclick=()=>{gate.remove();mode='menu';show('menu');};
 }
 
+
+let fourthWallState={idle:0,away:0,messageCooldown:0,returnFlash:0,cursorSeen:0,watching:false};
+let exitDoorFlash=0;
+let exitHintTimer=0;
+function fourthWallSay(text,intensity=1){
+ if(mode!=='play'||chestUIOpen)return;
+ setMsg(text,2.4);
+ showWarning(text);
+ fourthWallState.returnFlash=Math.max(fourthWallState.returnFlash,.55*intensity);
+ finalHorrorPulse=Math.max(finalHorrorPulse,.4*intensity);
+ shake=Math.max(shake,2*intensity);
+}
+window.addEventListener('pointermove',e=>{fourthWallState.idle=0;fourthWallState.cursorSeen++;});
+window.addEventListener('keydown',()=>{fourthWallState.idle=0;});
+window.addEventListener('pointerleave',()=>{if(mode==='play')fourthWallState.away=Math.max(fourthWallState.away,.7);});
+window.addEventListener('pointerenter',()=>{if(mode==='play'&&fourthWallState.away>0){fourthWallSay('I SAW YOU COME BACK.',.8);fourthWallState.away=0;}});
+window.addEventListener('visibilitychange',()=>{
+ if(document.hidden){fourthWallState.away=2;return;}
+ if(mode==='play'&&fourthWallState.away>0){fourthWallState.away=0;fourthWallSay('YOU LEFT THE ISLAND. SHE DID NOT.',1);}
+});
+function robustExitSide(){if(!interior)return null;if(player.x<=190)return'left';if(player.x>=1010)return'right';return null;}
+function robustExitBuilding(side){
+ if(!interior)return;
+ const b=interior.building;
+ const chosen=side||robustExitSide()||(player.x<610?'left':'right');
+ interior=null;
+ floor=1;
+ player.y=GROUND-player.h;
+ player.vx=0;
+ player.vy=0;
+ const minX=28;
+ const maxX=(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-28;
+ if(chosen==='left')player.x=clamp(b.x-46,minX,maxX);else player.x=clamp(b.x+b.w+46,minX,maxX);
+ camera=clamp(lerp(camera,player.x-W*.42,.5),0,maxX-W);
+ exitDoorFlash=1;
+ exitHintTimer=0;
+ stepParticles(player.x,GROUND-3,10,'dust');
+ tone(88,.18,'square',.028,-18);
+ setMsg(`EXITED ${b.name.toUpperCase()} — STREET`,1.4);
+}
+exitBuilding=robustExitBuilding;
+const exitAwareInteract=interact;
+interact=function(){
+ if(mode!=='play'||gadgetOpen||chestUIOpen)return;
+ if(interior){
+  const side=robustExitSide();
+  if(side){robustExitBuilding(side);return;}
+ }
+ exitAwareInteract();
+};
+const interiorDrawBase=drawEnhancedInterior;
+drawEnhancedInterior=function(){
+ interiorDrawBase();
+ if(!interior)return;
+ const b=interior.building;
+ const left=62;
+ const right=1138;
+ const active=robustExitSide();
+ ctx.save();
+ ctx.globalAlpha=.95;
+ px(left-28,375,82,140,'#080a0b');
+ px(left-20,386,66,129,'#202526');
+ px(left-13,398,52,6,'#4b504d');
+ px(left-7,450,5,5,'#8e7e5d');
+ px(right-26,375,82,140,'#080a0b');
+ px(right-18,386,66,129,'#202526');
+ px(right-11,398,52,6,'#4b504d');
+ px(right+34,450,5,5,'#8e7e5d');
+ ctx.font='bold 11px Consolas';
+ ctx.fillStyle=active==='left'?'#e0d19a':'#777d79';
+ ctx.fillText('EXIT',left-8,366);
+ ctx.fillStyle=active==='right'?'#e0d19a':'#777d79';
+ ctx.fillText('EXIT',right-5,366);
+ if(active){
+  const ax=active==='left'?left:right;
+  ctx.fillStyle='#d0c28e';
+  ctx.fillRect(ax-9,340,18,3);
+  ctx.fillRect(ax-5,334,10,3);
+  ctx.font='10px Consolas';
+  ctx.fillText('E  EXIT TO STREET',ax-55,324);
+ }
+ ctx.font='10px Consolas';
+ ctx.fillStyle='#5f6863';
+ ctx.fillText(b.name.toUpperCase(),485,690);
+ ctx.restore();
+};
+const interiorUpdateBase=update;
+update=function(dt){
+ interiorUpdateBase(dt);
+ if(exitDoorFlash>0)exitDoorFlash=Math.max(0,exitDoorFlash-dt*3);
+ if(mode!=='play')return;
+ fourthWallState.idle+=dt;
+ fourthWallState.messageCooldown=Math.max(0,fourthWallState.messageCooldown-dt);
+ fourthWallState.returnFlash=Math.max(0,fourthWallState.returnFlash-dt*1.8);
+ if(fourthWallState.idle>21&&fourthWallState.messageCooldown<=0){
+  fourthWallState.messageCooldown=28+Math.random()*25;
+  fourthWallSay(Math.random()<.5?'STILL THERE?':'JULIA CAN HEAR YOU BREATHING.',.65);
+ }
+ if(fourthWallState.idle>46&&fourthWallState.messageCooldown>12){
+  fourthWallState.idle=18;
+  fourthWallSay('MOVE THE CURSOR. I KNOW YOU ARE WATCHING.',.9);
+ }
+ if(state.sanity<58&&Math.random()<dt*.0018&&fourthWallState.messageCooldown<=0){
+  fourthWallState.messageCooldown=18;
+  fourthWallSay(Math.random()<.5?'DON’T CHECK THE OTHER TAB.':'THE GAME REMEMBERS WHEN YOU LEAVE.',.75);
+ }
+};
+const renderBase=draw;
+draw=function(){
+ renderBase();
+ if(mode==='play'&&interior&&robustExitSide()){
+  ctx.save();
+  ctx.globalAlpha=.72;
+  ctx.font='bold 11px Consolas';
+  ctx.fillStyle='#d9ce9a';
+  ctx.fillText('E  EXIT',robustExitSide()==='left'?70:1090,305);
+  ctx.restore();
+ }
+ if(mode==='play'&&exitDoorFlash>0){
+  ctx.save();
+  ctx.globalAlpha=exitDoorFlash*.12;
+  ctx.fillStyle='#efe0a0';
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+ }
+ if(mode==='play'&&fourthWallState.returnFlash>0){
+  ctx.save();
+  ctx.globalAlpha=fourthWallState.returnFlash*.18;
+  ctx.strokeStyle='#d5d0c2';
+  ctx.lineWidth=1;
+  const edge=mouse.x< W*.5 ? 24:W-24;
+  ctx.strokeRect(edge-10,mouse.y-10,20,20);
+  ctx.restore();
+ }
+};
+
 renderLoop();
 
 </script>
