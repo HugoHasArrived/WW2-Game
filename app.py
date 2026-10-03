@@ -2507,6 +2507,443 @@ draw=function(){ultimateDrawBase();ultimateDrawWorldPolish();if(mode==='play'&&i
 renderObjectivePanel=ultimateRenderObjectivePanel;
 setObjective=ultimateSetObjective;
 
+
+const screamJamStyle=document.createElement('style');
+screamJamStyle.textContent=`
+#jamFearHud{position:absolute;left:18px;bottom:18px;z-index:27;pointer-events:none;font:700 10px Consolas,monospace;letter-spacing:1.5px;color:#b8beb8;text-shadow:2px 2px #000;opacity:0;transition:opacity .2s}
+#jamFearHud.on{opacity:1}
+#jamFearHud .meter{width:124px;height:5px;background:#161a19;border:1px solid #464d4a;margin-top:5px}
+#jamFearHud i{display:block;height:100%;width:0;background:#8c4545;transition:width .15s}
+#jamScareFlash{position:absolute;inset:0;z-index:39;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 48%,rgba(230,224,212,.28),rgba(110,10,15,.09) 22%,transparent 58%)}
+#jamWallText{position:absolute;left:50%;top:35%;z-index:38;transform:translate(-50%,-50%);pointer-events:none;opacity:0;color:#c9c4ba;font:700 18px Consolas,monospace;letter-spacing:4px;text-shadow:0 0 16px #000,3px 3px #000;text-align:center}
+`;
+document.head.appendChild(screamJamStyle);
+const jamFearHud=document.createElement('div');
+jamFearHud.id='jamFearHud';
+jamFearHud.innerHTML='<div id="jamFearText">ADRENALINE</div><div class="meter"><i id="jamFearFill"></i></div>';
+document.body.appendChild(jamFearHud);
+const jamScareFlash=document.createElement('div');
+jamScareFlash.id='jamScareFlash';
+document.body.appendChild(jamScareFlash);
+const jamWallText=document.createElement('div');
+jamWallText.id='jamWallText';
+document.body.appendChild(jamWallText);
+
+let jamFear=0;
+let jamFearFlash=0;
+let jamWallTimer=0;
+let jamWallCooldown=10;
+let jamCombo=0;
+let jamLastPlayerX=0;
+let jamStuckTimer=0;
+let jamHiddenTimer=0;
+let jamNearSmiler=0;
+let jamAmbientClock=0;
+let jamBlink=0;
+
+function jamMessage(text,duration=1.6){
+ jamWallText.textContent=text;
+ jamWallTimer=Math.max(jamWallTimer,duration);
+ jamScareFlash.style.opacity='.22';
+}
+function jamPixelNoise(amount=28,alpha=.08){
+ ctx.save();ctx.globalAlpha=alpha;
+ for(let i=0;i<amount;i++){
+  const x=((i*149+Math.floor(totalTime*420))%W+W)%W;
+  const y=(i*61+Math.floor(totalTime*160))%H;
+  px(x,y,1+(i%3),1+(i%2),i%3?'#bfc3bc':'#6b1c20');
+ }
+ ctx.restore();
+}
+function jamBackgroundDetail(){
+ if(mode==='menu'||mode==='intro'||interior)return;
+ const left=camera-60,right=camera+W+60;
+ for(let i=0;i<24;i++){
+  const wx=180+i*260;
+  if(wx<left||wx>right)continue;
+  const x=wx-camera;
+  const h=28+(i%5)*9;
+  px(x,GROUND-h,3,h,'#111516');
+  px(x-5,GROUND-h,13,3,'#2b3030');
+  if(i%4===0){
+   line(x+3,GROUND-h+4,x+29,GROUND-h-10,'#303433',1);
+   line(x+29,GROUND-h-10,x+46,GROUND-h+2,'#252a29',1);
+  }
+  if(chapter==='SAN FRANCISCO'&&i%5===0){
+   px(x+10,GROUND-116,34,38,'#131718');
+   px(x+14,GROUND-109,26,7,'#373a36');
+   px(x+18,GROUND-97,18,20,'#242a29');
+   px(x+21,GROUND-94,3,6,'#6c6046');
+  }
+  if(chapter==='ALCATRAZ'&&i%6===0){
+   for(let q=0;q<4;q++)line(x+9+q*7,GROUND-74,x+4+q*7,GROUND-30,'#464a49',2);
+   px(x-4,GROUND-84,39,4,'#454845');
+  }
+ }
+}
+function jamInteriorDetail(){
+ if(!interior||mode!=='play')return;
+ for(let i=0;i<16;i++){
+  const x=25+i*83;
+  const y=110+(i%4)*77;
+  px(x,y,38,3,'#323736');
+  px(x+5,y+7,4,23,'#1b2020');
+  if(i%3===0){
+   line(x+10,y+32,x+28,y+15,'#474b47',2);
+   px(x+25,y+12,7,4,'#5c5142');
+  }
+ }
+ for(let i=0;i<5;i++){
+  const x=145+i*205;
+  px(x,535,86,4,'#292e2d');
+  px(x+10,528,13,7,'#464844');
+  px(x+58,528,17,7,'#303534');
+ }
+}
+function jamNearMiss(){
+ if(mode!=='play'||!smiler.active)return;
+ const d=Math.abs(smiler.x-player.x);
+ if(d<270){
+  jamNearSmiler=Math.min(1,jamNearSmiler+.06);
+  jamFear=Math.min(100,jamFear+0.9);
+ }else{
+  jamNearSmiler=Math.max(0,jamNearSmiler-.045);
+ }
+}
+function jamSpawnScare(){
+ if(mode!=='play'||chestUIOpen||infoFlashOpen||interior===null&&chapter!=='ALCATRAZ'&&chapter!=='SAN FRANCISCO')return;
+ if(jamWallCooldown>0)return;
+ const sanityDanger=state.sanity<62?1.35:1;
+ const probability=.0026*sanityDanger;
+ if(Math.random()>probability)return;
+ jamWallCooldown=8+Math.random()*13;
+ const roll=Math.random();
+ if(roll<.22){
+  jamFear=Math.min(100,jamFear+34);
+  jamFearFlash=.8;
+  jamMessage('DON’T LOOK BEHIND YOU',1.55);
+  tone(38,.35,'sine',.024,-10);
+  shake=Math.max(shake,6);
+ }else if(roll<.42){
+  jamFear=Math.min(100,jamFear+20);
+  jamMessage('THE CAMERA KNOWS WHERE YOU ARE',1.7);
+  ultimateScare.static=Math.max(ultimateScare.static,.7);
+  tone(51,.28,'triangle',.015,-4);
+ }else if(roll<.62){
+  jamFear=Math.min(100,jamFear+17);
+  jamWallText.textContent='';
+  horrorEyes=Math.max(horrorEyes,.65);
+  showWarning(chapter==='ALCATRAZ'?'CELL BLOCK A IS NOT EMPTY':'SOMEONE IS FOLLOWING THE SURVIVORS');
+  shake=Math.max(shake,4);
+  tone(44,.5,'sine',.02,-5);
+ }else if(roll<.8){
+  jamFear=Math.min(100,jamFear+26);
+  jamScareFlash=.5;
+  for(let i=0;i<12;i++)stepParticles(player.x+rand(-40,40),player.y+rand(0,70),4,'blood');
+  jamMessage(Math.random()<.5?'YOU HEARD THAT':'THAT WAS NOT THE WIND',1.4);
+  tone(64,.4,'sawtooth',.012,-7);
+ }else{
+  jamFear=Math.min(100,jamFear+15);
+  jamMessage('SHE MOVED WHEN YOU BLINKED',1.65);
+  cinematicPulse=.75;
+  shake=Math.max(shake,3);
+ }
+}
+function jamWallUpdate(dt){
+ jamWallCooldown=Math.max(0,jamWallCooldown-dt);
+ jamWallTimer=Math.max(0,jamWallTimer-dt);
+ jamScareFlash=Math.max(0,jamScareFlash-dt*2.8);
+ if(jamWallTimer<=0)jamWallText.style.opacity='0';else jamWallText.style.opacity=String(Math.min(1,jamWallTimer/.25));
+ jamScareFlash.style.opacity=String(Math.max(0,jamScareFlash));
+ if(mode==='play')jamFear=Math.max(0,jamFear-dt*1.7);
+ if(Math.abs(player.x-jamLastPlayerX)<1.4&&Math.abs(player.vx)<6&&mode==='play'&&interior===null)jamStuckTimer+=dt;else jamStuckTimer=0;
+ jamLastPlayerX=player.x;
+ if(jamStuckTimer>6&&mode==='play'){jamStuckTimer=0;jamMessage('YOU ARE STILL HERE.',1.2);jamFear=Math.min(100,jamFear+12);}
+ if(document.hidden&&mode==='play')jamHiddenTimer+=dt;else jamHiddenTimer=Math.max(0,jamHiddenTimer-dt*2);
+ if(jamHiddenTimer>.8){jamHiddenTimer=0;jamMessage('YOU LEFT. SHE DID NOT.',2.1);jamFear=Math.min(100,jamFear+25);tone(33,.7,'sine',.022,-9);}
+ jamAmbientClock+=dt;
+}
+function jamHudUpdate(){
+ const on=mode==='play'&&jamFear>3;
+ jamFearHud.classList.toggle('on',on);
+ const fill=document.getElementById('jamFearFill');
+ const text=document.getElementById('jamFearText');
+ if(fill)fill.style.width=Math.min(100,jamFear)+'%';
+ if(text)text.textContent=jamNearSmiler>.35?'PROXIMITY WARNING':'ADRENALINE';
+}
+function jamDrawAtmosphere(){
+ if(mode==='menu'||mode==='intro')return;
+ jamBackgroundDetail();
+ jamInteriorDetail();
+ if(mode==='play'){
+  const pxs=player.x-camera;
+  ctx.save();
+  ctx.globalAlpha=.16;
+  for(let i=0;i<18;i++){
+   const ox=(i*53+totalTime*20)%220-110;
+   const oy=(i*31)%80;
+   px(pxs+ox,GROUND-10-oy,1+(i%2),1,'#b8b5a9');
+  }
+  ctx.restore();
+ }
+ if(jamNearSmiler>.25){
+  ctx.save();
+  const a=jamNearSmiler*.11;
+  ctx.globalAlpha=a;
+  ctx.fillStyle='#8f1218';
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+ }
+ jamPixelNoise(state.sanity<45?46:26,state.sanity<45?.11:.045);
+ if(state.sanity<34){
+  ctx.save();
+  ctx.globalAlpha=.08;
+  for(let i=0;i<7;i++){
+   const y=(i*97+Math.floor(totalTime*90))%H;
+   ctx.fillStyle=i%2?'#efe8db':'#5f171c';
+   ctx.fillRect(0,y,W,2);
+  }
+  ctx.restore();
+ }
+}
+function jamFourthWall(dt){
+ if(mode!=='play')return;
+ if(Math.random()<dt*.0005&&state.sanity<56){
+  jamMessage(Math.random()<.5?'YOU CAN STOP PLAYING.':'WE CAN SEE YOU.',1.35);
+ }
+}
+const jamOldUpdate=update;
+update=function(dt){
+ jamOldUpdate(dt);
+ jamNearMiss();
+ jamSpawnScare();
+ jamWallUpdate(dt);
+ jamFourthWall(dt);
+ jamHudUpdate();
+ if(mode==='play'&&jamNearSmiler>.72&&smiler.active){
+  state.sanity=Math.max(0,state.sanity-dt*.8);
+ }
+};
+const jamOldDraw=draw;
+draw=function(){
+ jamOldDraw();
+ jamDrawAtmosphere();
+ if(mode==='play'&&jamFear>74){
+  ctx.save();
+  ctx.globalAlpha=.035+Math.sin(totalTime*22)*.02;
+  ctx.fillStyle='#f0eade';
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+ }
+};
+window.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play'){jamHiddenTimer=1;}});
+
+
+let enhJumpWasDown=false;
+let enhJumpsUsed=0;
+let enhLandingSquash=0;
+let enhRunDust=0;
+let enhFootClock=.12;
+let enhRecoil=0;
+let enhLastGround=true;
+let enhAirTime=0;
+let enhCamLead=0;
+function enhJumpPressed(){return keys.has('w')||keys.has('ArrowUp')||keys.has(' ');}
+function enhPixelBurst(x,y,count,color){for(let i=0;i<count;i++){if(particles.length>230)particles.shift();const a=Math.random()*Math.PI*2;const sp=rand(30,170);particles.push({x:x+rand(-5,5),y:y+rand(-3,3),life:rand(.18,.5),vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-rand(10,75),size:randi(1,3),c:color});}}
+function enhPhysicsBefore(dt){
+ const jump=enhJumpPressed();
+ const edge=jump&&!enhJumpWasDown;
+ const wasGround=player.onGround;
+ if(player.onGround){enhJumpsUsed=0;enhAirTime=0;}
+ else enhAirTime+=dt;
+ if(edge&&!wasGround&&enhJumpsUsed<1&&mode==='play'&&!gadgetOpen&&!chestUIOpen&&interior===null){
+  player.vy=-485;
+  enhJumpsUsed=1;
+  enhLandingSquash=.22;
+  enhPixelBurst(player.x+player.w/2,player.y+player.h/2,8,'#8a8e89');
+  tone(150,.08,'triangle',.025,55);
+  shake=Math.max(shake,2.2);
+ }
+ enhJumpWasDown=jump;
+ enhRecoil=Math.max(0,enhRecoil-dt*7);
+ enhLandingSquash=Math.max(0,enhLandingSquash-dt*5);
+ enhFootClock-=dt;
+}
+function enhPhysicsAfter(dt){
+ if(!player.onGround&&enhLastGround){
+  enhLandingSquash=Math.min(1,enhLandingSquash+.65);
+  enhPixelBurst(player.x+player.w/2,GROUND-2,10,'#6f7471');
+ }
+ if(player.onGround&&Math.abs(player.vx)>70){
+  enhRunDust=Math.min(1,enhRunDust+dt*5);
+  if(enhFootClock<=0){enhFootClock=Math.abs(player.vx)>300?.18:.29;stepParticles(player.x+rand(-4,4),GROUND-2,Math.abs(player.vx)>300?3:2,'dust');}
+ }else enhRunDust=Math.max(0,enhRunDust-dt*3);
+ if(player.shootTimer>0)enhRecoil=.16;
+ enhLastGround=player.onGround;
+ const desired=clamp(player.vx*.18,-68,68);
+ enhCamLead=lerp(enhCamLead,desired,Math.min(1,dt*4));
+ const maxCam=(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-W;
+ camera=lerp(camera,player.x-W*.42+enhCamLead,Math.min(1,dt*5.8));
+ camera=clamp(camera,0,maxCam);
+ if(Math.abs(player.vx)>330&&player.onGround&&mode==='play')shake=Math.max(shake,.35);
+}
+const enhBaseUpdate=update;
+update=function(dt){
+ enhPhysicsBefore(dt);
+ const prevVy=player.vy;
+ enhBaseUpdate(dt);
+ if(prevVy>520&&player.onGround)enhLandingSquash=Math.min(1,enhLandingSquash+.35);
+ enhPhysicsAfter(dt);
+};
+function enhBrickDetail(){
+ if(mode==='menu'||mode==='intro')return;
+ if(interior){
+  ctx.save();
+  ctx.globalAlpha=.5;
+  for(let row=0;row<5;row++){
+   const y=98+row*92+(floor%2)*4;
+   const off=row%2?31:0;
+   for(let i=-1;i<18;i++){
+    const x=i*76+off;
+    line(x,y,x+54,y,'#383d3d',2);
+    line(x+55,y,x+55,y+40,'#242929',2);
+   }
+  }
+  for(let i=0;i<7;i++){
+   const x=90+i*180;
+   px(x,184,46,5,'#4b4e4b');
+   px(x+7,189,32,3,'#202526');
+   if(i%2===0){px(x+17,177,5,7,'#7b6d50');px(x+24,176,4,8,'#5f5848');}
+  }
+  for(let i=0;i<11;i++){
+   const x=18+i*123;
+   px(x,GROUND-26,72,4,'#333634');
+   if(i%3===0)px(x+12,GROUND-31,27,4,'#57554d');
+  }
+  ctx.restore();
+ }else{
+  ctx.save();
+  ctx.globalAlpha=.6;
+  for(let i=0;i<17;i++){
+   const wx=115+i*355;
+   const x=wx-camera;
+   if(x<-90||x>W+90)continue;
+   const y=GROUND-185-(i%4)*18;
+   line(x,y,x+64,y,'#303536',2);
+   for(let q=0;q<4;q++)line(x+12+q*14,y,x+9+q*14,y+22,'#24292a',1);
+   if(i%3===0)px(x+26,y-20,22,6,'#444744');
+  }
+  ctx.restore();
+ }
+}
+function enhRainAndPuddles(){
+ if(mode==='menu'||mode==='intro')return;
+ ctx.save();
+ const rainBoost=interior?.12:1;
+ ctx.globalAlpha=.22*rainBoost;
+ for(let i=0;i<90;i++){
+  const x=(i*97+totalTime*520-camera*.92)%W;
+  const y=(i*53+totalTime*760)%442;
+  line(x,y,x-5,y+15,'#a4b7bf',1);
+ }
+ if(!interior){
+  ctx.globalAlpha=.16;
+  for(let i=0;i<22;i++){
+   const x=(i*181-camera)%W;
+   const y=GROUND-6-(i%4)*3;
+   ctx.fillStyle=i%3===0?'#5b686b':'#3c4547';
+   ctx.fillRect(x,y,48+(i%4)*11,2);
+   ctx.fillRect(x+9,y+4,28,1);
+  }
+ }
+ ctx.restore();
+}
+function enhStreetGlints(){
+ if(interior||mode==='menu'||mode==='intro')return;
+ ctx.save();
+ for(let i=0;i<18;i++){
+  const x=(i*211-camera*.58)%W;
+  const y=GROUND-24-(i%5)*7;
+  const pulse=.08+Math.max(0,Math.sin(totalTime*1.6+i))*.07;
+  ctx.globalAlpha=pulse;
+  px(x,y,32,2,i%2?'#758184':'#9b8e6c');
+  px(x+8,y-3,13,2,'#4f595b');
+ }
+ ctx.restore();
+}
+const enhSkyBase=drawEnhancedSky;
+drawEnhancedSky=function(){enhSkyBase();ctx.save();ctx.globalAlpha=.18;for(let i=0;i<70;i++){const x=(i*181-camera*.08)%W;const y=38+(i*67)%285;px(x,y,1+(i%3),1+(i%2),i%9===0?'#8f9597':'#354047');}for(let i=0;i<7;i++){const x=i*215-(camera*.04%240);const y=92+(i%3)*42;px(x,y,52,5,'#242b30');px(x+18,y-5,33,5,'#1b2227');}ctx.restore();enhBrickDetail();};
+const enhGroundBase=drawEnhancedGround;
+drawEnhancedGround=function(){enhGroundBase();enhStreetGlints();};
+const enhInteriorBase=drawEnhancedInterior;
+drawEnhancedInterior=function(){enhInteriorBase();enhBrickDetail();};
+const enhWeatherBase=drawEnhancedWeather;
+drawEnhancedWeather=function(){enhWeatherBase();enhRainAndPuddles();};
+const enhPlayerBase=drawEnhancedPlayer;
+drawEnhancedPlayer=function(){
+ const x=player.x-camera;
+ const bob=player.onGround?Math.sin(player.anim*1.12)*1.4:0;
+ const speed=Math.abs(player.vx);
+ if(mode==='play'&&player.onGround&&speed>250){
+  ctx.save();
+  ctx.globalAlpha=Math.min(.16,(speed-250)/900);
+  for(let i=0;i<4;i++){
+   const ghostX=x-player.facing*(i*8+8);
+   drawCharacterSprite(ghostX+8,player.y+bob,selectedCharacter,player.facing,player.anim-i*.38,'');
+  }
+  ctx.restore();
+ }
+ enhPlayerBase();
+ ctx.save();
+ const squash=1+enhLandingSquash*.12;
+ const sy=player.y+player.h-(player.h*0.1)*squash;
+ ctx.globalAlpha=.28;
+ ctx.fillStyle='#000';
+ ctx.beginPath();
+ ctx.ellipse(x+player.w/2,GROUND+3,23+speed*.028,5+Math.max(0,1-player.onGround)*3,0,0,Math.PI*2);
+ ctx.fill();
+ ctx.restore();
+ if(enhRecoil>0&&mode==='play'){
+  const gx=x+27*player.facing;
+  const gy=player.y+39;
+  ctx.save();ctx.globalAlpha=enhRecoil*2.2;
+  px(gx+29*player.facing,gy-6,3,13,'#f0df9c');
+  px(gx+35*player.facing,gy-3,12,5,'#d0b46e');
+  ctx.restore();
+ }
+ if(player.onGround&&speed>280&&mode==='play'){
+  ctx.save();ctx.globalAlpha=.25+enhRunDust*.2;
+  for(let i=0;i<5;i++){
+   const dx=x-player.facing*(12+i*12);
+   const dy=GROUND-5-(i%2)*4;
+   px(dx,dy,3+(i%2),2,'#777a74');
+  }
+  ctx.restore();
+ }
+};
+const enhInteriorPlayerBase=drawEnhancedInteriorPlayer;
+drawEnhancedInteriorPlayer=function(){enhInteriorPlayerBase();if(enhRecoil>0){ctx.save();ctx.globalAlpha=enhRecoil*1.5;px(player.x+player.facing*58,player.y+35,8,3,'#e0c37b');ctx.restore();}};
+const enhSmilerBase=drawEnhancedSmiler;
+drawEnhancedSmiler=function(){
+ enhSmilerBase();
+ if(smiler.active&&mode==='play'){
+  const sx=smiler.x-camera;
+  if(sx>-220&&sx<W+220){ctx.save();const beat=.5+.5*Math.sin(totalTime*7);ctx.globalAlpha=.06+.05*beat;ctx.fillStyle='#b20f18';for(let i=0;i<6;i++)px(sx-40+i*16,GROUND-250+(i%3)*34,3,18,'#741117');ctx.restore();}
+ }
+};
+function enhDrawOverlay(){
+ if(mode==='menu'||mode==='intro')return;
+ ctx.save();
+ if(mode==='play'){
+  const speed=Math.abs(player.vx);
+  if(speed>300&&player.onGround){ctx.globalAlpha=.04+Math.min(.035,(speed-300)/1800);ctx.fillStyle='#d8d3c7';ctx.fillRect(0,0,W,2);ctx.fillRect(0,H-3,W,3);}
+  if(enhAirTime>.18&&!player.onGround){ctx.globalAlpha=Math.min(.06,enhAirTime*.025);ctx.fillStyle='#b6bab4';ctx.fillRect(0,0,W,H);}
+ }
+ ctx.restore();
+}
+const enhDrawBase=draw;
+draw=function(){enhDrawBase();enhDrawOverlay();};
+
 renderLoop();
 
 </script>
