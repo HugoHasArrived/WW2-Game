@@ -50,6 +50,7 @@ let alcatrazEscaped=false,boatReady=false,fuel=0,alarm=0,hordeTimer=26,smilerTim
 let chapter='ALCATRAZ',escapeTransition=0,worldFear=0;
 let inv={ammo:0,medkit:0,fuel:0,battery:0,grenade:0,key:0};
 let interiorState=null,interiorCam=0,interiorWidth=3200;
+let stairPulse=0,ambientThreat=0;
 let storyStage=0,ending=false,dockPass=false,alcatrazBlocks={a:false,b:false};
 let startCell=true,cellKey=false,cellDoorOpen=false,cellInspected={bed:false,window:false,note:false},gameStarted=false,gunshotTimer=0;
 let cutLines=[],cutIndex=0,cutTimer=0;
@@ -66,7 +67,7 @@ function spawnParticle(x,y,c='#aaa',life=.5,size=2,vx=0,vy=0){particles.push({x,
 function spawnBlood(x,y){for(let i=0;i<8;i++)spawnParticle(x+rnd(-4,4),y+rnd(-4,4),'#7e403b',rnd(.25,.65),rnd(1,3),rnd(-35,35),rnd(-65,15));}
 function addBuilding(x,w,h,name,type='prison',locked=false){const words={prison:['DON’T OPEN','HE IS HERE','RUN','A-17','NO LIGHT'],office:['THEY LEFT US','LOCK THE DOOR','NO SIGNAL'],medical:['KEEP QUIET','DO NOT SLEEP','QUARANTINE'],cafeteria:['DON’T EAT','THE SCREAMING','HELP'],workshop:['STAY AWAY','HEAR THAT?','RUN'],armory:['EMPTY','TAKE NOTHING','LOCKED'],power:['DO NOT CUT POWER','LIGHTS OUT = RUN','NO'],warehouse:['DON’T LOOK UP','HELP ME','THE DOOR MOVED'],barracks:['SOMEONE IS INSIDE','WAKE UP','RUN'],house:['WE HEARD HIM','DO NOT KNOCK','HELP'],hotel:['ROOMS ARE NOT EMPTY','DON’T TURN AROUND','LEAVE'],military:['DO NOT ENTER','CLASSIFIED','ABANDONED'],church:['HE SMILES','PRAY','DON’T LOOK'],hospital:['THEY AREN’T DEAD','QUIET','NO PATIENTS'],safehouse:['SAFE?','KEEP WATCH','LOCKED'],lab:['PROJECT CLOSED','SUBJECT MISSING','DO NOT OPEN']};buildings.push({x,w,h,name,type,locked,open:false,interior:false,insideLoot:[],insideZombies:[],writings:words[type]||['RUN','HELP','HE IS HERE']});}
 function addVehicle(x,y,w,type,broken=false,usable=false){vehicles.push({x,y,w,h:type==='tank'?42:34,type,broken,usable,driving:false,angle:0});}
-function addLoot(x,y,type,label,amount=1,inside=null){loot.push({x,y,type,label,amount,got:false,inside});}
+function addLoot(x,y,type,label,amount=1,inside=null,floor=0){loot.push({x,y,type,label,amount,got:false,inside,floor});}
 function addChest(x,y,label='SUPPLY CHEST',inside=null){chests.push({x,y,label,open:false,inside,lootMade:false});}
 function addSurvivor(x,name,role){survivors.push({x,y:G-62,w:32,h:62,name,role,state:'idle',talked:false,anim:rnd(0,8),hp:100,follow:false});}
 function spawnZombie(x,type='walker',y=G-58,inside=null){if(chapter!=='SAN FRANCISCO')return null;if(zombies.filter(z=>!z.dead).length>=6)return null;let z={x,y,w:type==='brute'?58:type==='runner'?32:38,h:type==='brute'?78:60,type,hp:type==='brute'?170:type==='runner'?55:42,vx:0,vy:0,ground:true,attack:rnd(.2,1),anim:rnd(0,20),dead:false,inside,alert:0};zombies.push(z);return z;}
@@ -136,7 +137,7 @@ function getBuilding(){let best=null,bd=99999;for(const b of buildings){const d=
 function getVehicle(){let best=null,bd=99999;for(const v of vehicles){const d=Math.abs(v.x+v.w/2-p.x);if(d<bd&&d<100){best=v;bd=d;}}return best;}
 function getSurvivor(){let best=null,bd=99999;for(const s of survivors){const d=Math.abs(s.x-p.x);if(d<bd&&d<90){best=s;bd=d;}}return best;}
 function getChest(){let best=null,bd=99999;for(const c of chests){if(c.open)continue;if(c.inside&&c.inside!==interior)continue;const d=Math.abs(c.x-p.x);if(d<bd&&d<75){best=c;bd=d;}}return best;}
-function getLoot(){let best=null,bd=99999;for(const l of loot){if(l.got)continue;if(l.inside){const ok=l.inside===interior||(interiorState&&interiorState.cellView&&l.inside===interior+'#'+interiorState.cell.id);if(!ok)continue;}const d=Math.abs(l.x-p.x);if(d<bd&&d<65){best=l;bd=d;}}return best;}
+function getLoot(){let best=null,bd=99999;for(const l of loot){if(l.got)continue;if(l.inside){const ok=l.inside===interior||(interiorState&&interiorState.cellView&&l.inside===interior+'#'+interiorState.cell.id);if(!ok)continue;}if(interiorState&&l.floor&&l.floor!==interiorState.floor)continue;const d=Math.abs(l.x-p.x);if(d<bd&&d<65){best=l;bd=d;}}return best;}
 function interact(){
  if(mode!=='play')return;
  const chest=getChest();
@@ -158,11 +159,13 @@ function interact(){
     if(!interiorState.cellSearched){interiorState.cellSearched=true;const id=interiorState.cell.id;if(id===7&&!dockPass){dockPass=true;inv.key++;setMsg('Behind the loose brick: a DOCK PASS. Someone scratched “DON’T LET HIM BOARD.”',4);setObj('Find the second cell block. Search for a route to the dock.');}else if(id%5===0){addLoot(650,G-24,'ammo','Ammunition',4,interiorState.building.name+'#'+id);setMsg('A hidden cache. Something was recently disturbed.',2.5);}else setMsg('The cell is empty, but the scratches are fresh.',2);return;}
     setMsg('Nothing else here. Check another cell.',1.5);return;
    }
+   if(atStairs()){toggleFloor();return;}
    const cell=nearestPrisonCell();
    if(cell){enterPrisonCell(cell);return;}
    if(p.x>interiorWidth-180){const outside=b.x+b.w/2+70;interiorState=null;interior=null;interiorCam=0;p.x=outside;cam=clamp(p.x-390,0,WORLD-W);if(b.name==='Cell Block A'){alcatrazBlocks.a=true;setObj('Enter Cell Block B. Search it for the dock pass.');}else{alcatrazBlocks.b=true;setObj(dockPass?'Reach the dock and board the ready boat.':'Search Cell Block B for the dock pass.');}setMsg('You step back into the rain.',2);return;}
    setMsg('A long cell corridor. Twenty doors. Search them.',1.8);return;
   }
+  if(atStairs()){toggleFloor();return;}
   if(chapter==='SAN FRANCISCO'&&b.name==='Research Annex'&&storyStage===1&&p.x>2200&&p.x<2750){storyStage=2;setMsg('A terminal reveals the outbreak was contained here. You found the evacuation route.',4);setObj('Bring the survivors to the Emergency Shelter.');return;}
   if(p.x>interiorWidth-180){const outside=b.x+b.w/2+70;interiorState=null;interior=null;interiorCam=0;p.x=outside;cam=clamp(p.x-390,0,WORLD-W);setObj(chapter==='SAN FRANCISCO'?'Search San Francisco.':'Explore the empty prison.');setMsg('You step back outside.',2);return;}
   setMsg('The building is empty. Search carefully.',2);return;
@@ -179,9 +182,11 @@ function openChest(c){if(c.open)return;c.open=true;const inside=c.inside||null;c
 function nearestPrisonCell(){
  if(!interiorState||interiorState.building.type!=='prison'||interiorState.cellView)return null;
  let best=null,bd=99999;
- for(const c of interiorState.building.cells){const cx=145+(c.id-1)*145;const d=Math.abs(p.x-cx);if(d<bd&&d<62){best=c;bd=d;}}
+ for(const c of interiorState.building.cells){const cf=c.id<=10?1:2;if(cf!==interiorState.floor)continue;const idx=cf===1?c.id-1:c.id-11;const cx=180+idx*145;const d=Math.abs(p.x-cx);if(d<bd&&d<62){best=c;bd=d;}}
  return best;
 }
+function toggleFloor(){if(!interiorState||interiorState.cellView)return;interiorState.floor=interiorState.floor===1?2:1;p.x=1580;interiorCam=clamp(p.x-390,0,interiorWidth-W);p.sanity=clamp(p.sanity-1.5,0,100);stairPulse=.8;setMsg('You climb the stairs to FLOOR '+interiorState.floor+'. The building is larger than it looked from outside.',2.8);}
+function atStairs(){return !!interiorState&&!interiorState.cellView&&Math.abs(p.x-1580)<105;}
 function enterPrisonCell(cell){
  if(!interiorState||interiorState.building.type!=='prison'||!cell)return;
  interiorState.cellView=true;interiorState.cell=cell;interiorState.cellX=130;interiorState.cellSearched=false;p.x=130;p.y=G-p.h;p.vx=0;p.vy=0;interiorCam=0;
@@ -194,7 +199,7 @@ function leavePrisonCell(){
  const b=interiorState.building;interiorState.cellView=false;interiorState.cell=null;interiorState.cellSearched=false;p.x=130;p.vx=0;interiorCam=0;setObj('Explore '+b.name+'. Search the other cells.');setMsg('Back in the cell corridor.',2);
 }
 function enterBuilding(b){
- interiorState={building:b,cellView:false,cell:null,cellSearched:false,searches:0};interior=b.name;b.open=true;p.x=130;p.y=G-p.h;p.vx=0;p.vy=0;cam=0;interiorCam=0;
+ interiorState={building:b,cellView:false,cell:null,cellSearched:false,searches:0,floor:1};interior=b.name;b.open=true;p.x=130;p.y=G-p.h;p.vx=0;p.vy=0;cam=0;interiorCam=0;stairPulse=0;
  if(b.type==='prison')setObj('Explore '+b.name+'. Search twenty cells and look for clues.');else setObj('Search '+b.name+'. Explore every room before leaving.');
  setMsg('You enter '+b.name+'. The room is silent.',2.5);
  if(chapter==='SAN FRANCISCO'){
@@ -276,6 +281,7 @@ function updateTerror(dt){
  if(terrorLife<=0)terrorStage=0;
 }
 function updateHorror(dt){
+ if(mode==='play'&&interiorState&&interiorState.floor===2&&ambientThreat<=0&&Math.random()<dt*.012){ambientThreat=1.2+Math.random()*1.8;p.sanity=clamp(p.sanity-1.2,0,100);setMsg('Something moved on the upper floor.',1.5);shake=Math.max(shake,2);}
  updateTerror(dt);
  horrorTimer-=dt;
  horrorLife=Math.max(0,horrorLife-dt);
@@ -341,7 +347,7 @@ function transitionToSanFrancisco(){
 
 
 function update(dt){
- updateInfoScare(dt);
+ updateInfoScare(dt);stairPulse=Math.max(0,stairPulse-dt);ambientThreat=Math.max(0,ambientThreat-dt);
  if(mode!=='play')return;
  t+=dt;p.invuln=Math.max(0,p.invuln-dt);
  movePlayer(dt);updateZombies(dt);updateBullets(dt);updateSurvivors(dt);updateVehicles(dt);updateParticles(dt);updateRain(dt);triggerHorde();updateSmiler(dt);updateHorror(dt);updateSanity(dt);updateObjective();if(chapter==='SAN FRANCISCO'&&storyStage===2&&p.x>4680&&p.x<5400&&survivors.filter(s=>s.follow).length>=3){finishGame();}
@@ -352,7 +358,7 @@ function update(dt){
  document.getElementById('hp').style.width=p.hp+'%';document.getElementById('stam').style.width=p.stam+'%';document.getElementById('san').style.width=p.sanity+'%';document.getElementById('ammo').textContent='AMMO '+p.ammo+' / '+p.maxAmmo+(p.reload>0?' — RELOADING':'');document.getElementById('watch').textContent=smiler.active?'THE SMILER IS WATCHING YOU':'THE SMILER IS ALWAYS WATCHING';
  const l=getLoot(),c=getChest(),b=getBuilding(),s=getSurvivor(),v=getVehicle();let pr='';
  if(startCell){if(!cellInspected.bed&&p.x<300)pr='E — SEARCH BED';else if(!cellInspected.note&&p.x>=300&&p.x<520)pr='E — INSPECT LOOSE NOTE';else if(!cellInspected.window&&p.x>=520&&p.x<700)pr='E — LOOK OUT WINDOW';else if(cellKey&&p.x>=900)pr='E — UNLOCK CELL DOOR';else pr='A / D — MOVE   •   F — FLASHLIGHT';}
- else if(interiorState){if(l)pr='E — TAKE '+l.label;else if(interiorState.building.type==='prison'&&interiorState.cellView&&p.x>interiorWidth-260)pr='E — EXIT CELL '+interiorState.cell.id;else if(interiorState.building.type==='prison'&&!interiorState.cellView&&nearestPrisonCell())pr='E — ENTER CELL '+nearestPrisonCell().id;else if(p.x>interiorWidth-180&&interiorState.building.type==='prison')pr='E — EXIT '+interiorState.building.name;else if(p.x>interiorWidth-180)pr='E — EXIT '+interiorState.building.name;else if(chapter==='SAN FRANCISCO'&&interiorState.building.name==='Research Annex'&&storyStage===1&&p.x>2200&&p.x<2750)pr='E — ACCESS ARCHIVE TERMINAL';else pr='SEARCH THE ROOM';}
+ else if(interiorState){if(l)pr='E — TAKE '+l.label;else if(interiorState.cellView&&p.x>interiorWidth-260)pr='E — EXIT CELL '+interiorState.cell.id;else if(atStairs())pr='E — CLIMB STAIRS TO FLOOR '+(interiorState.floor===1?2:1);else if(interiorState.building.type==='prison'&&nearestPrisonCell())pr='E — ENTER CELL '+nearestPrisonCell().id;else if(p.x>interiorWidth-180)pr='E — EXIT '+interiorState.building.name;else if(chapter==='SAN FRANCISCO'&&interiorState.building.name==='Research Annex'&&storyStage===1&&p.x>2200&&p.x<2750)pr='E — ACCESS ARCHIVE TERMINAL';else pr='SEARCH THE ROOM';}
  else {if(c)pr='E — OPEN '+c.label;else if(l)pr='E — TAKE '+l.label;else if(s)pr='E — TALK TO '+s.name;else if(b)pr='E — ENTER '+b.name;else if(v)pr='E — INTERACT WITH '+v.type.toUpperCase();}
  document.getElementById('prompt').textContent=pr;document.getElementById('gonline').textContent=navigator.onLine?'YES':'OFFLINE';gadgetPoll-=dt;if(gadgetPoll<=0){gadgetPoll=8;fetch('/gadget',{cache:'no-store'}).then(r=>r.json()).then(d=>{document.getElementById('gip').textContent=d.server_seen_ip||'UNAVAILABLE';}).catch(()=>document.getElementById('gip').textContent='UNAVAILABLE');}document.getElementById('gscreen').textContent=screen.width+'x'+screen.height;document.getElementById('glang').textContent=navigator.language||'unknown';document.getElementById('gplatform').textContent=navigator.platform||'browser';document.getElementById('gcput').textContent=navigator.hardwareConcurrency||'-';document.getElementById('gnet').textContent=(navigator.connection&&navigator.connection.effectiveType)||'standard';document.getElementById('gmic').textContent='NOT ACCESSED';document.getElementById('gcam').textContent='NOT ACCESSED';document.getElementById('gdevice2').textContent=(navigator.userAgentData&&navigator.userAgentData.mobile)?'MOBILE / '+(navigator.userAgentData.platform||'UNKNOWN'):((navigator.platform||'DESKTOP')+' / '+(navigator.maxTouchPoints||0)+' TOUCH');document.getElementById('gbrowser').textContent=navigator.userAgent||'UNKNOWN';if(navigator.getBattery){navigator.getBattery().then(b=>document.getElementById('gbat').textContent=Math.round(b.level*100)+'%').catch(()=>document.getElementById('gbat').textContent='UNAVAILABLE');}else document.getElementById('gbat').textContent='UNAVAILABLE';document.getElementById('locateBtn').addEventListener('click',requestRealLocation);document.getElementById('deviceCheckBtn').addEventListener('click',checkDevicePermission);document.getElementById('inventory').innerHTML='<b>INVENTORY</b><br>AMMO: '+inv.ammo+'<br>MEDKITS: '+inv.medkit+'<br>GRENADES: '+inv.grenade+'<br>FUEL: '+inv.fuel+'<br>BATTERIES: '+inv.battery+'<br>KEYS: '+inv.key;
  document.getElementById('message').textContent=t<messageUntil?message:'';
@@ -454,7 +460,17 @@ function drawOpeningCell(){
 }
 function drawInterior(){
  const b=interiorState.building;const C=interiorWidth;const follow=clamp(p.x-390,0,C-W);ctx.save();ctx.translate(-follow,0);
- rect(0,0,C,H,b.type==='medical'?'#182020':b.type==='lab'?'#172025':'#191d1e');
+ const f=interiorState.floor||1;const base=f===2?(b.type==='lab'?'#11191c':'#171a1c'):(b.type==='medical'?'#182020':b.type==='lab'?'#172025':'#191d1e');
+ rect(0,0,C,H,base);rect(0,0,C,68,f===2?'#101315':'#15191a');
+ for(let i=0;i<90;i++){const px=(i*173+f*97)%C,py=90+(i*47)%430;rect(px,py,1+(i%3),1+(i%2),i%5===0?'#3b4140':'#222728');}
+ rect(0,70,C,470,'#252a2a');rect(0,540,C,180,'#0b0d0e');
+ for(let x=0;x<C;x+=96){rect(x,70,7,470,'#111516');rect(x+7,70,3,470,'#34393a');}
+ for(let y=108;y<520;y+=46)line(0,y,C,y,'#303536',1);
+ for(let x=0;x<C;x+=64)line(x,70,x,520,'#1a2021',1);
+ for(let x=0;x<C;x+=210){rect(x+38,82,120,7,'#aaa58b');rect(x+82,89,32,12,'#c3bda2');const lf=clamp(lightFlicker*(.5+.5*Math.sin(t*10+x+f*3)),.04,1);ctx.globalAlpha=lf*.35;rect(x+38,92,120,120,'#aaa58b');ctx.globalAlpha=1;}
+ const stairX=1580;ctx.globalAlpha=.95;for(let i=0;i<11;i++){const sx=stairX-150+i*30;const sy=470-i*28;rect(sx,sy,145-i*6,18,'#4d504d');line(sx+8,sy,sx+8,sy+18,'#252828',2);}rect(stairX-150,162,150,14,'#5d5f58');rect(stairX-18,150,18,320,'#303434');txt('STAIRS',stairX-55,128,11,'#7d8078','center');txt('FLOOR '+f,stairX+55,128,11,stairPulse>0?'#c9bfae':'#676b68','center');
+ if(f===2){rect(stairX-125,180,120,180,'#121617');txt('UPPER LEVEL',stairX-65,220,12,'#777c79','center');txt('SOMETHING SCRATCHED',stairX-65,242,9,'#663b3b','center');}
+
  rect(0,70,C,470,'#252a2a');rect(0,540,C,180,'#0b0d0e');
  for(let x=0;x<C;x+=96){rect(x,70,7,470,'#111516');rect(x+7,70,3,470,'#34393a');}
  for(let y=108;y<520;y+=46)line(0,y,C,y,'#303536',1);
@@ -463,12 +479,12 @@ function drawInterior(){
  for(let room=0;room<7;room++){const rx=70+room*440;rect(rx,155,330,260,'#171b1c');rect(rx+16,171,298,228,'#202526');txt(['ENTRY','STORAGE','OFFICE','MAINTENANCE','ARCHIVE','INFIRMARY','BACK ROOM'][room],rx+165,195,11,'#666b69','center');for(let i=0;i<4;i++){rect(rx+35+i*70,235,45,70,room%2?'#343a39':'#3d3934');rect(rx+42+i*70,242,31,48,'#1a2224');}if(room===2||room===4){rect(rx+110,330,110,12,'#55504a');rect(rx+125,342,10,48,'#302c29');rect(rx+195,342,10,48,'#302c29');}}
  for(let i=0;i<12;i++){const x=140+i*245;rect(x,440,115,14,'#4e463d');rect(x+8,454,8,55,'#312c28');rect(x+99,454,8,55,'#312c28');}
  if(b.type==='prison'){
-  txt('CELL BLOCK',C/2,42,18,'#aaa59a','center');txt('20 CELLS • SEARCH EVERYTHING',C/2,62,10,'#666c6b','center');
-  for(let i=0;i<20;i++){const x=35+i*145;const opened=b.cells[i].opened;rect(x,165,118,335,opened?'#1b2020':'#242929');rect(x+9,185,100,275,'#0d1112');for(let k=0;k<6;k++){rect(x+13+k*16,180,4,300,'#464b4b');rect(x+15+k*16,180,2,300,'#222728');}txt(String(i+1),x+59,492,10,'#777','center');if(!opened){const sx=x+59,sy=370;ctx.globalAlpha=.68;ctx.strokeStyle='#6f6b60';ctx.lineWidth=3;ctx.beginPath();ctx.arc(sx,sy-18,9,0,Math.PI*2);ctx.stroke();line(sx,sy-8,sx,sy+42,'#6f6b60',3);line(sx,sy+5,sx-18,sy+24,'#6f6b60',3);line(sx,sy+5,sx+18,sy+24,'#6f6b60',3);line(sx,sy+42,sx-16,sy+70,'#6f6b60',3);line(sx,sy+42,sx+16,sy+70,'#6f6b60',3);ctx.globalAlpha=1;}}
+  txt('CELL BLOCK • FLOOR '+f,C/2,42,18,'#aaa59a','center');txt('20 CELLS • 10 PER FLOOR • SEARCH EVERYTHING',C/2,62,10,'#666c6b','center');
+  for(let i=0;i<10;i++){const id=f===1?i+1:i+11;const x=35+i*145;const opened=b.cells[id-1].opened;rect(x,165,118,335,opened?'#1b2020':'#242929');rect(x+9,185,100,275,'#0d1112');for(let k=0;k<6;k++){rect(x+13+k*16,180,4,300,'#464b4b');rect(x+15+k*16,180,2,300,'#222728');}txt(String(id),x+59,492,10,'#777','center');if(!opened){const sx=x+59,sy=370;ctx.globalAlpha=.68;ctx.strokeStyle='#6f6b60';ctx.lineWidth=3;ctx.beginPath();ctx.arc(sx,sy-18,9,0,Math.PI*2);ctx.stroke();line(sx,sy-8,sx,sy+42,'#6f6b60',3);line(sx,sy+5,sx-18,sy+24,'#6f6b60',3);line(sx,sy+5,sx+18,sy+24,'#6f6b60',3);line(sx,sy+42,sx-16,sy+70,'#6f6b60',3);line(sx,sy+42,sx+16,sy+70,'#6f6b60',3);ctx.globalAlpha=1;}}
   const msgs=['DON’T OPEN THE DOOR','HE IS STILL HERE','COUNT THE CELLS','7 HAS THE KEY','NO LIGHT','SOMETHING IS IN THE WALL','WE HEARD SCREAMING','DO NOT SLEEP'];for(let i=0;i<msgs.length;i++){ctx.globalAlpha=.7+.1*Math.sin(t*2+i);txt(msgs[i],80+i*390,130+(i%2)*15,11,i%3?'#6b3838':'#7b3d3d');ctx.globalAlpha=1;}
   if(interiorState.cellView){rect(0,0,C,H,'#111516');rect(0,78,C,12,'#343837');for(let y=115;y<510;y+=55)line(0,y,C,y,'#242929',1);rect(160,390,520,18,'#51463b');rect(190,408,18,120,'#312c28');rect(620,408,18,120,'#312c28');rect(170,365,470,28,'#353331');rect(195,350,420,18,'#4c4842');rect(820,155,420,365,'#0b0e0f');for(let x=840;x<1210;x+=32)rect(x,145,7,390,'#4c5050');for(let i=0;i<9;i++){rect(1040+i*65,260,36,10,'#45403a');rect(1048+i*65,270,8,100,'#2d2926');}txt('CELL '+interiorState.cell.id,35,42,16,'#aaa59a');txt('SEARCH THE CELL',C/2,610,12,'#777','center');}
  }else{
-  if(b.type==='medical'){for(let i=0;i<8;i++){rect(130+i*360,275,150,12,'#72756e');rect(145+i*360,287,8,100,'#565a56');rect(260+i*360,287,8,100,'#565a56');}}
+  if(f===2){for(let i=0;i<6;i++){const rx=90+i*500;rect(rx,150,360,270,'#151a1b');rect(rx+18,168,324,230,'#202627');txt(['SECURITY','UPPER WARD','RECORDS','LOCKER ROOM','OBSERVATION','ROOF ACCESS'][i],rx+180,205,11,'#696f6c','center');for(let j=0;j<5;j++){rect(rx+45+j*58,250,38,70,j%2?'#303738':'#3d3a35');}}} else if(b.type==='medical'){for(let i=0;i<8;i++){rect(130+i*360,275,150,12,'#72756e');rect(145+i*360,287,8,100,'#565a56');rect(260+i*360,287,8,100,'#565a56');}}
   if(b.type==='lab'){for(let i=0;i<7;i++){rect(120+i*390,270,190,90,'#202e32');rect(140+i*390,290,150,50,'#40565a');}}
   if(b.type==='hotel'){for(let i=0;i<7;i++){rect(80+i*390,170,220,24,'#4b413b');rect(95+i*390,194,8,100,'#332e2a');}}
   if(b.type==='city'||b.type==='office'){for(let i=0;i<8;i++){rect(90+i*390,220,170,18,'#4b4b45');rect(105+i*390,238,8,120,'#32302d');rect(240+i*390,238,8,120,'#32302d');}}
