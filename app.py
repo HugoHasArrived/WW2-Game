@@ -11,10 +11,26 @@ GAME_HTML = r"""<!doctype html>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#020304;color:#ddd;font-family:Consolas,monospace;overflow:hidden}body{display:grid;place-items:center}.shell{position:relative;width:min(100vw,1280px);aspect-ratio:16/9;background:#050708;overflow:hidden;box-shadow:0 0 90px #000,0 0 0 1px #161c1c}canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}.layer{position:absolute;inset:0}.hidden{display:none!important}.screen{display:grid;place-items:center;background:rgba(2,3,4,.96);z-index:50}.panel{width:min(900px,92%);padding:30px;border:1px solid #4f575a;background:linear-gradient(#0b0f11,#050708);box-shadow:0 0 80px #000;position:relative}.panel:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.02),rgba(255,255,255,.02) 1px,transparent 1px,transparent 5px)}h1{letter-spacing:7px;margin:0 0 10px;font-size:40px;text-align:center;color:#e5e0d6;text-shadow:3px 3px #000,0 0 30px #777,0 0 2px #fff}.subtitle{text-align:center;color:#817a75;letter-spacing:4px}.intro{text-align:center;color:#aaa;margin:20px auto;line-height:1.7;max-width:760px}.choices{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.choices button,.panel button{font:inherit;color:#ddd;background:#111619;border:1px solid #596164;padding:12px 20px;cursor:pointer}.choices button:hover,.panel button:hover{background:#252d2d;border-color:#d7d3c8;transform:translateY(-1px)}.choices button{min-width:160px;box-shadow:inset 0 0 0 1px #1d2425,0 7px 20px rgba(0,0,0,.28)}.choices button .small{color:#7f898a}.choices button:first-child{border-color:#6e7770}.choices button:nth-child(2){border-color:#676f79}.choices button:nth-child(3){border-color:#626f69}.warning{text-align:center;color:#765e5a;font-size:11px;letter-spacing:2px;margin-top:18px}.controls{text-align:center;color:#707879;font-size:11px;line-height:1.8;margin-top:16px}.hud{z-index:10;pointer-events:none;text-shadow:2px 2px #000}.top{position:absolute;left:16px;right:16px;top:14px;display:flex;justify-content:space-between;font-size:12px}.bars{width:210px}.bar{height:8px;background:#101314;border:1px solid #555;margin:3px 0 7px}.fill{height:100%}.health{background:#a94b47}.stamina{background:#879477}.sanity{background:#6e688f}.objective{position:absolute;left:18px;top:108px;max-width:500px;color:#ddd}.message{position:absolute;left:50%;bottom:50px;transform:translateX(-50%);padding:9px 15px;background:rgba(3,4,5,.86);border:1px solid #444b4e;color:#ddd}.prompt{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);color:#c8c4bd}.inventory{position:absolute;right:18px;top:105px;width:245px;background:rgba(3,4,5,.92);border:1px solid #50585b;padding:12px;font-size:12px}.map{position:absolute;right:18px;bottom:18px;width:190px;height:70px;background:rgba(0,0,0,.6);border:1px solid #555}.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 36%,rgba(0,0,0,.82) 100%);mix-blend-mode:multiply}.warningText{position:absolute;top:24%;left:50%;transform:translateX(-50%);color:#c5b7ad;font-size:20px;letter-spacing:5px;text-shadow:0 0 15px #000,3px 3px #000}.gadget{z-index:40;background:rgba(2,3,4,.97);padding:30px}.gadgetBox{width:min(900px,94%);margin:auto;border:2px solid #555e62;background:#080c0e;padding:22px;box-shadow:0 0 70px #000}.gadgetGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px;line-height:1.6}.gadgetBox button{font:inherit;color:#ddd;background:#121719;border:1px solid #596164;padding:6px 10px;cursor:pointer}.gadgetTitle{font-size:23px;letter-spacing:4px}.infoFlash{z-index:65;background:rgba(0,0,0,.88);display:grid;place-items:center}.infoFlashBox{width:min(760px,90%);padding:26px;border:2px solid #8b3434;background:linear-gradient(#120b0c,#050607);box-shadow:0 0 90px #000,0 0 35px rgba(150,30,30,.35);text-align:left}.infoFlashTitle{font-size:25px;letter-spacing:5px;color:#d6c9c0;text-align:center;margin-bottom:18px}.infoFlashGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:14px;line-height:1.55}.infoFlashGrid div{border-bottom:1px solid #292123;padding:7px}.infoFlashGrid b{color:#a84b49}.infoFlashClose{text-align:center;margin-top:18px;color:#777;font-size:11px;letter-spacing:2px}.cutscene{z-index:60;display:grid;place-items:center;background:radial-gradient(circle at 50% 55%,#121719 0,#020304 62%,#000 100%);overflow:hidden}.cutscene:before,.cutscene:after{content:'';position:absolute;left:0;right:0;height:74px;background:#000;z-index:1}.cutscene:before{top:0}.cutscene:after{bottom:0}.cutline{position:relative;z-index:2;text-align:center;max-width:930px;padding:30px;font-size:28px;line-height:1.5;text-shadow:4px 4px #000,0 0 18px #000;color:#ddd8ce}.cutline:after{content:'ENTER / SPACE';display:block;margin-top:22px;font-size:10px;letter-spacing:3px;color:#666d6c}.ending{z-index:70}.death{z-index:70;background:#080203}.small{font-size:11px;color:#777}.center{text-align:center}.red{color:#9c4643}.blood{color:#8e3837}
 #privacyGate{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.96);backdrop-filter:blur(8px)}#privacyGate .privacyBox{width:min(900px,96vw);max-height:90vh;overflow:auto;border:2px solid #68736d;background:linear-gradient(180deg,#101512,#070908);box-shadow:0 0 0 1px #202622,0 25px 90px #000;padding:26px;color:#d9dfdb}#privacyGate h1{margin:0 0 8px;font-size:26px;letter-spacing:2px;color:#f1f3f1}#privacyGate .privacyLead{color:#aab4ae;line-height:1.5}#privacyGate .privacyGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}#privacyGate .privacyCard{border:1px solid #303934;background:#0b0f0d;padding:12px;line-height:1.45}#privacyGate .privacyCard b{display:block;color:#e6ebe8;margin-bottom:5px}#privacyGate .privacyNotice{border-left:3px solid #9da8a2;background:#0b0f0d;padding:11px 13px;color:#9da7a1;line-height:1.5}#privacyGate button,#privacyDashboard button{font:inherit;color:#eef1ef;background:#151b18;border:1px solid #68736d;padding:10px 15px;cursor:pointer}#privacyGate button:hover,#privacyDashboard button:hover{background:#252d29}#privacyDashboard{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.8);backdrop-filter:blur(5px)}#privacyDashboard .dashBox{width:min(1080px,96vw);max-height:90vh;overflow:auto;background:#090c0b;border:2px solid #59635e;box-shadow:0 25px 90px #000;padding:22px}#privacyDashboard .dashTop{display:flex;justify-content:space-between;align-items:center;gap:15px;border-bottom:1px solid #303633;padding-bottom:12px;margin-bottom:15px}#privacyDashboard h2{margin:0;font-size:23px;letter-spacing:1.5px}#privacyDashboard .dashSub{color:#89938d;font-size:12px;margin-top:4px}#privacyDashboard .dashGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}#privacyDashboard .dashCard{border:1px solid #2d3531;background:#0d1110;padding:12px;min-height:68px}#privacyDashboard .dashLabel{font-size:10px;letter-spacing:1px;color:#78837d;text-transform:uppercase}#privacyDashboard .dashValue{font-size:14px;color:#dce2de;margin-top:7px;word-break:break-word}#privacyDashboard .dashBar{height:6px;background:#1a211e;margin-top:8px;overflow:hidden}#privacyDashboard .dashBar i{display:block;height:100%;background:#9ba69f}@media(max-width:760px){#privacyGate .privacyGrid,#privacyDashboard .dashGrid{grid-template-columns:1fr}}
+
+.modePicker{z-index:55;display:grid;place-items:center;background:rgba(0,0,0,.86);backdrop-filter:blur(5px)}.modeBox{width:min(680px,92%);border:2px solid #525b58;background:#080b0d;padding:25px;text-align:center;box-shadow:0 0 80px #000}.modeTitle{font-size:23px;letter-spacing:4px;color:#e6e2da}.modeSub{color:#818a87;margin:10px 0 20px}.modeBtns{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}.modeBtns button{font:inherit;color:#ddd;background:#121719;border:1px solid #606969;padding:13px 18px;cursor:pointer;min-width:180px}.modeBtns button:hover{background:#27302f;border-color:#ddd}.modeHint{font-size:11px;color:#707a77;margin-top:15px;line-height:1.6}.mobileControls{position:absolute;inset:auto 0 0 0;height:210px;z-index:25;pointer-events:none;display:flex;justify-content:space-between;align-items:flex-end;padding:14px;gap:12px;background:linear-gradient(transparent,rgba(0,0,0,.45))}.mobileMove,.mobileActions{display:flex;flex-wrap:wrap;gap:8px;pointer-events:auto}.mobileMove{width:45%;align-items:flex-end}.mobileActions{width:50%;justify-content:flex-end}.mobileControls button{font:700 11px Consolas,monospace;min-width:58px;height:50px;color:#e7e5de;background:rgba(10,13,14,.72);border:1px solid #68706d;box-shadow:0 3px 12px #000}.mobileControls button:active{transform:scale(.96);background:#343b38}.mobileMove button{min-width:72px;height:62px;font-size:18px}.mobileMove button[data-key="shift"]{font-size:10px}@media(max-width:760px){.shell{width:100vw;aspect-ratio:auto;height:100vh}.mobileControls{height:195px}.hud .top{font-size:10px}.bars{width:150px}.objective{top:90px;max-width:55%;font-size:10px}.map{width:145px;height:54px;bottom:205px}.prompt{bottom:205px}.message{bottom:185px;max-width:88%;font-size:11px}.inventory{right:8px;top:86px;width:190px;font-size:11px}.warningText{font-size:14px}}
+
 </style>
 </head>
 <body>
 <div id="privacyGate"><div class="privacyBox"><h1>NIGHTWATCH SECURITY TERMINAL</h1><p class="privacyLead">ASHES OF THE DEAD — DEVICE INFORMATION NOTICE</p><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform details, screen size, language, timezone, online state, network hints, CPU thread count, touch support, cookies state, referrer, battery information when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>The game does not read passwords, personal files, photos, contacts, saved documents, account contents, or arbitrary data from your computer.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone information require separate browser permission.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV alerts, tracking messages, The Smiler observations, and horror-terminal events are fictional game elements unless explicitly identified as browser/server information.</div></div><div class="privacyNotice">The server can only see the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This is an entertainment game, not a security or diagnostic product.</div><div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button id="privacyAccept">ENTER ASHES OF THE DEAD</button><button id="privacyDetails">VIEW DEVICE PANEL</button></div></div></div><div id="privacyDashboard"><div class="dashBox"><div class="dashTop"><div><h2>NIGHTWATCH / PERSONAL DEVICE RECORD</h2><div class="dashSub">Press P to open or close this record</div></div><button id="privacyClose">CLOSE</button></div><div id="dashGrid" class="dashGrid"></div><div style="margin-top:14px;color:#7f8983;font-size:11px;line-height:1.5">Browser-exposed values can be unavailable or approximate. Location, camera, and microphone require permission. The server-seen address may be a proxy address. No passwords, personal files, photos, contacts, or account contents are read by this game.</div></div></div>
+
+<div id="modePicker" class="modePicker layer hidden">
+<div class="modeBox">
+<div class="modeTitle">CONTROL PROFILE</div>
+<div class="modeSub">Choose the way you want to survive.</div>
+<div class="modeBtns"><button data-mode="laptop">LAPTOP / DESKTOP</button><button data-mode="mobile">MOBILE / TOUCH</button><button id="modeAuto">AUTO DETECT</button></div>
+<div class="modeHint">Laptop: keyboard + mouse. Mobile: virtual controls + touch shooting.</div>
+</div>
+</div>
+<div id="mobileControls" class="mobileControls hidden">
+<div class="mobileMove"><button data-key="a">◀</button><button data-key="d">▶</button><button data-key="shift">RUN</button></div>
+<div class="mobileActions"><button data-key="w">JUMP</button><button data-action="e">USE</button><button data-action="q">MELEE</button><button data-action="f">LIGHT</button><button data-action="g">GRENADE</button><button data-action="h">HEAL</button><button data-action="i">BAG</button><button data-action="r">RELOAD</button><button data-action="shoot">FIRE</button></div>
+</div>
 <div class="shell">
 <canvas id="game" width="1280" height="720"></canvas>
 <div id="menu" class="layer screen">
@@ -23,7 +39,7 @@ GAME_HTML = r"""<!doctype html>
 <div class="subtitle">THE ALCATRAZ ESCAPE</div>
 <div class="intro">Rain hits the island. Your cell is open. The prison is empty, but the walls are covered in warnings. Search the cell blocks, survive the island, discover what happened, and escape to San Francisco.</div>
 <div class="choices"><button data-char="Julia">JULIA<br><span class="small">FEMALE DETECTIVE • FIELD FILES</span></button><button data-char="May">MAY<br><span class="small">FEMALE DETECTIVE • CRIME SCENE</span></button><button data-char="Yumi">YUMI<br><span class="small">FEMALE DETECTIVE • INTELLIGENCE</span></button></div>
-<div class="warning">HEADPHONES RECOMMENDED • THE QUIET PART IS IMPORTANT</div><div class="center" style="margin-top:12px"><button id="privacyReopen">PRIVACY / DEVICE NOTICE</button></div>
+<div class="warning">HEADPHONES RECOMMENDED • THE QUIET PART IS IMPORTANT</div><div class="center" style="margin-top:12px"><button id="privacyReopen">PRIVACY / DEVICE NOTICE</button><button id="controlModeOpen">CONTROL MODE</button></div>
 <div class="controls">A/D OR ARROWS MOVE • SHIFT RUN • W/SPACE JUMP • E INTERACT • I INVENTORY • TAB GADGET • P PERSONAL INFO<br>F FLASHLIGHT • Q MELEE • G GRENADE • R RELOAD • MOUSE SHOOT • ESC PAUSE</div>
 </div>
 </div>
@@ -217,8 +233,8 @@ const names=['Julia','May','Yumi'];
 
 const cutsceneLines=[
 'ALCATRAZ ISLAND — 11:47 PM',
-'You wake in Cell A-17. The rain is louder than the prison.',
-'The cell door is open. You do not remember opening it.',
+'You wake inside Cell A-17. The rain is louder than the prison.',
+'The cell door is shut. Something is breathing on the other side.',
 'Across the corridor, twenty doors wait in the dark.',
 'Blood writing covers the concrete: DO NOT LET HIM SEE YOU.',
 'You need a way off the island. Search the prison.',
@@ -1135,7 +1151,7 @@ window.addEventListener('visibilitychange',()=>{if(document.hidden)keys.clear();
 canvas.setAttribute('tabindex','0');
 canvas.addEventListener('click',()=>canvas.focus());
 window.addEventListener('pointerdown',()=>{if(mode==='play')canvas.focus();});
-document.querySelectorAll('[data-char]').forEach(b=>b.addEventListener('click',()=>{audio();startGame(b.dataset.char);}));
+document.querySelectorAll('[data-char]').forEach(b=>b.addEventListener('click',()=>{closeModePicker();audio();startGame(b.dataset.char);}));
 document.getElementById('resume').onclick=resumeGame;
 document.getElementById('restart').onclick=restart;
 document.getElementById('backMenu').onclick=()=>{mode='menu';hide('pause');hide('hud');show('menu');};
@@ -1497,10 +1513,262 @@ function drawEnhancedInteriorPlayer(){drawCharacterSprite(player.x,player.y,sele
 function updateParticles(dt){for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.vy<380)p.vy+=420*dt;}particles=particles.filter(p=>p.life>0);}
 function drawParticles(){for(const p of particles){const x=p.x-camera;ctx.save();ctx.globalAlpha=clamp(p.life*2,0,1);px(x,p.y,p.size,p.size,p.c);ctx.restore();}}
 function drawLighting(){if(interior)return;if(state.light){const pxs=player.x-camera;const cone=ctx.createRadialGradient(pxs+player.facing*90,player.y+26,12,pxs+player.facing*90,player.y+26,260);cone.addColorStop(0,'rgba(255,239,185,.16)');cone.addColorStop(.36,'rgba(255,226,162,.07)');cone.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=cone;ctx.fillRect(0,0,W,H);}const fog=ctx.createLinearGradient(0,320,0,520);fog.addColorStop(0,'rgba(170,178,178,0)');fog.addColorStop(1,'rgba(120,130,132,.055)');ctx.fillStyle=fog;ctx.fillRect(0,250,W,300);}
-function drawWorld(){drawEnhancedSky();drawEnhancedGround();chapter==='SAN FRANCISCO'?drawSFStreetProps():drawAlcatrazProps();drawStreetDebris();drawEnhancedStructures();drawEnhancedBloodWriting();drawEnhancedSkeletons();drawEnhancedChests();drawEnhancedLoot();drawEnhancedSurvivors();drawEnhancedZombies();for(const b of bullets){const x=b.x-camera;if(x>-30&&x<W+30){px(x-5,b.y-2,10,4,'#e6d28b');px(x+2,b.y-1,6,2,'#fff4c0');}}drawEnhancedPlayer();drawParticles();drawLighting();drawEnhancedSmiler();}
+function drawWorld(){drawEnhancedSky();drawEnhancedGround();chapter==='SAN FRANCISCO'?drawSFStreetProps():drawAlcatrazProps();drawStreetDebris();drawEnhancedStructures();drawStartingCell();drawEnhancedBloodWriting();drawEnhancedSkeletons();drawEnhancedChests();drawEnhancedLoot();drawEnhancedSurvivors();drawEnhancedZombies();for(const b of bullets){const x=b.x-camera;if(x>-30&&x<W+30){px(x-5,b.y-2,10,4,'#e6d28b');px(x+2,b.y-1,6,2,'#fff4c0');}}drawEnhancedPlayer();drawParticles();drawLighting();drawEnhancedSmiler();}
 function drawInterior(){drawEnhancedInterior();drawInteriorLoot();drawEnhancedInteriorPlayer();drawParticles();}
 function drawWeather(){drawEnhancedWeather();}
 function update(dt){totalTime+=dt;infoFlashCooldown=Math.max(0,infoFlashCooldown-dt);if(mode==='play'&&!infoFlashOpen){infoFlashTimer-=dt;if(infoFlashTimer<=0){infoFlashTimer=32+Math.random()*42;showInfoFlash();}}updateMessage(dt);updatePlayer(dt);updateZombies(dt);updateSurvivors(dt);updateBullets(dt);updateHunger(dt);randomHorror(dt);updateSmiler(dt);triggerSmilerVision();updateParticles(dt);if(state.battery>0&&state.light)state.battery=Math.max(0,state.battery-dt*.25);if(state.sanity<=0)die('You could no longer tell what was real.');if(chapter==='ALCATRAZ'&&player.x>4100&&state.dockPass){objectiveStep=5;setObjective();}if(chapter==='SAN FRANCISCO'&&survivorsFound>=3&&!archiveOpened)setObjective();flash=Math.max(0,flash-dt*2);shake=Math.max(0,shake-dt*10);camera=lerp(camera,player.x-W*.42,Math.min(1,dt*5));const maxCam=(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-W;camera=clamp(camera,0,maxCam);drawHUD();}
+
+
+let controlMode=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches?'mobile':'laptop';
+let startingCell=true;
+let horrorPulse=0;
+let horrorEyes=0;
+let horrorMessageTimer=0;
+let lastDoorBang=0;
+function setControlMode(next){
+ controlMode=next==='mobile'?'mobile':'laptop';
+ document.body.dataset.controlMode=controlMode;
+ const mob=document.getElementById('mobileControls');
+ if(mob)mob.classList.toggle('hidden',controlMode!=='mobile'||mode!=='play');
+ localStorage.setItem('ashesofthedead_control_mode',controlMode);
+}
+function openModePicker(){
+ const p=document.getElementById('modePicker');
+ if(p)p.classList.remove('hidden');
+}
+function closeModePicker(){
+ const p=document.getElementById('modePicker');
+ if(p)p.classList.add('hidden');
+ setControlMode(controlMode);
+}
+const savedControlMode=localStorage.getItem('ashesofthedead_control_mode');
+if(savedControlMode==='mobile'||savedControlMode==='laptop')controlMode=savedControlMode;
+function addMobileKey(key,pressed){
+ const k=key==='shift'?'Shift':key==='space'?' ':key;
+ if(pressed)keys.add(k);else keys.delete(k);
+}
+function triggerMobileAction(a){
+ if(mode!=='play'||gadgetOpen)return;
+ if(a==='shoot')shoot();
+ else if(a==='e')interact();
+ else if(a==='q'){for(const z of zombies){if(!z.dead&&Math.abs(z.x-player.x)<86){z.hp-=55;z.hit=.15;shake=5;if(z.hp<=0)z.dead=true;setMsg('MELEE HIT',.5);}}}
+ else if(a==='f'){state.light=!state.light;setMsg(state.light?'Flashlight on.':'Flashlight off.',1);}
+ else if(a==='g'&&state.grenades>0){state.grenades--;for(const z of zombies){if(!z.dead&&Math.abs(z.x-player.x)<280)z.hp-=120;}flash=.2;shake=11;scareSound();setMsg('GRENADE',1);}
+ else if(a==='h')useItem();
+ else if(a==='i')inventoryOpen=!inventoryOpen;
+ else if(a==='r')reload();
+}
+function setupMobileControls(){
+ document.querySelectorAll('#mobileControls [data-key]').forEach(btn=>{
+  const k=btn.dataset.key;
+  const down=e=>{e.preventDefault();if(k==='w'&&mode==='play'){keys.add('w');}else addMobileKey(k,true);if(btn.setPointerCapture&&e.pointerId!==undefined){try{btn.setPointerCapture(e.pointerId)}catch(err){}}};
+  const up=e=>{e.preventDefault();if(k==='w')keys.delete('w');else addMobileKey(k,false);};
+  btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointercancel',up);btn.addEventListener('pointerleave',up);
+ });
+ document.querySelectorAll('#mobileControls [data-action]').forEach(btn=>btn.addEventListener('pointerdown',e=>{e.preventDefault();triggerMobileAction(btn.dataset.action);}));
+}
+function positionAtCell(){
+ startingCell=true;
+ interior=null;
+ floor=1;
+ camera=0;
+ player.x=175;
+ player.y=GROUND-player.h;
+ player.vx=0;
+ player.vy=0;
+ player.facing=1;
+ state.startEscaped=false;
+}
+function drawStartingCell(){
+ if(chapter!=='ALCATRAZ'||!startingCell||state.startEscaped||interior)return;
+ const x=-20-camera;
+ px(x,GROUND-222,360,222,'#171b1d');
+ px(x,GROUND-230,360,9,'#303536');
+ px(x+18,GROUND-204,300,8,'#0b0e0f');
+ px(x+34,GROUND-160,110,52,'#252a2b');
+ px(x+46,GROUND-176,85,16,'#3d4140');
+ px(x+54,GROUND-188,58,14,'#686158');
+ px(x+190,GROUND-61,64,49,'#111516');
+ px(x+206,GROUND-77,34,17,'#303334');
+ px(x+24,GROUND-199,7,136,'#333838');
+ px(x+75,GROUND-199,7,136,'#333838');
+ px(x+126,GROUND-199,7,136,'#333838');
+ px(x+177,GROUND-199,7,136,'#333838');
+ px(x+228,GROUND-199,7,136,'#333838');
+ px(x+279,GROUND-199,7,136,'#333838');
+ for(let i=0;i<7;i++){
+  line(x+18+i*48,GROUND-201,x+37+i*48,GROUND-59,'#494e4e',2);
+  line(x+37+i*48,GROUND-59,x+18+i*48,GROUND-201,'#272c2d',1);
+ }
+ px(x+304,GROUND-186,24,125,'#080a0b');
+ px(x+310,GROUND-174,11,108,'#202526');
+ px(x+314,GROUND-124,5,6,'#8b7856');
+ px(x+48,GROUND-56,32,6,'#16191a');
+ px(x+62,GROUND-63,13,6,'#4a4740');
+ px(x+15,GROUND-38,24,5,'#5c2325');
+ for(let i=0;i<9;i++)px(x+12+i*31,GROUND-31-(i%3)*5,7+(i%4)*4,2,i%2?'#501b1e':'#641f21');
+ ctx.font='bold 12px Consolas';ctx.fillStyle='#9a4140';ctx.fillText('A-17',x+257,GROUND-115);
+ ctx.font='10px Consolas';ctx.fillStyle='#777d7a';ctx.fillText('MATTRESS',x+48,GROUND-193);
+ ctx.fillStyle='#7d3032';ctx.fillText('DO NOT LET HIM SEE YOU',x+34,GROUND-246);
+}
+function enhancedStartAudio(){audio();tone(38,.7,'sine',.025,-12);setTimeout(()=>tone(27,1.1,'sine',.02,-4),180);}
+function startGame(name){
+ selectedCharacter=name;
+ resetWorld();
+ buildAlcatraz();
+ positionAtCell();
+ mode='intro';
+ cutIndex=0;
+ cutTimer=0;
+ hide('menu');
+ hide('hud');
+ hide('pause');
+ hide('ending');
+ hide('death');
+ show('cutscene');
+ const line=document.getElementById('cutline');
+ if(line)line.textContent=cutsceneLines[0];
+ setControlMode(controlMode);
+ enhancedStartAudio();
+}
+function finishIntro(){
+ mode='play';
+ startingCell=true;
+ positionAtCell();
+ hide('cutscene');
+ show('hud');
+ setObjective();
+ setMsg('CELL A-17. Find the key beneath the mattress.',3);
+ showWarning('DO NOT OPEN THE DOOR YET');
+ setControlMode(controlMode);
+ horrorPulse=1;
+}
+function interact(){
+ if(mode!=='play'||gadgetOpen)return;
+ if(chapter==='ALCATRAZ'&&startingCell&&!state.startEscaped){
+  if(player.x<235){
+   if(!state.startKey){state.startKey=true;state.keys++;setMsg('A brass key was taped beneath the mattress.',2.5);state.sanity=Math.max(0,state.sanity-1);tone(250,.18,'triangle',.03,25);}
+   else setMsg('Nothing else is beneath the mattress.',1.1);
+   return;
+  }
+  if(player.x>=235){
+   if(state.startKey||state.keys>0){state.startEscaped=true;state.keys=Math.max(0,state.keys-1);startingCell=false;objectiveStep=1;setObjective();setMsg('CELL A-17 UNLOCKED. Do not look into the corridor.',2.8);scareSound();shake=7;return;}
+   setMsg('The cell is locked. Find the key under the mattress.',1.7);return;
+  }
+ }
+ const l=currentLoot();
+ if(l){l.taken=true;addItem(l.item,l.count);setMsg(`Picked up ${itemName(l.item)} x${l.count}`,1.2);return;}
+ if(interior){
+  if(player.x>1100){exitBuilding();return;}
+  if(Math.abs(player.x-620)<78){floor=floor===1?2:1;player.x=170;setMsg(`STAIRS — FLOOR ${floor}`,1.2);tone(130,.25,'square',.04,-20);return;}
+  if(player.x>760&&player.x<900){addChest(820,480,false,true);const c=chests[chests.length-1];if(!c.opened){openChest(c);return;}}
+  return;
+ }
+ const c=currentCell();
+ if(c){
+  if(!c.open){if(state.keys>0){state.keys--;c.open=true;setMsg(`${c.id} unlocked.`,1.2);}else setMsg('Locked. Search for a key.',1.5);return;}
+  if(!c.searched){c.searched=true;state.sanity=Math.max(0,state.sanity-2);if(c.id==='B-4'){state.dockPass=true;objectiveStep=4;setMsg('You found the DOCK PASS. The writing was true.',3);addItem('ammo',8);}else{const roll=Math.random();if(roll<.4)addItem('bandage',1);else if(roll<.7)addItem('ammo',6);else addItem('scrap',randi(1,3));setMsg('Cell searched.',1);}}return;
+ }
+ const ch=currentChest();if(ch){openChest(ch);return;}
+ const b=currentBuilding();
+ if(b&&player.x>b.x+20&&player.x<b.x+b.w-20){insideBuilding(b);return;}
+ if(chapter==='ALCATRAZ'&&player.x>3850&&state.dockPass){enterSF();return;}
+ if(chapter==='SAN FRANCISCO'){
+  for(const sv of survivors){if(!sv.found&&Math.abs(player.x-sv.x)<65){sv.found=true;survivorsFound++;sv.follow=true;state.sanity=Math.min(100,state.sanity+8);setMsg(`${sv.name}: "Stay close. We need the others."`,2.5);setObjective();return;}}
+  if(player.x>5250&&player.x<5970&&survivorsFound>=3){archiveOpened=true;setMsg('ARCHIVE OPENED. The files mention a ferry route.',3);setObjective();return;}
+  if(player.x>4420&&player.x<5040&&survivorsFound>=3&&archiveOpened){shelterReached=true;win('Mara, Eli and Noah reached the shelter. The city is still screaming beyond the doors, but you made it through the night.');}
+ }
+}
+function updateSmarterHorror(dt){
+ if(mode!=='play')return;
+ horrorPulse=Math.max(0,horrorPulse-dt*.45);
+ horrorMessageTimer=Math.max(0,horrorMessageTimer-dt);
+ lastDoorBang=Math.max(0,lastDoorBang-dt);
+ if(smiler.active&&Math.abs(smiler.x-player.x)<600){state.sanity=Math.max(0,state.sanity-dt*1.15);horrorPulse=Math.max(horrorPulse,.5);}
+ if(state.sanity<65&&Math.random()<dt*.012){horrorEyes=1.2;setMsg('You heard a second set of footsteps.',1.1);tone(44,.45,'sine',.018,-5);}
+ if(state.sanity<42&&Math.random()<dt*.006){horrorEyes=1.8;showWarning(Math.random()<.5?'DON’T TURN AROUND':'HE IS CLOSER NOW');scareSound();shake=5;}
+ if(chapter==='ALCATRAZ'&&startingCell&&!state.startEscaped&&Math.random()<dt*.003){if(lastDoorBang<=0){lastDoorBang=3;tone(48,.12,'square',.035,-5);setMsg('Something touched the cell bars.',1.3);horrorPulse=.75;}}
+ if(chapter==='ALCATRAZ'&&state.startEscaped&&Math.random()<dt*.0025){horrorEyes=1.4;showWarning('SOMEONE IS STANDING AT THE FAR END');}
+ if(chapter==='SAN FRANCISCO'&&Math.random()<dt*.002){spawnZombie(clamp(player.x+rand(-650,650),120,SF_WIDTH-120),Math.random()<.22?'runner':'walker');}
+}
+function drawStartingCellOverlay(){
+ if(chapter!=='ALCATRAZ'||!startingCell||state.startEscaped||interior)return;
+ const cx=318-camera;
+ ctx.save();ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,360,430);
+ ctx.fillStyle='#0a0c0d';ctx.fillRect(cx,0,10,GROUND);
+ ctx.fillStyle='#373b3b';ctx.fillRect(cx-2,0,3,GROUND);ctx.fillRect(cx+18,0,3,GROUND);ctx.fillRect(cx+38,0,3,GROUND);ctx.fillRect(cx+58,0,3,GROUND);
+ ctx.fillStyle='#4b4f4e';ctx.fillRect(cx-4,GROUND-155,66,4);
+ ctx.fillStyle='#080909';ctx.fillRect(cx+2,GROUND-154,57,151);
+ ctx.fillStyle='#1d2222';ctx.fillRect(cx+10,GROUND-142,40,131);
+ ctx.fillStyle='#716e61';ctx.fillRect(cx+43,GROUND-78,5,5);
+ for(let i=0;i<5;i++){ctx.fillStyle='#343737';ctx.fillRect(cx+7+i*12,GROUND-150,3,148);}
+ ctx.fillStyle='rgba(150,25,28,.22)';ctx.fillRect(cx+4,GROUND-210,57,5);
+ ctx.restore();
+}
+function drawHorrorOverlay(){
+ if(mode!=='play')return;
+ if(horrorPulse>0){ctx.fillStyle=`rgba(35,0,6,${horrorPulse*.08})`;ctx.fillRect(0,0,W,H);}
+ if(horrorEyes>0){
+  const edge=smiler.active?smiler.x-camera:(player.facing>0?W-75:75);
+  ctx.save();ctx.globalAlpha=Math.min(1,horrorEyes/1.2)*.7;ctx.fillStyle='#010101';ctx.fillRect(edge-34,195,68,235);ctx.fillStyle='#e4dfd2';ctx.fillRect(edge-17,229,7,5);ctx.fillRect(edge+10,229,7,5);ctx.fillStyle='#050505';ctx.fillRect(edge-21,250,42,45);ctx.restore();
+ }
+ if(blackout>0.2){ctx.fillStyle=`rgba(0,0,0,${clamp(blackout/2.4,0,.9)})`;ctx.fillRect(0,0,W,H);}
+ if(state.sanity<55){ctx.save();ctx.globalAlpha=(55-state.sanity)/420;for(let i=0;i<11;i++){const y=100+i*47+Math.sin(totalTime*4+i)*5;ctx.fillStyle='#b6a7a0';ctx.fillRect((i*137+totalTime*70)%W,y,16,1);}ctx.restore();}
+}
+function draw(){
+ ctx.save();
+ const sx=shake?(Math.random()*shake-shake/2):0;
+ ctx.translate(sx,0);
+ ctx.fillStyle='#06090b';ctx.fillRect(0,0,W,H);
+ if(interior)drawInterior();else drawWorld();
+ drawWeather();
+ drawHorrorOverlay();
+ if(flash>0){ctx.fillStyle=`rgba(255,245,230,${flash})`;ctx.fillRect(0,0,W,H);}
+ if(state.sanity<45){ctx.fillStyle=`rgba(30,5,15,${(45-state.sanity)/180})`;ctx.fillRect(0,0,W,H);}
+ ctx.restore();
+}
+function update(dt){
+ totalTime+=dt;
+ infoFlashCooldown=Math.max(0,infoFlashCooldown-dt);
+ if(mode==='play'&&!infoFlashOpen){infoFlashTimer-=dt;if(infoFlashTimer<=0){infoFlashTimer=46+Math.random()*52;showInfoFlash();}}
+ updateMessage(dt);
+ updatePlayer(dt);
+ updateZombies(dt);
+ updateSurvivors(dt);
+ updateBullets(dt);
+ updateHunger(dt);
+ randomHorror(dt);
+ updateSmiler(dt);
+ updateSmarterHorror(dt);
+ triggerSmilerVision();
+ updateParticles(dt);
+ if(state.battery>0&&state.light)state.battery=Math.max(0,state.battery-dt*.22);
+ if(state.sanity<=0)die('You could no longer tell what was real.');
+ if(chapter==='ALCATRAZ'&&player.x>4100&&state.dockPass){objectiveStep=5;setObjective();}
+ if(chapter==='SAN FRANCISCO'&&survivorsFound>=3&&!archiveOpened)setObjective();
+ flash=Math.max(0,flash-dt*2);shake=Math.max(0,shake-dt*10);
+ const targetCamera=player.x-W*.42;
+ camera=lerp(camera,targetCamera,Math.min(1,dt*5));
+ const maxCam=(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-W;
+ camera=clamp(camera,0,maxCam);
+ drawHUD();
+}
+function renderLoop(){requestAnimationFrame(renderLoop);const now=performance.now();const dt=Math.min(.035,(now-last)/1000);last=now;if(mode==='play'||mode==='pause')update(dt);draw();}
+function setupModeUi(){
+ document.querySelectorAll('#modePicker [data-mode]').forEach(b=>b.onclick=()=>{setControlMode(b.dataset.mode);closeModePicker();});
+ const auto=document.getElementById('modeAuto');if(auto)auto.onclick=()=>{controlMode=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches?'mobile':'laptop';closeModePicker();};
+ const reopen=document.getElementById('privacyReopen');if(reopen)reopen.onclick=openPrivacyDashboard;
+ const modeOpen=document.getElementById('controlModeOpen');if(modeOpen)modeOpen.onclick=openModePicker;
+ setupMobileControls();
+ setControlMode(controlMode);
+}
+setupModeUi();
+
+
+const oldAccept=document.getElementById('privacyAccept');
+if(oldAccept)oldAccept.addEventListener('click',()=>{setControlMode(controlMode);openModePicker();});
+document.getElementById('privacyClose').onclick=closePrivacyDashboard;
+document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();mouse.down=false;}});
 
 </script>
 </div>
