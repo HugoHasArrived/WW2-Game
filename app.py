@@ -92,6 +92,8 @@ const GROUND=570;
 
 const keys=new Set();
 
+const inputState={left:false,right:false,down:false,run:false,jump:false};
+
 const mouse={x:640,y:360,down:false};
 
 const serverInfo={ip:'UNAVAILABLE'};
