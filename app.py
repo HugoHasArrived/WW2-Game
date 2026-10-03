@@ -1458,9 +1458,9 @@ setupPrivacyUi();
 let physicsState={coyote:0,jumpBuffer:0,fallSpeed:0,landKick:0,stepClock:0,impact:0};
 function makeBuildingDoor(b){const inset=Math.min(95,Math.max(58,b.w*.08));return {left:b.x+b.w*.5-inset,right:b.x+b.w*.5+inset};}
 function buildingBlocksPoint(b,x){const d=makeBuildingDoor(b);return x>b.x+18&&x<b.x+b.w-18&&(x<d.left||x>d.right);}
-function resolveBuildingX(oldX,newX,half){let x=newX;for(const b of buildings){if(interior)break;if(chapter==='ALCATRAZ'&&!state.startEscaped&&b.x>300)continue;const left=b.x+8-half;const right=b.x+b.w-8+half;if(x>left&&x<right&&buildingBlocksPoint(b,x)){const door=makeBuildingDoor(b);if(oldX<=left&&x>left&&x<door.left)x=left;if(oldX>=right&&x<right&&x>door.right)x=right;if(oldX<door.left&&x>=door.left&&x<=door.right)x=door.left;if(oldX>door.right&&x<=door.right&&x>=door.left)x=door.right;}}
+function resolveBuildingX(oldX,newX,half){let x=newX;for(const b of buildings){if(interior)break;if(b.type==='prison')continue;if(chapter==='ALCATRAZ'&&!state.startEscaped&&b.x>300)continue;const left=b.x+8-half;const right=b.x+b.w-8+half;if(x>left&&x<right&&buildingBlocksPoint(b,x)){const door=makeBuildingDoor(b);if(oldX<=left&&x>left&&x<door.left)x=left;if(oldX>=right&&x<right&&x>door.right)x=right;if(oldX<door.left&&x>=door.left&&x<=door.right)x=door.left;if(oldX>door.right&&x<=door.right&&x>=door.left)x=door.right;}}
 return x;}
-function resolveWorldX(oldX,newX){const half=player.w*.42;let x=clamp(newX,22,(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-22);if(chapter==='ALCATRAZ'&&!state.startEscaped)x=clamp(x,120,300);if(!interior)x=resolveBuildingX(oldX,x,half);return x;}
+function resolveWorldX(oldX,newX){const half=player.w*.42;let x=clamp(newX,22,(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-22);if(chapter==='ALCATRAZ'&&startingCell&&!state.startEscaped){return clamp(x,120,350);}if(!interior)x=resolveBuildingX(oldX,x,half);return x;}
 function stepParticles(x,y,count,type='dust'){for(let i=0;i<count;i++){if(particles.length>190)particles.shift();if(type==='rain'){particles.push({x:x+rand(-8,8),y:y,life:rand(.35,.8),vx:rand(-25,25),vy:rand(80,160),size:randi(1,3),c:'#7d8788'});}else if(type==='spark'){particles.push({x:x+rand(-4,4),y:y+rand(-4,4),life:rand(.18,.42),vx:rand(-90,90),vy:rand(-120,-20),size:randi(1,3),c:'#d1a95c'});}else{particles.push({x:x+rand(-8,8),y:y+rand(-2,2),life:rand(.25,.6),vx:rand(-25,25),vy:rand(-60,-10),size:randi(1,3),c:type==='debris'?'#5e625f':'#777a76'});}}}
 function updatePlayer(dt){
 if(!physicsState)physicsState={coyote:0,jumpBuffer:0,fallSpeed:0,landKick:0,stepClock:0,impact:0};
@@ -1818,9 +1818,9 @@ function update(dt){
  if(chapter==='ALCATRAZ'&&player.x>4100&&state.dockPass){objectiveStep=5;setObjective();}
  if(chapter==='SAN FRANCISCO'&&survivorsFound>=3&&!archiveOpened)setObjective();
  flash=Math.max(0,flash-dt*2);shake=Math.max(0,shake-dt*10);
- const targetCamera=player.x-W*.42;
- camera=lerp(camera,targetCamera,Math.min(1,dt*5));
  const maxCam=(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-W;
+ const targetCamera=startingCell?0:player.x-W*.42+enhCamLead;
+ camera=lerp(camera,targetCamera,Math.min(1,dt*6));
  camera=clamp(camera,0,maxCam);
  drawHUD();
 }
@@ -2791,7 +2791,7 @@ function enhPhysicsAfter(dt){
  const desired=clamp(player.vx*.18,-68,68);
  enhCamLead=lerp(enhCamLead,desired,Math.min(1,dt*4));
  const maxCam=(chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH)-W;
- camera=lerp(camera,player.x-W*.42+enhCamLead,Math.min(1,dt*5.8));
+ camera=lerp(camera,startingCell?0:player.x-W*.42+enhCamLead,Math.min(1,dt*5.8));
  camera=clamp(camera,0,maxCam);
  if(Math.abs(player.vx)>330&&player.onGround&&mode==='play')shake=Math.max(shake,.35);
 }
