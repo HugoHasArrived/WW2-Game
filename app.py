@@ -103,7 +103,7 @@ GAME_HTML = r"""<!doctype html>
 <body>
 <div id="privacyGate"><div class="privacyBox"><h1>NIGHTWATCH SECURITY TERMINAL</h1><p class="privacyLead">ASHES OF THE DEAD — DEVICE INFORMATION NOTICE</p><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform details, screen size, language, timezone, online state, network hints, CPU thread count, touch support, cookies state, referrer, battery information when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>The game does not read passwords, personal files, photos, contacts, saved documents, account contents, or arbitrary data from your computer.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone information require separate browser permission.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV alerts, tracking messages, The Smiler observations, and horror-terminal events are fictional game elements unless explicitly identified as browser/server information.</div></div><div class="privacyNotice">The server can only see the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This is an entertainment game, not a security or diagnostic product.</div><div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button id="privacyAccept">ENTER ASHES OF THE DEAD</button><button id="privacyDetails">VIEW DEVICE PANEL</button></div></div></div><div id="privacyDashboard"><div class="dashBox"><div class="dashTop"><div><h2>NIGHTWATCH / PERSONAL DEVICE RECORD</h2><div class="dashSub">Press P to open or close this record</div></div><button id="privacyClose">CLOSE</button></div><div id="dashGrid" class="dashGrid"></div><div style="margin-top:14px;color:#7f8983;font-size:11px;line-height:1.5">Browser-exposed values can be unavailable or approximate. Location, camera, and microphone require permission. The server-seen address may be a proxy address. No passwords, personal files, photos, contacts, or account contents are read by this game.</div></div></div>
 
-<div id="mainMenu" class="layer screen mainMenu"><div class="mainMenuBox"><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • THE ALCATRAZ ESCAPE</div><div class="menuLore">A detective wakes alone inside Cell A-17. The island is quiet. The rain is not. Find the docks. Escape the island. Then find the people who are still alive.</div><div class="menuButtons"><button id="mainMenuPlay" class="menuPlay">PLAY</button><button id="mainMenuCredits" class="menuButton">CREDITS</button><button id="mainMenuControls" class="menuButton">CONTROL MODE</button></div><div class="menuThreat">DO NOT STAY IN ONE PLACE TOO LONG.</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • ALCATRAZ → SAN FRANCISCO</div></div></div><div id="credits" class="layer credits hidden"><div class="creditsBox"><h2>CREDITS</h2><p class="creditsName">Yumi Alingarog</p><p>Thank you for inspiring me to join <b>Scream Jam 2026</b> and motivating this project.</p><p>Ashes of the Dead is an original horror game experience built for the jam.</p><button id="creditsBack">BACK</button></div></div>
+<div id="mainMenu" class="layer screen mainMenu"><div class="mainMenuBox"><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • THE ALCATRAZ ESCAPE</div><div class="menuLore">A detective wakes alone inside Cell A-17. The island is quiet. The rain is not. Find the docks. Escape the island. Then find the people who are still alive.</div><div class="menuButtons"><button id="mainMenuPlay" class="menuPlay">PLAY</button><button id="mainMenuCredits" class="menuButton">CREDITS</button><button id="mainMenuControls" class="menuButton">CONTROL MODE</button></div><div class="menuThreat">DO NOT STAY IN ONE PLACE TOO LONG.</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • ALCATRAZ → SAN FRANCISCO</div></div></div><div id="credits" class="layer credits hidden"><div class="creditsBox"><h2>CREDITS</h2><p class="creditsName">Mayumi Alingarog (Yumi, Mimi, Yumimi)</p><p>Thank you to Mayumi Alingarog (Yumi, Mimi, Yumimi), a wonderful classmate and developer who is very helpful, kind, and respectful, for inspiring me to join <b>Scream Jam 2026</b> and motivating this project.</p><p>Ashes of the Dead is an original horror game experience built for the jam.</p><button id="creditsBack">BACK</button></div></div>
 <div id="modePicker" class="modePicker layer hidden">
 <div class="modeBox">
 <div class="modeTitle">CONTROL PROFILE</div>
@@ -810,7 +810,7 @@ eventTimer-=dt;
 quietTimer+=dt;
 if(blackout>0)blackout-=dt;
 if(scareTimer<=0){scareTimer=rand(28,52);
-if(Math.random()<.45){blackout=rand(1.2,2.8);
+if(interior&&Math.random()<.45){blackout=rand(1.2,2.8);
 state.sanity=Math.max(0,state.sanity-rand(3,8));
 setMsg('The lights failed.',1.5);
 tone(42,.5,'sine',.04,-15);
@@ -896,7 +896,7 @@ else drawWorld();
 drawWeather();
 if(flash>0){ctx.fillStyle=`rgba(255,245,230,${flash})`;
 ctx.fillRect(0,0,W,H);
-}if(blackout>0){ctx.fillStyle=`rgba(0,0,0,${clamp(blackout/2,0,.92)})`;
+}if(interior&&blackout>0){ctx.fillStyle=`rgba(0,0,0,${clamp(blackout/2,0,.92)})`;
 ctx.fillRect(0,0,W,H);
 }if(state.sanity<45){ctx.fillStyle=`rgba(30,5,15,${(45-state.sanity)/180})`;
 ctx.fillRect(0,0,W,H);
@@ -1863,7 +1863,7 @@ function drawHorrorOverlay(){
   const edge=smiler.active?smiler.x-camera:(player.facing>0?W-75:75);
   ctx.save();ctx.globalAlpha=Math.min(1,horrorEyes/1.2)*.7;ctx.fillStyle='#010101';ctx.fillRect(edge-34,195,68,235);ctx.fillStyle='#e4dfd2';ctx.fillRect(edge-17,229,7,5);ctx.fillRect(edge+10,229,7,5);ctx.fillStyle='#050505';ctx.fillRect(edge-21,250,42,45);ctx.restore();
  }
- if(blackout>0.2){ctx.fillStyle=`rgba(0,0,0,${clamp(blackout/2.4,0,.9)})`;ctx.fillRect(0,0,W,H);}
+ if(interior&&blackout>0.2){ctx.fillStyle=`rgba(0,0,0,${clamp(blackout/2.4,0,.9)})`;ctx.fillRect(0,0,W,H);}
  if(state.sanity<55){ctx.save();ctx.globalAlpha=(55-state.sanity)/420;for(let i=0;i<11;i++){const y=100+i*47+Math.sin(totalTime*4+i)*5;ctx.fillStyle='#b6a7a0';ctx.fillRect((i*137+totalTime*70)%W,y,16,1);}ctx.restore();}
 }
 function draw(){
@@ -3244,7 +3244,7 @@ function competitionDrawRainSplash(){
 }
 function competitionDrawHorrorLayers(){
  if(mode!=='play')return;
- if(competitionPixelState.blackout>0){ctx.save();ctx.fillStyle='rgba(0,0,0,'+Math.min(.78,competitionPixelState.blackout)+')';ctx.fillRect(0,0,W,H);ctx.restore();}
+ if(interior&&competitionPixelState.blackout>0){ctx.save();ctx.fillStyle='rgba(0,0,0,'+Math.min(.78,competitionPixelState.blackout)+')';ctx.fillRect(0,0,W,H);ctx.restore();}
  if(competitionPixelState.shock>0){
   ctx.save();const a=competitionPixelState.shock*.14;ctx.fillStyle='rgba(133,17,24,'+a+')';ctx.fillRect(0,0,W,H);ctx.globalAlpha=a*1.3;
   for(let i=0;i<18;i++){const y=(i*41+Math.floor(totalTime*260))%H;ctx.fillRect(0,y,W,1+(i%2));}
@@ -3266,6 +3266,7 @@ function competitionHorrorUpdate(dt){
  competitionPixelState.time+=dt;
  competitionPixelState.flash=Math.max(0,competitionPixelState.flash-dt*3.8);
  competitionPixelState.blackout=Math.max(0,competitionPixelState.blackout-dt*1.7);
+ if(!interior)competitionPixelState.blackout=0;
  competitionPixelState.shock=Math.max(0,competitionPixelState.shock-dt*2.2);
  competitionPixelState.wallEvent=Math.max(0,competitionPixelState.wallEvent-dt*1.35);
  competitionPixelState.wallCooldown=Math.max(0,competitionPixelState.wallCooldown-dt);
@@ -3277,7 +3278,7 @@ function competitionHorrorUpdate(dt){
   competitionPixelState.wallCooldown=18+Math.random()*34;
   const r=Math.random();
   if(r<.28){competitionPixelState.flash=.6;competitionPixelState.shock=.8;showWarning('DID YOU SEE THAT?');tone(36,.55,'sine',.025,-10);shake=Math.max(shake,5);}
-  else if(r<.52){competitionPixelState.blackout=.72;setMsg('The lights went out for less than a second.',1.4);tone(29,.45,'sine',.018,-9);}
+  else if(r<.52&&interior){competitionPixelState.blackout=.72;setMsg('The interior lights flicker.',1.4);tone(29,.45,'sine',.025,-9);}
   else if(r<.76){competitionPixelState.wallEvent=.95;setMsg('Something is standing at the edge of the hall.',1.25);tone(47,.5,'triangle',.018,-8);}
   else{competitionPixelState.shock=.55;jamMessage(Math.random()<.5?'KEEP WALKING.':'THE DOOR BEHIND YOU IS OPEN.',1.35);tone(52,.3,'sawtooth',.01,-6);}
  }
@@ -3343,10 +3344,11 @@ const aotdSoundscapeV1=(()=>{
   ctx=audio();
   if(!ctx)return null;
   if(!master){
-   master=ctx.createGain();master.gain.value=.62;master.connect(ctx.destination);
-   musicGain=ctx.createGain();musicGain.gain.value=.22;musicGain.connect(master);
-   sfxGain=ctx.createGain();sfxGain.gain.value=.82;sfxGain.connect(master);
-   rainGain=ctx.createGain();rainGain.gain.value=.07;rainGain.connect(master);
+   master=ctx.createGain();master.gain.value=1.08;
+   const limiter=ctx.createDynamicsCompressor();limiter.threshold.value=-8;limiter.knee.value=12;limiter.ratio.value=6;limiter.attack.value=.003;limiter.release.value=.16;master.connect(limiter);limiter.connect(ctx.destination);
+   musicGain=ctx.createGain();musicGain.gain.value=.30;musicGain.connect(master);
+   sfxGain=ctx.createGain();sfxGain.gain.value=1.18;sfxGain.connect(master);
+   rainGain=ctx.createGain();rainGain.gain.value=.11;rainGain.connect(master);
   }
   return ctx;
  }
@@ -3377,7 +3379,7 @@ const aotdSoundscapeV1=(()=>{
  }
  function startRain(){
   const ac=ensure();if(!ac||rainSource)return;
-  rainBuffer=noise(2.4);rainSource=ac.createBufferSource();rainFilter=ac.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=3100;rainFilter.Q.value=.55;rainSource.buffer=rainBuffer;rainSource.loop=true;rainGain.gain.value=.035;rainSource.connect(rainFilter);rainFilter.connect(rainGain);rainSource.start();
+  rainBuffer=noise(2.4);rainSource=ac.createBufferSource();rainFilter=ac.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=3100;rainFilter.Q.value=.55;rainSource.buffer=rainBuffer;rainSource.loop=true;rainGain.gain.value=.075;rainSource.connect(rainFilter);rainFilter.connect(rainGain);rainSource.start();
  }
  function startMusic(){
   const ac=ensure();if(!ac||droneA)return;
@@ -3409,14 +3411,15 @@ const aotdSoundscapeV1=(()=>{
  }
  function unlock(){if(enabled){audio();start();}}
  function footstep(){
-  noiseBurst(.075,.05,'lowpass',900,1);
-  burst(78,.055,'sine',.025,-15,'lowpass',420);
+  noiseBurst(.095,.10,'lowpass',1050,1);
+  burst(72,.10,'sine',.050,-15,'lowpass',430);
+  burst(118,.045,'triangle',.025,-10,'bandpass',760);
  }
- function jump(){burst(180,.11,'triangle',.035,55,'lowpass',900);noiseBurst(.07,.018,'highpass',1500,1);}
- function land(){burst(62,.12,'sine',.045,-22,'lowpass',360);noiseBurst(.11,.022,'lowpass',700,1);}
- function door(){burst(54,.22,'square',.052,-23,'lowpass',650);noiseBurst(.14,.028,'bandpass',520,1.2);}
- function chest(){burst(185,.16,'triangle',.045,90,'lowpass',1200);setTimeout(()=>burst(270,.12,'triangle',.028,120,'lowpass',1500),80);}
- function pickup(){burst(420,.07,'square',.022,90,'lowpass',2000);}
+ function jump(){burst(180,.12,'triangle',.07,55,'lowpass',900);noiseBurst(.09,.04,'highpass',1500,1);}
+ function land(){burst(58,.14,'sine',.09,-22,'lowpass',360);noiseBurst(.13,.05,'lowpass',700,1);}
+ function door(){burst(50,.26,'square',.10,-23,'lowpass',650);noiseBurst(.18,.055,'bandpass',520,1.2);}
+ function chest(){burst(150,.16,'square',.09,85,'lowpass',1050);setTimeout(()=>burst(235,.14,'triangle',.07,130,'lowpass',1500),85);setTimeout(()=>burst(520,.08,'sine',.045,160,'highpass',1800),160);}
+ function pickup(){burst(440,.09,'square',.06,90,'lowpass',2000);burst(700,.07,'triangle',.035,120,'highpass',1800);}
  function reload(){burst(190,.08,'square',.027,35,'highpass',700);setTimeout(()=>burst(280,.1,'triangle',.025,55,'bandpass',1500),85);}
  function shot(){burst(94,.075,'sawtooth',.08,-38,'lowpass',1500);noiseBurst(.065,.06,'highpass',1800,1);}
  function grenade(){burst(52,.38,'sawtooth',.11,-30,'lowpass',600);setTimeout(()=>noiseBurst(.26,.09,'lowpass',740,1),75);}
@@ -3431,10 +3434,10 @@ const aotdSoundscapeV1=(()=>{
   const o=ac.createOscillator();const g=ac.createGain();const f=ac.createBiquadFilter();
   o.type='sawtooth';o.frequency.setValueAtTime(760,t);o.frequency.exponentialRampToValueAtTime(145,t+.34);o.frequency.exponentialRampToValueAtTime(300,t+.83);
   f.type='bandpass';f.frequency.value=1350;f.Q.value=1.1;
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.055*power,t+.025);g.gain.exponentialRampToValueAtTime(.0001,t+.9);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.13*power,t+.025);g.gain.exponentialRampToValueAtTime(.0001,t+.9);
   o.connect(f);f.connect(g);g.connect(sfxGain);o.start(t);o.stop(t+.93);
-  noiseBurst(.72,.035*power,'bandpass',2100,1.2);
-  setTimeout(()=>burst(58,.08*power,'square',.17*power,-18,'lowpass',520),65);
+  noiseBurst(.78,.09*power,'bandpass',2100,1.2);
+  setTimeout(()=>burst(52,.16*power,'square',.25*power,-18,'lowpass',520),65);
  }
  function whisper(){burst(240,.32,'sine',.008,-80,'bandpass',1100);noiseBurst(.31,.006,'bandpass',1700,1.4);}
  function update(dt){
@@ -3446,7 +3449,7 @@ const aotdSoundscapeV1=(()=>{
    const sanity=typeof state!=='undefined'?clamp(state.sanity||100,0,100):100;
    const stress=1+(100-sanity)/130+(typeof smiler!=='undefined'&&smiler.active?.55:0);
    musicGain.gain.setTargetAtTime(.18+.035*stress,ac.currentTime,.12);
-   rainGain.gain.setTargetAtTime((typeof interior!=='undefined'&&interior)?0:.045,ac.currentTime,.25);
+   rainGain.gain.setTargetAtTime((typeof interior!=='undefined'&&interior)?.035:.085,ac.currentTime,.25);
   }
   if(mode==='play'&&!chestUIOpen&&!gadgetOpen){
    const moving=Math.abs(player.vx)>48&&player.onGround;
@@ -3516,6 +3519,7 @@ window.addEventListener('pointerdown',()=>aotdSoundscapeV1.unlock(),{passive:tru
 window.addEventListener('keydown',()=>aotdSoundscapeV1.unlock(),{passive:true});
 
 
+let interiorAnimClock=0;
 function aotdInteriorAnimationUpgrade(){
  drawCharacterSprite=function(x,y,who,dir,anim,role){
   const t=anim||0;
@@ -3615,6 +3619,96 @@ function aotdMenuPolish(){
  }
 }
 aotdMenuPolish();
+
+const aotdCompetitionFixStyle=document.createElement('style');
+aotdCompetitionFixStyle.textContent=`
+#aotdJumpScare{position:absolute;inset:0;z-index:68;pointer-events:none;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.18)}
+#aotdJumpScare.show{display:flex}
+#aotdJumpScare .face{position:relative;width:220px;height:250px;background:#030304;border:3px solid #111;box-shadow:0 0 70px rgba(255,255,255,.12),0 0 24px rgba(130,0,10,.35);image-rendering:pixelated}
+#aotdJumpScare .eye{position:absolute;top:70px;width:28px;height:14px;background:#e8e0d2;box-shadow:0 0 16px rgba(255,240,210,.7)}
+#aotdJumpScare .eye.left{left:45px}.aotdJumpScare .eye.right{right:45px}
+#aotdJumpScare .mouth{position:absolute;left:45px;right:45px;bottom:55px;height:60px;border-top:5px solid #8c7370;border-bottom:5px solid #8c7370;background:#0a0809}
+#aotdRoomBanner{position:absolute;left:18px;top:83px;z-index:28;pointer-events:none;color:#d5cfc2;font:700 10px Consolas,monospace;letter-spacing:2px;text-shadow:2px 2px #000;opacity:0;transition:opacity .15s}
+`;
+document.head.appendChild(aotdCompetitionFixStyle);
+const aotdJumpScareEl=document.createElement('div');
+aotdJumpScareEl.id='aotdJumpScare';
+aotdJumpScareEl.innerHTML='<div class="face"><div class="eye left"></div><div class="eye right"></div><div class="mouth"></div></div>';
+document.body.appendChild(aotdJumpScareEl);
+const aotdRoomBanner=document.createElement('div');
+aotdRoomBanner.id='aotdRoomBanner';
+document.body.appendChild(aotdRoomBanner);
+let aotdScareDirector={timer:18+Math.random()*16,cooldown:0,flash:0,active:false,face:0};
+let aotdFootAudioSafety=0;
+function aotdTriggerJumpscare(power=1){
+ if(mode!=='play'||chestUIOpen||gadgetOpen||aotdScareDirector.cooldown>0)return;
+ aotdScareDirector.cooldown=18+Math.random()*17;
+ aotdScareDirector.flash=.85*power;
+ aotdScareDirector.face=.42+.18*power;
+ aotdScareDirector.active=true;
+ aotdJumpScareEl.classList.add('show');
+ aotdJumpScareEl.style.opacity=String(Math.min(1,.82+.12*power));
+ showWarning('RUN.');
+ jamMessage(Math.random()<.5?'HE WAS CLOSER THAN YOU THOUGHT':'DON’T TURN AROUND.',1.4);
+ aotdSoundscapeV1.scream(1.7*power);
+ shake=Math.max(shake,10*power);
+ flash=Math.max(flash,.55*power);
+ setTimeout(()=>{aotdJumpScareEl.classList.remove('show');aotdScareDirector.active=false;},Math.max(260,520-power*80));
+}
+function aotdUpdateScareDirector(dt){
+ if(mode!=='play')return;
+ aotdScareDirector.timer-=dt;
+ aotdScareDirector.cooldown=Math.max(0,aotdScareDirector.cooldown-dt);
+ aotdScareDirector.flash=Math.max(0,aotdScareDirector.flash-dt*2.7);
+ if(aotdScareDirector.timer<=0&&aotdScareDirector.cooldown<=0){
+  const danger=state.sanity<55?1.35:state.sanity<75?1.12:1;
+  aotdScareDirector.timer=(24+Math.random()*24)/danger;
+  if(Math.random()<.48||state.sanity<38)aotdTriggerJumpscare(state.sanity<38?1.18:1);
+ }
+ if(smiler.active&&Math.abs(smiler.x-player.x)<320&&Math.random()<dt*.085)aotdSoundscapeV1.scream(.75);
+}
+function aotdRoomRender(){
+ if(mode!=='play'||!interior)return;
+ const b=interior.building;
+ const ground=GROUND-20;
+ ctx.save();
+ ctx.fillStyle='#06090b';ctx.fillRect(0,0,W,H);
+ const wall=ctx.createLinearGradient(0,60,0,560);wall.addColorStop(0,'#0e1316');wall.addColorStop(.52,b.type==='prison'?'#303536':'#242b2c');wall.addColorStop(1,'#111516');ctx.fillStyle=wall;ctx.fillRect(0,62,W,505);
+ px(0,62,W,9,'#4b504f');px(0,72,W,5,'#181d1e');
+ for(let row=0;row<9;row++)for(let col=0;col<18;col++){const x=col*78+(row%2)*39;const y=92+row*50;line(x,y,x+50,y,'#3a3f3e',1);px(x+2,y+3,2,11,'#242928');}
+ px(0,545,W,175,'#0a0e0f');
+ for(let i=0;i<18;i++){const x=i*73;px(x,545,50,5,'#282d2c');px(x+8,551,2,115,'#161b1b');}
+ px(38,395,235,120,'#161b1c');px(52,364,205,35,'#414644');px(84,321,92,44,'#080c0d');px(82,354,128,7,'#50524b');
+ px(770,407,190,108,'#332e2a');px(789,368,150,39,'#252a2a');px(812,380,23,9,'#615844');
+ px(1048,361,105,154,'#161b1c');for(let i=0;i<5;i++)px(1056,375+i*26,87,5,'#555b57');
+ const doorX=610;px(doorX-68,365,136,150,'#090c0d');px(doorX-58,378,116,137,'#1c2223');px(doorX+36,430,5,5,'#9f8b5d');
+ ctx.fillStyle='#d2c8a2';ctx.fillRect(doorX-77,344,154,2);
+ ctx.font='bold 16px Consolas';ctx.fillStyle='#ba4c4b';ctx.fillText(b.name.toUpperCase(),270,104);
+ ctx.font='11px Consolas';ctx.fillStyle='#8f9893';ctx.fillText(`FLOOR ${floor}  •  INTERIOR`,500,128);
+ for(let i=0;i<5;i++){const x=150+i*205;px(x,152,82,48,'#111617');px(x+9,162,64,6,'#4f5350');px(x+20,178,41,12,'#272c2c');if(i%2===0)px(x+33,192,9,5,'#7d6b49');}
+ if(floor>=2){px(382,165,140,12,'#141919');px(382,177,10,220,'#2d3332');px(512,177,10,220,'#202727');for(let i=0;i<6;i++){line(392+i*20,390,432+i*20,180,'#414745',3);}}
+ for(let i=0;i<15;i++){const x=20+i*86;const y=220+(i%4)*66;px(x,y,42,4,'#303534');px(x+6,y+6,28,3,'#171c1c');if(i%4===0){px(x+12,y-14,6,14,'#4d524f');px(x+7,y-19,16,6,'#6d6554');}}
+ if(chests.some(c=>c.inside&&c.buildingName===b.name))drawInteriorLoot();
+ drawEnhancedInteriorPlayer();
+ for(const p of particles){const x=p.x;ctx.save();ctx.globalAlpha=clamp(p.life*2,0,1);px(x,p.y,p.size,p.size,p.c);ctx.restore();}
+ ctx.font='bold 10px Consolas';ctx.fillStyle='#c9c4b5';ctx.fillText('LEFT EXIT',32,338);ctx.fillText('RIGHT EXIT',1090,338);
+ ctx.font='9px Consolas';ctx.fillStyle='#777f7a';ctx.fillText('WALLS / FLOOR / DOOR / PROPS',32,690);
+ ctx.restore();
+}
+function aotdRoomUi(dt){
+ const b=document.getElementById('aotdRoomBanner');
+ if(!b)return;
+ if(mode==='play'&&interior){b.textContent=`${interior.building.name.toUpperCase()}  //  FLOOR ${floor}  //  SEARCH THE ROOM`;b.style.opacity='1';}
+ else b.style.opacity='0';
+}
+const aotdPreFinalUpdate=update;
+update=function(dt){aotdPreFinalUpdate(dt);aotdUpdateScareDirector(dt);aotdRoomUi(dt);if(mode==='play'&&!interior){aotdFootAudioSafety=Math.max(0,aotdFootAudioSafety-dt);if(Math.abs(player.vx)>55&&player.onGround&&aotdFootAudioSafety<=0){aotdFootAudioSafety=Math.abs(player.vx)>260?.23:.34;aotdSoundscapeV1.footstep();}}};
+const aotdPreFinalDraw=draw;
+draw=function(){
+ if(mode==='play'&&interior){aotdRoomRender();drawHorrorOverlay();if(aotdScareDirector.flash>0){ctx.save();ctx.globalAlpha=aotdScareDirector.flash*.12;ctx.fillStyle='#f0e8dc';ctx.fillRect(0,0,W,H);ctx.restore();}return;}
+ aotdPreFinalDraw();
+ if(mode==='play'&&aotdScareDirector.flash>0){ctx.save();ctx.globalAlpha=aotdScareDirector.flash*.12;ctx.fillStyle='#f0e8dc';ctx.fillRect(0,0,W,H);ctx.restore();}
+};
 
 renderLoop();
 
