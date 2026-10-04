@@ -129,6 +129,12 @@ GAME_HTML = r"""<!doctype html>
 .charCard[data-char="Yumi"]::marker{display:none}
 .charSelectBox{background:radial-gradient(circle at 50% 12%,rgba(80,94,88,.16),transparent 32%),linear-gradient(180deg,#0b110f,#030706)!important;border-color:#69746e!important;box-shadow:0 20px 90px rgba(0,0,0,.82),inset 0 0 90px rgba(170,184,174,.035)!important}
 
+
+#aotdVisibilityFix{display:none}
+.vignette{background:radial-gradient(ellipse at center,transparent 48%,rgba(0,0,0,.38) 100%)!important}
+.charCard:after{display:none!important}
+.charCard{background:linear-gradient(180deg,#141c1e,#0b1113)!important}
+.mainMenuBox{z-index:20!important}
 </style>
 </style>
 <style id="visualUpgradeStyle">
@@ -4224,6 +4230,180 @@ function aotdFixDrawPipeline(){
  draw=function(){base();if(mode==='play'){aotdReadableCharacterNames();}};
 }
 aotdFixDrawPipeline();
+
+function aotdVisibleDistantSky(){
+ const sf=chapter==='SAN FRANCISCO';
+ const g=ctx.createLinearGradient(0,0,0,GROUND);
+ g.addColorStop(0,sf?'#091019':'#0a1117');
+ g.addColorStop(.42,sf?'#17252d':'#1a272d');
+ g.addColorStop(1,sf?'#293436':'#273236');
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<18;i++){
+  const x=(i*137-camera*.08)%W;
+  const h=70+(i%6)*19;
+  const y=GROUND-145-h;
+  px(x,y,92+(i%4)*12,h,sf?(i%2?'#172127':'#1b2529'):(i%2?'#1a2529':'#1d292c'));
+  px(x+8,y+10,72+(i%3)*8,5,'#344247');
+  for(let q=0;q<3;q++){
+   const lit=(i+q)%4===0;
+   px(x+14+q*24,y+28,12,18,lit?'#6b634f':'#273236');
+   if(lit)px(x+17+q*24,y+32,5,8,'#a08c5d');
+  }
+ }
+ if(sf){
+  px(0,GROUND-132,W,7,'#394446');
+  for(let i=0;i<9;i++){
+   const x=i*164-camera*.14;
+   line(x,GROUND-126,x+35,GROUND-182,'#596467',3);
+   line(x+35,GROUND-182,x+70,GROUND-126,'#485255',3);
+  }
+ }
+ if(chapter==='ALCATRAZ'){
+  ctx.save();ctx.globalAlpha=.7;px(0,GROUND-118,W,118,'#1a2428');ctx.restore();
+  for(let i=0;i<7;i++){
+   const x=70+i*210-camera*.12;
+   px(x,GROUND-168,108,168,'#283236');
+   px(x+12,GROUND-154,84,8,'#434b4c');
+   for(let q=0;q<5;q++)px(x+18+q*15,GROUND-128,5,64,'#11191b');
+  }
+ }
+}
+function aotdVisibleGround(){
+ const g=ctx.createLinearGradient(0,GROUND-4,0,H);
+ g.addColorStop(0,'#343b39');g.addColorStop(.2,'#252c2c');g.addColorStop(1,'#13191a');
+ ctx.fillStyle=g;ctx.fillRect(0,GROUND,W,H-GROUND);
+ ctx.fillStyle='#46504e';ctx.fillRect(0,GROUND-8,W,8);
+ for(let i=0;i<54;i++){
+  const x=(i*83-camera*.92)%W;
+  const y=GROUND+14+(i%10)*14;
+  if(i%5===0){px(x,y,24,3,'#59605b');px(x+5,y+5,9,2,'#252b29');}
+  else if(i%3===0){px(x,y,5+(i%4),3,'#666960');px(x+8,y+2,3,2,'#414742');}
+  else{px(x,y,2+(i%3),2,'#525754');}
+ }
+ if(chapter==='SAN FRANCISCO'){
+  ctx.fillStyle='#39403f';ctx.fillRect(0,GROUND+39,W,76);
+  for(let x=-20;x<W+160;x+=155)px(x,GROUND+68,72,4,'#7a7970');
+ }else{
+  ctx.fillStyle='#2d3534';ctx.fillRect(0,GROUND+45,W,95);
+  for(let i=0;i<11;i++){
+   const x=i*132-camera*.42;
+   px(x,GROUND+62,68,7,'#4c514c');
+   px(x+8,GROUND+77,42,3,'#1f2625');
+  }
+ }
+}
+function aotdVisibleStructures(){
+ for(const b of buildings){
+  const x=b.x-camera;
+  if(x<-b.w-80||x>W+80)continue;
+  const h=b.type==='prison'?250:b.floors*105+82;
+  const main=b.type==='hospital'?'#354044':b.type==='police'?'#334047':b.type==='prison'?'#3a4142':'#343b3d';
+  const trim=b.type==='hospital'?'#697476':b.type==='police'?'#626c70':'#666c69';
+  const shadow='#20282a';
+  px(x,GROUND-h,b.w,h,main);
+  px(x,GROUND-h,b.w,9,trim);
+  px(x+10,GROUND-h+11,b.w-20,8,shadow);
+  for(let f=0;f<b.floors;f++){
+   const fy=GROUND-74-f*105;
+   px(x+17,fy,b.w-34,5,'#555e5e');
+   const cols=Math.max(2,Math.floor((b.w-56)/46));
+   for(let q=0;q<cols;q++){
+    const wx=x+25+q*46;
+    const lit=(q+f+Math.floor(b.x/100))%6===0;
+    px(wx,fy-31,24,24,lit?'#6b604d':'#1b2427');
+    px(wx+3,fy-28,18,18,lit?'#8d7a52':'#263236');
+    if(lit){px(wx+7,fy-24,4,7,'#b29a65');px(wx+14,fy-24,4,7,'#927d54');}
+   }
+  }
+  const door=b.x+b.w*.5-camera;
+  px(door-30,GROUND-73,60,73,'#11181a');
+  px(door-24,GROUND-66,48,66,'#253033');
+  px(door+17,GROUND-43,5,5,'#b19c68');
+  if(b.type==='police'){px(x+18,GROUND-h+17,b.w-36,23,'#20292c');aotdReadableText('POLICE',x+30,GROUND-h+31,13,'#ddd8c8');}
+  if(b.type==='hospital'){px(x+b.w/2-62,GROUND-h+18,124,34,'#526064');px(x+b.w/2-8,GROUND-h+23,16,23,'#d8dbd5');px(x+b.w/2-20,GROUND-h+31,40,8,'#d8dbd5');}
+  if(b.type==='funeral'){px(x+22,GROUND-h+18,b.w-44,25,'#242b2d');aotdReadableText('MERCY FUNERAL',x+105,GROUND-h+31,11,'#c2c5c0');}
+  if(b.type==='research'){px(x+b.w/2-96,GROUND-h+16,192,27,'#1b2527');aotdReadableText('ECLIPSE RESEARCH',x+b.w/2,GROUND-h+29,10,'#c7cec8');}
+ }
+}
+function aotdVisibleExteriorScene(){
+ aotdVisibleDistantSky();
+ aotdVisibleGround();
+ aotdVisibleStructures();
+ if(chapter==='SAN FRANCISCO')drawSFStreetProps();else drawAlcatrazProps();
+ drawStreetDebris();
+ if(chapter==='ALCATRAZ'){drawCellBlockAExterior();drawStartingCell();}
+ drawEnhancedBloodWriting();
+ drawEnhancedChests();
+ drawEnhancedLoot();
+ drawEnhancedSurvivors();
+ drawEnhancedZombies();
+ for(const b of bullets){const x=b.x-camera;if(x>-25&&x<W+25){px(x-4,b.y-2,8,4,'#e9d99c');px(x+2,b.y-1,5,2,'#fff6c9');}}
+ drawEnhancedPlayer();
+ drawEnhancedSmiler();
+ if(typeof finalDrawBuildingDetails==='function')finalDrawBuildingDetails();
+ if(typeof finalDrawIslandDock==='function')finalDrawIslandDock();
+ if(typeof drawFinalBoat==='function')drawFinalBoat();
+ drawParticles();
+ drawLighting();
+ drawEnhancedWeather();
+}
+function aotdVisibleInteriorScene(){
+ const b=interior.building;
+ const wall=ctx.createLinearGradient(0,50,0,530);
+ wall.addColorStop(0,b.type==='prison'?'#394344':'#303b3d');
+ wall.addColorStop(.48,'#252e30');
+ wall.addColorStop(1,'#151d1f');
+ ctx.fillStyle=wall;ctx.fillRect(0,0,W,H);
+ px(0,64,W,8,'#67706d');
+ for(let row=0;row<8;row++){
+  const y=94+row*52;
+  for(let col=-1;col<18;col++){
+   const x=col*76+(row%2)*38;
+   line(x,y,x+49,y,'#46504e',1);
+   px(x+2,y+4,2,10,'#252d2d');
+  }
+ }
+ px(0,530,W,190,'#11191a');
+ for(let i=0;i<19;i++){const x=i*68;px(x,539,50,4,'#3e4745');px(x+8,546,2,126,'#202727');}
+ const doorX=610;
+ px(doorX-65,360,130,154,'#101719');
+ px(doorX-55,374,110,140,'#2c3739');
+ px(doorX+35,431,5,5,'#c0a768');
+ px(doorX-71,347,142,3,'#aaa27f');
+ px(52,392,214,122,'#202a2b');
+ px(43,370,232,23,'#4b5351');
+ px(83,334,99,34,'#11181a');
+ px(778,405,192,109,'#443a31');
+ px(790,378,168,27,'#2b3536');
+ px(807,387,20,9,'#766b53');
+ px(1050,360,104,154,'#202a2b');
+ for(let i=0;i<5;i++){px(1057,374+i*27,88,5,'#727873');}
+ for(let i=0;i<5;i++){
+  const x=132+i*205;
+  px(x,145,88,46,'#1b2426');
+  px(x+8,153,72,6,'#66706b');
+  px(x+17,167,54,13,'#303b3c');
+  if(i%2===0)px(x+36,185,10,6,'#90774f');
+ }
+ if(floor>=2){px(388,156,118,240,'#1b2426');px(522,156,12,240,'#3a4443');for(let i=0;i<6;i++)line(401+i*20,388,442+i*20,174,'#59615e',3);}
+ ctx.font='700 16px Consolas';ctx.fillStyle='#d0c5ac';ctx.strokeStyle='#000';ctx.lineWidth=3;ctx.strokeText(b.name.toUpperCase(),255,104);ctx.fillText(b.name.toUpperCase(),255,104);
+ ctx.font='11px Consolas';ctx.fillStyle='#b5beb8';ctx.fillText(`FLOOR ${floor} • INTERIOR`,500,126);
+ drawInteriorLoot();
+ drawEnhancedInteriorPlayer();
+ drawParticles();
+}
+function aotdFinalVisibleDraw(){
+ if(mode!=='play')return;
+ ctx.save();
+ const sx=shake?(Math.random()*shake-shake/2):0;
+ ctx.translate(sx,0);
+ if(interior)aotdVisibleInteriorScene();else aotdVisibleExteriorScene();
+ if(ultimateScare&&ultimateScare.shadow>0){ctx.save();ctx.globalAlpha=Math.min(.16,ultimateScare.shadow*.08);const side=player.facing>0?W-105:105;px(side-18,210,36,210,'#050708');px(side-11,192,22,24,'#050708');ctx.restore();}
+ if(flash>0){ctx.fillStyle=`rgba(255,245,225,${Math.min(.25,flash*.22)})`;ctx.fillRect(0,0,W,H);}
+ if(state.sanity<45){ctx.fillStyle=`rgba(45,12,24,${Math.min(.16,(45-state.sanity)/240)})`;ctx.fillRect(0,0,W,H);}
+ ctx.restore();
+}
+draw=aotdFinalVisibleDraw;
 
 </script>
 </div>
