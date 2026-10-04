@@ -4435,6 +4435,8 @@ function aotdFinalVisibleDraw(){
 }
 draw=aotdFinalVisibleDraw;
 
+renderLoop();
+
 </script>
 </div>
 </body>
