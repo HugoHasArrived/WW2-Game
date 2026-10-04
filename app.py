@@ -72,6 +72,9 @@ GAME_HTML = r"""<!doctype html>
 .horrorLetterbox{position:absolute;left:0;right:0;top:0;height:0;background:#000;z-index:37;pointer-events:none;opacity:0;transition:height .18s,opacity .18s}
 .horrorLetterbox.on{height:34px;opacity:.96}.horrorLetterbox.bottom{top:auto;bottom:0}
 @media(max-width:760px){.menuBadge{left:12px;top:12px}.menuSignal{right:12px;bottom:12px}.menuMoon{right:5%;top:9%;width:66px;height:66px}.pixelHudChip{right:12px;top:82px}}
+
+#aotdSoundPanel{position:absolute;left:18px;top:62px;z-index:28;pointer-events:auto;font:700 9px Consolas,monospace;letter-spacing:1.5px;color:#aeb6b1;background:rgba(6,9,9,.76);border:1px solid #3d4542;padding:6px 8px;cursor:pointer;box-shadow:0 3px 12px #000}#aotdSoundPanel b{color:#d6d0c5}#aotdSoundPanel.off{color:#7d8581}#modePicker .modeBtns button.active{background:#27302d;border-color:#b8c0bb;box-shadow:0 0 0 1px #4f5853,inset 0 0 14px rgba(200,200,190,.06)}#modePicker .soundChoice{margin-top:12px;border-top:1px solid #252b29;padding-top:12px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.soundChoice button{font:inherit;color:#d7dbd8;background:#101514;border:1px solid #4e5753;padding:8px 12px;cursor:pointer;min-width:120px}.soundChoice button.active{border-color:#b3bbb5;background:#242c29}
+
 </style>
 </head>
 <body>
@@ -84,8 +87,13 @@ GAME_HTML = r"""<!doctype html>
 <div class="modeSub">Choose the way you want to survive.</div>
 <div class="modeBtns"><button data-mode="laptop">LAPTOP / DESKTOP</button><button data-mode="mobile">MOBILE / TOUCH</button><button id="modeAuto">AUTO DETECT</button></div>
 <div class="modeHint">Laptop: keyboard + mouse. Mobile: virtual controls + touch shooting.</div>
+<div class="soundChoice"><button id="soundOn" type="button">SOUND ON</button><button id="soundOff" type="button">SOUND OFF</button></div>
+
 </div>
 </div>
+
+<button id="aotdSoundPanel" type="button" aria-pressed="true">SOUND: <b>ON</b></button>
+
 <div id="mobileControls" class="mobileControls hidden">
 <div class="mobileMove"><button data-key="a">◀</button><button data-key="d">▶</button><button data-key="shift">RUN</button></div>
 <div class="mobileActions"><button data-key="w">JUMP</button><button data-action="e">USE</button><button data-action="q">MELEE</button><button data-action="f">LIGHT</button><button data-action="g">GRENADE</button><button data-action="h">HEAL</button><button data-action="i">BAG</button><button data-action="r">RELOAD</button><button data-action="shoot">FIRE</button></div>
@@ -3276,6 +3284,213 @@ startGame=function(name){competitionPixelState.flash=.35;competitionPixelState.s
 
 const competitionAccept=document.getElementById('privacyAccept');
 if(competitionAccept&&!competitionAccept.dataset.competitionBound){competitionAccept.dataset.competitionBound='1';competitionAccept.addEventListener('click',()=>{const gate=document.getElementById('privacyGate');if(gate)gate.remove();jamMainMenu();});}
+
+
+const aotdSoundscapeV1=(()=>{
+ let ctx=null;
+ let master=null;
+ let musicGain=null;
+ let sfxGain=null;
+ let rainGain=null;
+ let droneA=null;
+ let droneB=null;
+ let hum=null;
+ let rainSource=null;
+ let rainFilter=null;
+ let rainBuffer=null;
+ let noiseBuffer=null;
+ let started=false;
+ let enabled=true;
+ let stepTimer=0;
+ let rainTimer=0;
+ let heartbeatTimer=0;
+ let musicTimer=0;
+ let prevGround=true;
+ let prevLight=false;
+ let prevInterior=false;
+ let prevStartCell=true;
+ let prevChapter='ALCATRAZ';
+ let prevHealth=100;
+ let prevSmiler=false;
+ let prevWall=0;
+ let prevMode=mode;
+ let lastScream=0;
+ function ensure(){
+  if(!enabled)return null;
+  ctx=audio();
+  if(!ctx)return null;
+  if(!master){
+   master=ctx.createGain();master.gain.value=.62;master.connect(ctx.destination);
+   musicGain=ctx.createGain();musicGain.gain.value=.22;musicGain.connect(master);
+   sfxGain=ctx.createGain();sfxGain.gain.value=.82;sfxGain.connect(master);
+   rainGain=ctx.createGain();rainGain.gain.value=.07;rainGain.connect(master);
+  }
+  return ctx;
+ }
+ function noise(seconds){
+  const ac=ensure();
+  if(!ac)return null;
+  const n=Math.max(1,Math.floor(ac.sampleRate*seconds));
+  const b=ac.createBuffer(1,n,ac.sampleRate);const d=b.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*.65;
+  return b;
+ }
+ function burst(freq,duration,type,volume,slide,filterType,filterFreq){
+  const ac=ensure();if(!ac)return;
+  const t=ac.currentTime;
+  const o=ac.createOscillator();const g=ac.createGain();
+  o.type=type;o.frequency.setValueAtTime(Math.max(20,freq),t);
+  if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,freq+slide),t+duration);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  if(filterType){const f=ac.createBiquadFilter();f.type=filterType;f.frequency.value=filterFreq||900;o.connect(f);f.connect(g);}else{o.connect(g);}
+  g.connect(sfxGain);o.start(t);o.stop(t+duration+.025);
+ }
+ function noiseBurst(duration,volume,filterType,filterFreq,lowpass){
+  const ac=ensure();if(!ac)return;
+  const src=ac.createBufferSource();const g=ac.createGain();const f=ac.createBiquadFilter();
+  src.buffer=noiseBuffer||noise(Math.min(1.5,Math.max(.1,duration+.04)));f.type=filterType||'bandpass';f.frequency.value=filterFreq||1400;f.Q.value=lowpass||.7;
+  g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.linearRampToValueAtTime(volume,ac.currentTime+.015);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+duration);
+  src.connect(f);f.connect(g);g.connect(sfxGain);src.start();src.stop(ac.currentTime+duration+.02);
+ }
+ function startRain(){
+  const ac=ensure();if(!ac||rainSource)return;
+  rainBuffer=noise(2.4);rainSource=ac.createBufferSource();rainFilter=ac.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=3100;rainFilter.Q.value=.55;rainSource.buffer=rainBuffer;rainSource.loop=true;rainGain.gain.value=.035;rainSource.connect(rainFilter);rainFilter.connect(rainGain);rainSource.start();
+ }
+ function startMusic(){
+  const ac=ensure();if(!ac||droneA)return;
+  droneA=ac.createOscillator();droneB=ac.createOscillator();hum=ac.createOscillator();
+  const filter=ac.createBiquadFilter();const g=ac.createGain();
+  filter.type='lowpass';filter.frequency.value=760;filter.Q.value=2.4;g.gain.value=.0001;
+  droneA.type='sine';droneA.frequency.value=43;droneB.type='triangle';droneB.frequency.value=64.5;hum.type='sine';hum.frequency.value=21.5;
+  droneA.connect(filter);droneB.connect(filter);hum.connect(filter);filter.connect(g);g.connect(musicGain);
+  droneA.start();droneB.start();hum.start();
+  musicTimer=0;
+ }
+ function start(){
+  if(!enabled)return;
+  ensure();if(!ctx)return;
+  startRain();startMusic();started=true;
+ }
+ function stop(){
+  try{if(rainSource){rainSource.stop();rainSource.disconnect();}}catch(e){}
+  try{if(droneA)droneA.stop();if(droneB)droneB.stop();if(hum)hum.stop();}catch(e){}
+  rainSource=null;droneA=null;droneB=null;hum=null;started=false;
+ }
+ function setEnabled(v){
+  enabled=!!v;
+  const panel=document.getElementById('aotdSoundPanel');
+  if(panel){panel.classList.toggle('off',!enabled);panel.innerHTML='SOUND: <b>'+(enabled?'ON':'OFF')+'</b>';panel.setAttribute('aria-pressed',enabled?'true':'false');panel.classList.toggle('hidden',typeof mode!=='undefined'&&mode!=='play');}
+  const on=document.getElementById('soundOn'),off=document.getElementById('soundOff');
+  if(on)on.classList.toggle('active',enabled);if(off)off.classList.toggle('active',!enabled);
+  if(enabled)start();else stop();
+ }
+ function unlock(){if(enabled){audio();start();}}
+ function footstep(){
+  noiseBurst(.075,.05,'lowpass',900,1);
+  burst(78,.055,'sine',.025,-15,'lowpass',420);
+ }
+ function jump(){burst(180,.11,'triangle',.035,55,'lowpass',900);noiseBurst(.07,.018,'highpass',1500,1);}
+ function land(){burst(62,.12,'sine',.045,-22,'lowpass',360);noiseBurst(.11,.022,'lowpass',700,1);}
+ function door(){burst(54,.22,'square',.052,-23,'lowpass',650);noiseBurst(.14,.028,'bandpass',520,1.2);}
+ function chest(){burst(185,.16,'triangle',.045,90,'lowpass',1200);setTimeout(()=>burst(270,.12,'triangle',.028,120,'lowpass',1500),80);}
+ function pickup(){burst(420,.07,'square',.022,90,'lowpass',2000);}
+ function reload(){burst(190,.08,'square',.027,35,'highpass',700);setTimeout(()=>burst(280,.1,'triangle',.025,55,'bandpass',1500),85);}
+ function shot(){burst(94,.075,'sawtooth',.08,-38,'lowpass',1500);noiseBurst(.065,.06,'highpass',1800,1);}
+ function grenade(){burst(52,.38,'sawtooth',.11,-30,'lowpass',600);setTimeout(()=>noiseBurst(.26,.09,'lowpass',740,1),75);}
+ function flashlight(){burst(prevLight?125:210,.075,'square',.022,20,'highpass',1300);}
+ function playerHit(){burst(69,.16,'sawtooth',.055,-25,'bandpass',430);noiseBurst(.075,.02,'highpass',1900,1);}
+ function survivor(){burst(330,.15,'triangle',.026,80,'lowpass',1700);setTimeout(()=>burst(495,.18,'sine',.018,50,'lowpass',1800),80);}
+ function ferry(){burst(72,.5,'sine',.055,22,'lowpass',500);setTimeout(()=>burst(118,.5,'triangle',.034,-12,'lowpass',740),180);}
+ function scream(power=1){
+  const now=performance.now();if(now-lastScream<1300)return;lastScream=now;
+  const ac=ensure();if(!ac)return;
+  const t=ac.currentTime;
+  const o=ac.createOscillator();const g=ac.createGain();const f=ac.createBiquadFilter();
+  o.type='sawtooth';o.frequency.setValueAtTime(760,t);o.frequency.exponentialRampToValueAtTime(145,t+.34);o.frequency.exponentialRampToValueAtTime(300,t+.83);
+  f.type='bandpass';f.frequency.value=1350;f.Q.value=1.1;
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.055*power,t+.025);g.gain.exponentialRampToValueAtTime(.0001,t+.9);
+  o.connect(f);f.connect(g);g.connect(sfxGain);o.start(t);o.stop(t+.93);
+  noiseBurst(.72,.035*power,'bandpass',2100,1.2);
+  setTimeout(()=>burst(58,.08*power,'square',.17*power,-18,'lowpass',520),65);
+ }
+ function whisper(){burst(240,.32,'sine',.008,-80,'bandpass',1100);noiseBurst(.31,.006,'bandpass',1700,1.4);}
+ function update(dt){
+  if(!enabled)return;
+  const ac=ensure();if(!ac)return;
+  if(!started)start();
+  stepTimer=Math.max(0,stepTimer-dt);rainTimer=Math.max(0,rainTimer-dt);heartbeatTimer=Math.max(0,heartbeatTimer-dt);musicTimer=Math.max(0,musicTimer-dt);lastScream=Math.max(0,lastScream-0);
+  if(master&&musicGain&&rainGain){
+   const sanity=typeof state!=='undefined'?clamp(state.sanity||100,0,100):100;
+   const stress=1+(100-sanity)/130+(typeof smiler!=='undefined'&&smiler.active?.55:0);
+   musicGain.gain.setTargetAtTime(.18+.035*stress,ac.currentTime,.12);
+   rainGain.gain.setTargetAtTime((typeof interior!=='undefined'&&interior)?0:.045,ac.currentTime,.25);
+  }
+  if(mode==='play'&&!chestUIOpen&&!gadgetOpen){
+   const moving=Math.abs(player.vx)>48&&player.onGround;
+   if(moving&&stepTimer<=0){const run=Math.abs(player.vx)>260;stepTimer=run?.26:.42;footstep();}
+   if(typeof player!=='undefined'&&prevGround!==player.onGround){if(player.onGround)land();else jump();}
+   
+   if(typeof state!=='undefined'&&state.light!==prevLight){flashlight();}
+   if(typeof startingCell!=='undefined'&&prevStartCell&&!startingCell){door();}
+   if(typeof interior!=='undefined'&&!!interior!==prevInterior)door();
+   if(typeof state!=='undefined'&&state.health<prevHealth-2)playerHit();
+   if(typeof smiler!=='undefined'&&smiler.active&&!prevSmiler){whisper();}
+   if(typeof competitionPixelState!=='undefined'&&competitionPixelState.wallEvent>0&&prevWall<=0){scream(1);}
+   if(typeof chapter!=='undefined'&&chapter!==prevChapter){ferry();}
+   if(typeof state!=='undefined'&&typeof survivorsFound!=='undefined'&&survivorsFound>soundStatePrevSurvivors){survivor();}
+   if(typeof chapter!=='undefined'&&chapter==='ALCATRAZ'&&!interior&&rainTimer<=0){rainTimer=.16+Math.random()*.28;if(Math.random()<.8){noiseBurst(.025,.006,'highpass',2600,1);}}
+  }
+  if(mode==='menu'&&musicTimer<=0){musicTimer=2.8;burst(88+Math.random()*28,.26,'sine',.006,-20,'lowpass',500);}
+  prevGround=typeof player!=='undefined'?player.onGround:prevGround;
+  prevLight=typeof state!=='undefined'?state.light:prevLight;
+  prevInterior=typeof interior!=='undefined'&&!!interior;
+  prevStartCell=typeof startingCell!=='undefined'?startingCell:prevStartCell;
+  prevChapter=typeof chapter!=='undefined'?chapter:prevChapter;
+  prevHealth=typeof state!=='undefined'?state.health:prevHealth;
+  prevSmiler=typeof smiler!=='undefined'?smiler.active:prevSmiler;
+  prevWall=typeof competitionPixelState!=='undefined'?competitionPixelState.wallEvent:prevWall;
+  soundStatePrevSurvivors=typeof survivorsFound!=='undefined'?survivorsFound:soundStatePrevSurvivors;
+ }
+ let soundStatePrevSurvivors=0;
+ return {start,stop,setEnabled,unlock,update,footstep,jump,land,door,chest,pickup,reload,shot,grenade,flashlight,playerHit,scream,whisper};
+})();
+
+function aotdSyncControlMode(){
+ const btns=document.querySelectorAll('#modePicker [data-mode]');btns.forEach(b=>{const on=b.dataset.mode===controlMode;b.classList.toggle('active',on);b.setAttribute('aria-pressed',on?'true':'false');});
+ const sub=document.querySelector('#modePicker .modeSub');if(sub)sub.textContent=controlMode==='mobile'?'MOBILE / TOUCH — virtual buttons are active.':'LAPTOP / DESKTOP — keyboard and mouse are active.';
+}
+const aotdOriginalSetControlMode=setControlMode;
+setControlMode=function(next){aotdOriginalSetControlMode(next);aotdSyncControlMode();};
+function aotdBindSoundUi(){
+ const panel=document.getElementById('aotdSoundPanel');
+ if(panel)panel.onclick=()=>aotdSoundscapeV1.setEnabled(!panel.classList.contains('off'));
+ const on=document.getElementById('soundOn'),off=document.getElementById('soundOff');
+ if(on)on.onclick=()=>aotdSoundscapeV1.setEnabled(true);
+ if(off)off.onclick=()=>aotdSoundscapeV1.setEnabled(false);
+ document.querySelectorAll('#modePicker [data-mode]').forEach(b=>b.addEventListener('click',()=>setTimeout(aotdSyncControlMode,0)));
+ aotdSyncControlMode();
+}
+aotdBindSoundUi();
+const aotdOldStartGame=startGame;
+startGame=function(name){aotdSoundscapeV1.unlock();aotdSoundscapeV1.start();aotdOldStartGame(name);};
+const aotdOldFinishIntro=finishIntro;
+finishIntro=function(){aotdSoundscapeV1.unlock();aotdSoundscapeV1.start();aotdOldFinishIntro();};
+const aotdOldOpenChestUI=openChestUI;
+openChestUI=function(c){aotdOldOpenChestUI(c);aotdSoundscapeV1.chest();};
+const aotdOldCloseChestUI=closeChestUI;
+closeChestUI=function(){aotdOldCloseChestUI();aotdSoundscapeV1.door();};
+const aotdOldReload=reload;
+reload=function(){aotdOldReload();aotdSoundscapeV1.reload();};
+const aotdOldUseItem=useItem;
+useItem=function(){aotdOldUseItem();aotdSoundscapeV1.pickup();};
+const aotdOldShoot=shoot;
+shoot=function(){const old=player.shootTimer;aotdOldShoot();if(player.shootTimer!==old)aotdSoundscapeV1.shot();};
+const aotdOldInteract=interact;
+interact=function(){aotdOldInteract();};
+const aotdOldUpdate=update;
+update=function(dt){aotdOldUpdate(dt);aotdSoundscapeV1.update(dt);};
+window.addEventListener('pointerdown',()=>aotdSoundscapeV1.unlock(),{passive:true});
+window.addEventListener('keydown',()=>aotdSoundscapeV1.unlock(),{passive:true});
 
 renderLoop();
 
