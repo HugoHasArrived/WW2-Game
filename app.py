@@ -2530,9 +2530,10 @@ const jamFearHud=document.createElement('div');
 jamFearHud.id='jamFearHud';
 jamFearHud.innerHTML='<div id="jamFearText">ADRENALINE</div><div class="meter"><i id="jamFearFill"></i></div>';
 document.body.appendChild(jamFearHud);
-const jamScareFlash=document.createElement('div');
-jamScareFlash.id='jamScareFlash';
-document.body.appendChild(jamScareFlash);
+const jamScareFlashEl=document.createElement('div');
+jamScareFlashEl.id='jamScareFlash';
+document.body.appendChild(jamScareFlashEl);
+let jamScareFlash=0;
 const jamWallText=document.createElement('div');
 jamWallText.id='jamWallText';
 document.body.appendChild(jamWallText);
@@ -2552,7 +2553,7 @@ let jamBlink=0;
 function jamMessage(text,duration=1.6){
  jamWallText.textContent=text;
  jamWallTimer=Math.max(jamWallTimer,duration);
- jamScareFlash.style.opacity='.22';
+ jamScareFlashEl.style.opacity='.22';
 }
 function jamPixelNoise(amount=28,alpha=.08){
  ctx.save();ctx.globalAlpha=alpha;
@@ -2662,7 +2663,7 @@ function jamWallUpdate(dt){
  jamWallTimer=Math.max(0,jamWallTimer-dt);
  jamScareFlash=Math.max(0,jamScareFlash-dt*2.8);
  if(jamWallTimer<=0)jamWallText.style.opacity='0';else jamWallText.style.opacity=String(Math.min(1,jamWallTimer/.25));
- jamScareFlash.style.opacity=String(Math.max(0,jamScareFlash));
+ jamScareFlashEl.style.opacity=String(Math.max(0,jamScareFlash));
  if(mode==='play')jamFear=Math.max(0,jamFear-dt*1.7);
  if(Math.abs(player.x-jamLastPlayerX)<1.4&&Math.abs(player.vx)<6&&mode==='play'&&interior===null)jamStuckTimer+=dt;else jamStuckTimer=0;
  jamLastPlayerX=player.x;
