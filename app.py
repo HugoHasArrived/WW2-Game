@@ -31,8 +31,8 @@ GAME_HTML = r"""<!doctype html>
 .menuTag{position:relative;text-align:center;color:#8a928e;letter-spacing:5px;font-size:11px;margin-bottom:24px}
 .menuLore{position:relative;max-width:700px;margin:0 auto 25px;text-align:center;color:#a2a8a4;font-size:12px;line-height:1.7}
 .menuButtons{position:relative;display:flex;justify-content:center;flex-wrap:wrap;gap:11px}
-.menuPlay{min-width:240px!important;font-size:19px!important;letter-spacing:4px;padding:15px 28px!important;background:#18201d!important;border-color:#a6afa7!important;box-shadow:0 0 20px rgba(180,180,170,.08),inset 0 0 0 1px #28302c!important}
-.menuButton{min-width:170px!important}
+.menuPlay{min-width:260px!important;min-height:54px;font-size:19px!important;letter-spacing:4px;padding:15px 28px!important;background:#18201d!important;border-color:#a6afa7!important;box-shadow:0 0 20px rgba(180,180,170,.08),inset 0 0 0 1px #28302c!important}
+.menuButton{min-width:185px!important;min-height:48px}
 .menuFooter{position:relative;text-align:center;margin-top:20px;color:#646d68;font-size:9px;letter-spacing:2px}
 .menuThreat{position:relative;text-align:center;margin:15px auto 0;color:#6f4949;font-size:10px;letter-spacing:2px;min-height:14px}
 .charSelectBox{width:min(920px,94%);padding:30px;border:1px solid #5d6661;background:linear-gradient(180deg,#0d1210,#050706);box-shadow:0 0 90px #000}
@@ -48,6 +48,30 @@ GAME_HTML = r"""<!doctype html>
 .creditsBox p{color:#9ca39f;line-height:1.75;font-size:12px}
 .creditsName{font-size:17px!important;color:#d5d0c4!important;letter-spacing:2px}
 
+
+.competitionMenu{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.menuMoon{position:absolute;width:92px;height:92px;border-radius:50%;right:9%;top:11%;background:radial-gradient(circle at 35% 35%,#d9d8cf 0 7%,#9b9b95 9%,#545957 43%,#15191a 72%);box-shadow:0 0 48px rgba(198,200,192,.13);opacity:.48;animation:moonBreath 6s ease-in-out infinite}
+.menuFog{position:absolute;left:-15%;right:-15%;height:120px;bottom:9%;background:linear-gradient(90deg,transparent,rgba(129,137,132,.06),rgba(216,220,212,.08),rgba(110,120,116,.04),transparent);filter:blur(7px);animation:fogDrift 13s linear infinite}
+.menuFog.two{bottom:24%;opacity:.55;animation-duration:18s;animation-delay:-7s}
+.menuScan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 6px,rgba(255,255,255,.018) 7px,transparent 8px);mix-blend-mode:screen;opacity:.45;animation:scanShift 8s linear infinite}
+.menuEyes{position:absolute;left:50%;top:23%;width:160px;height:64px;transform:translateX(-50%);opacity:.25;filter:blur(.2px);animation:eyeWatch 9s ease-in-out infinite}
+.menuEyes i{position:absolute;width:5px;height:5px;background:#c9cbc4;box-shadow:0 0 9px #c9cbc4}
+.menuEyes i:first-child{left:47px;top:27px}.menuEyes i:last-child{right:47px;top:27px}
+.menuThreatPulse{animation:threatPulse 2.4s steps(2,end) infinite}
+.menuBadge{position:absolute;left:30px;top:24px;color:#707a75;font-size:9px;letter-spacing:2px;border:1px solid #313834;background:rgba(4,6,6,.52);padding:7px 9px;opacity:.8}
+.menuSignal{position:absolute;right:30px;bottom:24px;color:#555f5a;font-size:8px;letter-spacing:2px;opacity:.85}
+.menuSignal b{color:#8e4b4b;font-weight:700}
+.menuGlitch{animation:menuGlitch .12s steps(2,end)}
+@keyframes moonBreath{0%,100%{transform:scale(1);opacity:.42}50%{transform:scale(1.04);opacity:.58}}
+@keyframes fogDrift{0%{transform:translateX(-10%)}50%{transform:translateX(8%)}100%{transform:translateX(-10%)}}
+@keyframes scanShift{0%{transform:translateY(0)}100%{transform:translateY(14px)}}
+@keyframes eyeWatch{0%,37%,100%{opacity:.05;transform:translateX(-50%) scale(.9)}41%,45%{opacity:.75;transform:translateX(-50%) scale(1)}47%,50%{opacity:.1}53%,55%{opacity:.72}60%,92%{opacity:.05}}
+@keyframes threatPulse{0%,100%{opacity:.65}50%{opacity:.2}}
+@keyframes menuGlitch{0%{transform:translate(0)}33%{transform:translate(2px,-1px)}66%{transform:translate(-2px,1px)}100%{transform:translate(0)}}
+.pixelHudChip{position:absolute;right:18px;top:58px;z-index:23;pointer-events:none;font:700 9px Consolas,monospace;letter-spacing:1.5px;color:#767f7a;background:rgba(4,6,6,.58);border:1px solid #2a302e;padding:5px 7px;opacity:.8}
+.horrorLetterbox{position:absolute;left:0;right:0;top:0;height:0;background:#000;z-index:37;pointer-events:none;opacity:0;transition:height .18s,opacity .18s}
+.horrorLetterbox.on{height:34px;opacity:.96}.horrorLetterbox.bottom{top:auto;bottom:0}
+@media(max-width:760px){.menuBadge{left:12px;top:12px}.menuSignal{right:12px;bottom:12px}.menuMoon{right:5%;top:9%;width:66px;height:66px}.pixelHudChip{right:12px;top:82px}}
 </style>
 </head>
 <body>
@@ -3078,6 +3102,180 @@ draw=function(){jamBaseDrawUltra();jamExtraPixelGraphics();};
 hide('menu');
 hide('credits');
 show('mainMenu');
+
+
+function competitionMenuBuild(){
+ const menu=document.getElementById('mainMenu');
+ if(!menu||menu.querySelector('.competitionMenu'))return;
+ const fx=document.createElement('div');
+ fx.className='competitionMenu';
+ fx.innerHTML='<div class="menuMoon"></div><div class="menuFog"></div><div class="menuFog two"></div><div class="menuScan"></div><div class="menuEyes"><i></i><i></i></div><div class="menuBadge">NIGHTWATCH // ALCATRAZ INCIDENT 01</div><div id="menuSignal" class="menuSignal">SIGNAL: <b>UNSTABLE</b></div>';
+ menu.appendChild(fx);
+ const threat=menu.querySelector('.menuThreat');
+ if(threat)threat.classList.add('menuThreatPulse');
+ const logo=menu.querySelector('.menuLogo');
+ if(logo){logo.addEventListener('mouseenter',()=>logo.classList.add('menuGlitch'));logo.addEventListener('animationend',()=>logo.classList.remove('menuGlitch'));}
+ const buttons=menu.querySelectorAll('button');
+ buttons.forEach((b,i)=>{b.addEventListener('mouseenter',()=>{if(window.audioCtx)tone(110+i*16,.025,'square',.006,-4);});});
+}
+competitionMenuBuild();
+
+const competitionPixelState={time:0,flash:0,blackout:0,shock:0,stepDust:0,menuTick:0,wallEvent:0,wallCooldown:0,returnPulse:0,ambient:0};
+function competitionPixel(x,y,w,h,c){px(Math.floor(x),Math.floor(y),Math.max(1,Math.floor(w)),Math.max(1,Math.floor(h)),c);}
+function competitionDrawBrickwork(){
+ if(mode!=='play')return;
+ if(interior){
+  for(let row=0;row<5;row++){
+   const y=112+row*84;
+   const offset=row%2?38:0;
+   for(let x=-30+offset;x<W+40;x+=76){
+    competitionPixel(x,y,68,2,'#292e2d');
+    competitionPixel(x+2,y+3,2,8,'#1a1e1e');
+    competitionPixel(x+55,y+3,2,8,'#15191a');
+   }
+  }
+ }else{
+  const base=Math.floor(camera/76)*76;
+  for(let i=-2;i<20;i++){
+   const x=base+i*76-camera;
+   const h=45+(i%5)*11;
+   competitionPixel(x,GROUND-h,68,2,'#2b302f');
+   competitionPixel(x+5,GROUND-h+4,2,10,'#171b1c');
+   competitionPixel(x+39,GROUND-h+4,2,10,'#171b1c');
+   if(i%3===0)competitionPixel(x+11,GROUND-h+16,24,3,'#383b39');
+  }
+ }
+}
+function competitionDrawStreetTexture(){
+ if(mode!=='play'||interior)return;
+ for(let i=0;i<75;i++){
+  const wx=i*181+41;
+  const x=wx-camera;
+  if(x<-35||x>W+35)continue;
+  const y=GROUND+4+(i%10)*13;
+  if(i%7===0){competitionPixel(x,y,31,3,'#353838');competitionPixel(x+6,y+5,17,2,'#222626');}
+  else if(i%5===0){competitionPixel(x,y,8,4,'#4e504b');competitionPixel(x+9,y+2,4,3,'#343736');}
+  else{competitionPixel(x,y,2+(i%3),2,'#4b4d49');}
+ }
+ for(let i=0;i<13;i++){
+  const x=(i*131-camera*.7)%W;
+  const y=GROUND+31+(i%3)*14;
+  ctx.save();ctx.globalAlpha=.18;ctx.fillStyle='#879198';ctx.fillRect(x,y,52,2);ctx.fillRect(x+9,y+5,31,1);ctx.restore();
+ }
+}
+function competitionDrawInteriorDetail(){
+ if(mode!=='play'||!interior)return;
+ for(let i=0;i<7;i++){
+  const x=76+i*188;
+  competitionPixel(x,112,82,5,'#101415');
+  competitionPixel(x+6,117,69,4,'#3d4240');
+  competitionPixel(x+12,121,54,2,'#1a1e1e');
+  competitionPixel(x+34,124,4,23,'#4a4f4c');
+ }
+ for(let i=0;i<5;i++){
+  const x=110+i*236;
+  competitionPixel(x,465,75,5,'#363b39');
+  competitionPixel(x+8,470,58,3,'#181c1c');
+  competitionPixel(x+13,456,22,5,'#4e514c');
+ }
+}
+function competitionDrawPlayerMotion(){
+ if(mode!=='play')return;
+ const x=player.x-camera;
+ const lean=Math.max(-3,Math.min(3,player.vx*.012));
+ const stride=Math.sin(player.anim)*4;
+ const coat=selectedCharacter==='Julia'?'#385154':selectedCharacter==='May'?'#4d5163':'#3b554e';
+ ctx.save();
+ if(!player.onGround){ctx.globalAlpha=.26;competitionPixel(x-12,player.y+player.h-8,46,4,'#000');}
+ ctx.translate(lean,0);
+ if(player.onGround&&Math.abs(player.vx)>45){
+  competitionPixel(x-13-stride*.35,player.y+player.h-26,10,4,coat);
+  competitionPixel(x+28+stride*.35,player.y+player.h-23,10,4,coat);
+ }
+ if(state.light&&mode==='play'){
+  const fx=x+player.facing*52;
+  const fy=player.y+37;
+  const grad=ctx.createRadialGradient(fx,fy,5,fx+player.facing*150,fy,205);
+  grad.addColorStop(0,'rgba(235,229,203,.20)');
+  grad.addColorStop(.35,'rgba(215,215,198,.08)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grad;ctx.fillRect(fx-15,fy-90,330,180);
+ }
+ ctx.restore();
+}
+function competitionDrawRainSplash(){
+ if(mode!=='play'||interior)return;
+ for(let i=0;i<18;i++){
+  const x=(i*79+Math.floor(totalTime*310))%W;
+  const y=GROUND-2+(i%4)*2;
+  ctx.save();ctx.globalAlpha=.08+.03*(i%3);ctx.strokeStyle='#b8c1c0';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-4,y+5);ctx.moveTo(x,y);ctx.lineTo(x+5,y+4);ctx.stroke();ctx.restore();
+ }
+}
+function competitionDrawHorrorLayers(){
+ if(mode!=='play')return;
+ if(competitionPixelState.blackout>0){ctx.save();ctx.fillStyle='rgba(0,0,0,'+Math.min(.78,competitionPixelState.blackout)+')';ctx.fillRect(0,0,W,H);ctx.restore();}
+ if(competitionPixelState.shock>0){
+  ctx.save();const a=competitionPixelState.shock*.14;ctx.fillStyle='rgba(133,17,24,'+a+')';ctx.fillRect(0,0,W,H);ctx.globalAlpha=a*1.3;
+  for(let i=0;i<18;i++){const y=(i*41+Math.floor(totalTime*260))%H;ctx.fillRect(0,y,W,1+(i%2));}
+  ctx.restore();
+ }
+ if(competitionPixelState.flash>0){ctx.save();ctx.fillStyle='rgba(235,230,215,'+competitionPixelState.flash*.16+')';ctx.fillRect(0,0,W,H);ctx.restore();}
+ if(competitionPixelState.wallEvent>0){
+  const side=player.facing>0?W-94:94;
+  ctx.save();ctx.globalAlpha=Math.min(1,competitionPixelState.wallEvent)*.42;
+  const tall=220+Math.sin(totalTime*5)*4;
+  competitionPixel(side-22,GROUND-tall,44,tall,'#020203');
+  competitionPixel(side-14,GROUND-tall-29,28,32,'#020203');
+  competitionPixel(side-9,GROUND-tall-20,5,4,'#d0c6b8');
+  competitionPixel(side+4,GROUND-tall-20,5,4,'#d0c6b8');
+  ctx.restore();
+ }
+}
+function competitionHorrorUpdate(dt){
+ competitionPixelState.time+=dt;
+ competitionPixelState.flash=Math.max(0,competitionPixelState.flash-dt*3.8);
+ competitionPixelState.blackout=Math.max(0,competitionPixelState.blackout-dt*1.7);
+ competitionPixelState.shock=Math.max(0,competitionPixelState.shock-dt*2.2);
+ competitionPixelState.wallEvent=Math.max(0,competitionPixelState.wallEvent-dt*1.35);
+ competitionPixelState.wallCooldown=Math.max(0,competitionPixelState.wallCooldown-dt);
+ competitionPixelState.returnPulse=Math.max(0,competitionPixelState.returnPulse-dt*2);
+ competitionPixelState.ambient+=dt;
+ if(mode!=='play')return;
+ const danger=state.sanity<55?1.45:state.sanity<75?1.16:1;
+ if(competitionPixelState.wallCooldown<=0&&Math.random()<dt*.0009*danger){
+  competitionPixelState.wallCooldown=18+Math.random()*34;
+  const r=Math.random();
+  if(r<.28){competitionPixelState.flash=.6;competitionPixelState.shock=.8;showWarning('DID YOU SEE THAT?');tone(36,.55,'sine',.025,-10);shake=Math.max(shake,5);}
+  else if(r<.52){competitionPixelState.blackout=.72;setMsg('The lights went out for less than a second.',1.4);tone(29,.45,'sine',.018,-9);}
+  else if(r<.76){competitionPixelState.wallEvent=.95;setMsg('Something is standing at the edge of the hall.',1.25);tone(47,.5,'triangle',.018,-8);}
+  else{competitionPixelState.shock=.55;jamMessage(Math.random()<.5?'KEEP WALKING.':'THE DOOR BEHIND YOU IS OPEN.',1.35);tone(52,.3,'sawtooth',.01,-6);}
+ }
+ if(document.hidden&&competitionPixelState.returnPulse<=0){competitionPixelState.returnPulse=2;competitionPixelState.flash=.55;jamMessage('YOU CAME BACK.',1.4);tone(31,.5,'sine',.02,-8);}
+ if(Math.abs(player.vx)>150&&player.onGround&&Math.random()<dt*.5){stepParticles(player.x,GROUND-3,2,'debris');}
+}
+const competitionUpdateBase=update;
+update=function(dt){competitionUpdateBase(dt);competitionHorrorUpdate(dt);};
+const competitionDrawBase=draw;
+draw=function(){competitionDrawBase();competitionDrawBrickwork();competitionDrawStreetTexture();competitionDrawInteriorDetail();competitionDrawPlayerMotion();competitionDrawRainSplash();competitionDrawHorrorLayers();};
+
+function competitionMenuPulse(){
+ if(mode!=='menu')return;
+ const signal=document.getElementById('menuSignal');
+ if(signal&&Math.random()<.018){signal.classList.add('menuGlitch');setTimeout(()=>signal.classList.remove('menuGlitch'),140);}
+}
+const competitionMenuBaseUpdate=update;
+update=function(dt){competitionMenuBaseUpdate(dt);competitionMenuPulse();};
+
+window.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&mode==='menu'&&document.getElementById('mainMenu')&&!document.getElementById('mainMenu').classList.contains('hidden')){jamOpenCharacterSelect();return;}
+ if((e.key==='c'||e.key==='C')&&mode==='menu'&&document.getElementById('mainMenu')&&!document.getElementById('mainMenu').classList.contains('hidden')){jamOpenCredits();return;}
+});
+
+const competitionOriginalStart=startGame;
+startGame=function(name){competitionPixelState.flash=.35;competitionPixelState.shock=.2;competitionOriginalStart(name);setTimeout(()=>{const line=document.getElementById('cutline');if(line)line.classList.add('menuGlitch');setTimeout(()=>line&&line.classList.remove('menuGlitch'),160);},120);};
+
+const competitionAccept=document.getElementById('privacyAccept');
+if(competitionAccept&&!competitionAccept.dataset.competitionBound){competitionAccept.dataset.competitionBound='1';competitionAccept.addEventListener('click',()=>{const gate=document.getElementById('privacyGate');if(gate)gate.remove();jamMainMenu();});}
 
 renderLoop();
 
