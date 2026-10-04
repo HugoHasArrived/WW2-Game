@@ -114,6 +114,8 @@ GAME_HTML = r"""<!doctype html>
 .medicalPassMarker{position:absolute;z-index:27;display:none;pointer-events:none;color:#e0d2a0;font:700 10px Consolas,monospace;letter-spacing:2px;text-shadow:2px 2px #000;background:rgba(8,10,10,.72);border:1px solid #575349;padding:7px 9px}
 .roomTransitionLabel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:76;color:#ded9cf;font:700 12px Consolas,monospace;letter-spacing:4px;text-shadow:0 0 18px #fff}
 @media(max-width:760px){.controlChoiceGrid{grid-template-columns:1fr}.controlChoiceBox{padding:20px}}
+
+#aotdExitPrompt{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);z-index:29;display:none;pointer-events:none;padding:9px 14px;border:1px solid #777f7b;background:rgba(5,7,7,.92);color:#e7e3d8;font:700 11px Consolas,monospace;letter-spacing:1.5px;text-shadow:2px 2px #000;box-shadow:0 8px 22px #000}#aotdExitPrompt.show{display:block}
 </style>
 </style>
 </head>
@@ -134,7 +136,7 @@ GAME_HTML = r"""<!doctype html>
 
 <button id="aotdSoundPanel" type="button" aria-pressed="true">SOUND: <b>ON</b></button>
 
-<div id="mobileControls" class="mobileControls hidden">
+<div id="aotdExitPrompt">E — EXIT TO STREET</div><div id="mobileControls" class="mobileControls hidden">
 <div class="mobileMove"><button data-key="a">◀</button><button data-key="d">▶</button><button data-key="shift">RUN</button></div>
 <div class="mobileActions"><button data-key="w">JUMP</button><button data-action="e">USE</button><button data-action="q">MELEE</button><button data-action="f">LIGHT</button><button data-action="g">GRENADE</button><button data-action="h">HEAL</button><button data-action="i">BAG</button><button data-action="r">RELOAD</button><button data-action="shoot">FIRE</button></div>
 </div>
@@ -4012,6 +4014,77 @@ const aotdSoundStartBase=aotdSoundscapeV1.start;
 if(aotdSoundscapeV1&&aotdSoundscapeV1.setEnabled){aotdSoundscapeV1.setEnabled(true);}
 
 renderLoop();
+
+
+const aotdReliableExitPrompt=document.getElementById('aotdExitPrompt');
+function aotdExitZone(){
+ if(!interior)return null;
+ if(player.x<=210)return 'left';
+ if(player.x>=1010)return 'right';
+ return null;
+}
+function aotdDrawExitDoors(){
+ if(mode!=='play'||!interior)return;
+ const y=GROUND-122;
+ const leftX=58;
+ const rightX=1152;
+ ctx.save();
+ ctx.fillStyle='#080a0b';
+ ctx.fillRect(leftX,y,74,122);
+ ctx.fillRect(rightX,y,74,122);
+ ctx.fillStyle='#2f3535';
+ ctx.fillRect(leftX+8,y+8,58,106);
+ ctx.fillRect(rightX+8,y+8,58,106);
+ ctx.fillStyle='#777052';
+ ctx.fillRect(leftX+56,y+54,5,7);
+ ctx.fillRect(rightX+13,y+54,5,7);
+ ctx.font='bold 10px Consolas';
+ ctx.fillStyle='#aaa79c';
+ ctx.fillText('EXIT',leftX+22,y-10);
+ ctx.fillText('EXIT',rightX+22,y-10);
+ ctx.restore();
+}
+function aotdUpdateExitPrompt(){
+ if(!aotdReliableExitPrompt)return;
+ if(mode!=='play'||!interior){aotdReliableExitPrompt.classList.remove('show');return;}
+ const side=aotdExitZone();
+ if(side){
+  aotdReliableExitPrompt.textContent=side==='left'?'E — EXIT TO STREET ←':'E — EXIT TO STREET →';
+  aotdReliableExitPrompt.classList.add('show');
+ }else{
+  aotdReliableExitPrompt.classList.remove('show');
+ }
+}
+const aotdExitInteractBase=interact;
+interact=function(){
+ if(mode!=='play'||gadgetOpen||chestUIOpen||aotdRoomTransitionState.active)return;
+ const side=aotdExitZone();
+ if(side){
+  aotdExitBuildingSmooth(side);
+  return;
+ }
+ aotdExitInteractBase();
+};
+const aotdExitUpdateBase=update;
+update=function(dt){
+ aotdExitUpdateBase(dt);
+ aotdUpdateExitPrompt();
+};
+const aotdExitDrawBase=draw;
+draw=function(){
+ aotdExitDrawBase();
+ aotdDrawExitDoors();
+};
+window.addEventListener('keydown',e=>{
+ if(mode==='play'&&interior&&(e.key==='e'||e.key==='E')){
+  const side=aotdExitZone();
+  if(side){e.preventDefault();interact();}
+ }
+ if(mode==='play'&&interior&&(e.key==='q'||e.key==='Q')){
+  const side=aotdExitZone();
+  if(side){e.preventDefault();interact();}
+ }
+});
 
 </script>
 </div>
