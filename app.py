@@ -131,7 +131,7 @@ GAME_HTML = r"""<!doctype html>
 
 
 #aotdVisibilityFix{display:none}
-.vignette{background:radial-gradient(ellipse at center,transparent 48%,rgba(0,0,0,.38) 100%)!important}
+.vignette{background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.20) 100%)!important}
 .charCard:after{display:none!important}
 .charCard{background:linear-gradient(180deg,#141c1e,#0b1113)!important}
 .mainMenuBox{z-index:20!important}
@@ -4395,12 +4395,42 @@ function aotdVisibleInteriorScene(){
 function aotdFinalVisibleDraw(){
  if(mode!=='play')return;
  ctx.save();
+ ctx.setTransform(1,0,0,1,0,0);
+ ctx.globalAlpha=1;
+ ctx.globalCompositeOperation='source-over';
+ ctx.filter='none';
+ ctx.shadowBlur=0;
+ ctx.shadowColor='transparent';
+ ctx.clearRect(0,0,W,H);
  const sx=shake?(Math.random()*shake-shake/2):0;
  ctx.translate(sx,0);
- if(interior)aotdVisibleInteriorScene();else aotdVisibleExteriorScene();
- if(ultimateScare&&ultimateScare.shadow>0){ctx.save();ctx.globalAlpha=Math.min(.16,ultimateScare.shadow*.08);const side=player.facing>0?W-105:105;px(side-18,210,36,210,'#050708');px(side-11,192,22,24,'#050708');ctx.restore();}
- if(flash>0){ctx.fillStyle=`rgba(255,245,225,${Math.min(.25,flash*.22)})`;ctx.fillRect(0,0,W,H);}
- if(state.sanity<45){ctx.fillStyle=`rgba(45,12,24,${Math.min(.16,(45-state.sanity)/240)})`;ctx.fillRect(0,0,W,H);}
+ let rendered=false;
+ try{
+  if(interior)aotdVisibleInteriorScene();else aotdVisibleExteriorScene();
+  rendered=true;
+ }catch(err){
+  console.error('Ashes render recovered:',err);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha=1;
+  ctx.globalCompositeOperation='source-over';
+  const g=ctx.createLinearGradient(0,0,0,GROUND);
+  g.addColorStop(0,'#0b1820');g.addColorStop(.55,'#1b3033');g.addColorStop(1,'#344744');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#2c3735';ctx.fillRect(0,GROUND,W,H-GROUND);
+  px(0,GROUND-160,W,160,'#1e292c');
+  for(let i=0;i<7;i++){const bx=50+i*195-camera*.08;px(bx,GROUND-210,150,210,'#2d3a3d');px(bx+12,GROUND-194,126,8,'#58615e');for(let q=0;q<4;q++)px(bx+22+q*29,GROUND-160,15,28,'#151d1f');}
+  if(chapter==='ALCATRAZ'){px(90,GROUND-260,300,260,'#3a4444');px(118,GROUND-230,244,10,'#59605d');for(let q=0;q<10;q++)px(132+q*23,GROUND-200,4,190,'#161b1c');}
+  if(interior){px(0,0,W,H,'#101719');px(0,GROUND-80,W,80,'#2e3637');px(500,290,280,190,'#202729');px(555,320,170,150,'#4b4137');}
+  drawCharacterSprite(player.x-camera+8,player.y,selectedCharacter,player.facing,player.anim,'');
+  rendered=true;
+ }
+ if(!rendered){
+  ctx.fillStyle='#172025';ctx.fillRect(0,0,W,H);
+ }
+ ctx.setTransform(1,0,0,1,0,0);
+ if(ultimateScare&&ultimateScare.shadow>0){ctx.save();ctx.globalAlpha=Math.min(.18,ultimateScare.shadow*.08);const side=player.facing>0?W-105:105;px(side-18,210,36,210,'#050708');px(side-11,192,22,24,'#050708');ctx.restore();}
+ if(flash>0){ctx.save();ctx.globalAlpha=Math.min(.22,flash*.18);ctx.fillStyle='#fff4dc';ctx.fillRect(0,0,W,H);ctx.restore();}
+ if(state.sanity<45){ctx.save();ctx.globalAlpha=Math.min(.12,(45-state.sanity)/300);ctx.fillStyle='#3b0b18';ctx.fillRect(0,0,W,H);ctx.restore();}
  ctx.restore();
 }
 draw=aotdFinalVisibleDraw;
