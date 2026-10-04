@@ -4212,6 +4212,115 @@ draw=function(){aotdMapDrawBase();aotdDetailMap();if(mode==='play'&&interior){ct
 function aotdWorldLabel(){const el=document.getElementById('aotdWorldLabel');if(!el)return;if(mode!=='play'){el.textContent='';return;}if(interior)el.textContent=interior.building.name+'  //  '+(floor===1?'GROUND FLOOR':'UPPER FLOOR');else if(chapter==='ALCATRAZ')el.textContent='ALCATRAZ ISLAND  //  CELL BLOCK A → MEDICAL WING → DOCKS';else el.textContent='SAN FRANCISCO  //  FIND THE SURVIVORS';}
 const aotdLabelUpdateBase=update;
 update=function(dt){aotdLabelUpdateBase(dt);aotdWorldLabel();};
+
+function aotdReadableText(text,x,y,size=12,color='#f1ead8'){
+ ctx.save();
+ ctx.font='700 '+size+'px Consolas';
+ ctx.textAlign='center';
+ ctx.textBaseline='middle';
+ ctx.lineJoin='round';
+ ctx.lineWidth=4;
+ ctx.strokeStyle='rgba(0,0,0,.92)';
+ ctx.strokeText(text,x,y);
+ ctx.fillStyle=color;
+ ctx.fillText(text,x,y);
+ ctx.restore();
+}
+function aotdCharacterLabel(x,y,text,accent='#d8c68f'){
+ const w=Math.max(72,text.length*7.2+22);
+ const h=22;
+ ctx.save();
+ ctx.globalAlpha=.94;
+ ctx.fillStyle='rgba(5,7,7,.86)';
+ ctx.fillRect(x-w/2,y-h/2,w,h);
+ ctx.strokeStyle='rgba(218,209,184,.5)';
+ ctx.lineWidth=1;
+ ctx.strokeRect(x-w/2+.5,y-h/2+.5,w-1,h-1);
+ aotdReadableText(text,x,y,11,accent);
+ ctx.restore();
+}
+function aotdInteriorVisualFix(){
+ if(mode!=='play'||!interior)return;
+ ctx.save();
+ const fixtures=[150,355,560,765,970];
+ for(const x of fixtures){
+  px(x,152,82,48,'#1b2324');
+  px(x+4,156,74,40,'#3b4342');
+  px(x+9,163,64,25,'#101718');
+  px(x+13,167,56,5,'#85877d');
+  px(x+18,178,46,6,'#273131');
+  px(x+28,192,27,4,'#b0a77b');
+  px(x+1,199,80,3,'#121719');
+ }
+ px(38,395,235,120,'#202627');
+ px(45,380,220,12,'#4a4c48');
+ px(52,392,205,17,'#333938');
+ px(52,411,205,71,'#171d1e');
+ px(65,423,50,40,'#252d2d');
+ px(123,423,50,40,'#202727');
+ px(181,423,51,40,'#272d2d');
+ px(58,484,18,28,'#121718');
+ px(205,484,18,28,'#121718');
+ px(86,338,88,6,'#4f5552');
+ px(91,347,78,22,'#222829');
+ px(98,352,29,9,'#8d8160');
+ px(136,352,27,9,'#6f746c');
+ px(770,407,190,108,'#3a342e');
+ px(779,398,172,16,'#51483e');
+ px(786,420,158,78,'#2b2b2a');
+ px(792,430,67,57,'#202526');
+ px(866,430,67,57,'#242a2a');
+ px(804,446,42,4,'#766d5a');
+ px(878,446,42,4,'#766d5a');
+ px(804,468,42,4,'#515753');
+ px(878,468,42,4,'#515753');
+ px(1048,361,105,154,'#232a2a');
+ px(1055,368,91,141,'#151b1c');
+ for(let i=0;i<5;i++){
+  const yy=376+i*26;
+  px(1058,yy,86,5,'#646963');
+  px(1068,yy+7,23,11,i%2?'#4b4d49':'#765f47');
+  px(1100,yy+7,31,11,'#2c3332');
+ }
+ px(534,365,152,150,'#202728');
+ px(542,375,136,140,'#303738');
+ px(551,384,118,131,'#1b2223');
+ px(659,425,8,8,'#b69f65');
+ px(536,355,148,6,'#69716d');
+ px(84,321,92,44,'#202729');
+ px(89,326,82,8,'#505753');
+ px(96,338,68,20,'#1a2021');
+ px(101,342,58,4,'#7a6e54');
+ aotdReadableText(interior.building.name.toUpperCase(),W/2,104,16,'#f0d8b4');
+ aotdReadableText('FLOOR '+floor,W/2,127,10,'#c9d0ca');
+ ctx.restore();
+}
+function aotdReadableCharacterNames(){
+ if(mode!=='play')return;
+ const pxpos=player.x-camera;
+ const pyy=player.y-24;
+ aotdCharacterLabel(pxpos,pyy,selectedCharacter.toUpperCase());
+ if(chapter==='SAN FRANCISCO'){
+  for(const s of survivors){
+   if(s.found)continue;
+   const sx=s.x-camera;
+   if(sx<-70||sx>W+70)continue;
+   aotdCharacterLabel(sx,GROUND-108,s.name.toUpperCase(),'#d5cdbb');
+  }
+ }
+}
+const aotdLastDrawForReadableFix=draw;
+draw=function(){
+ if(mode==='play'&&interior){
+  aotdLastDrawForReadableFix();
+  aotdInteriorVisualFix();
+  aotdReadableCharacterNames();
+  return;
+ }
+ aotdLastDrawForReadableFix();
+ aotdReadableCharacterNames();
+};
+
 </script>
 </div>
 </body>
