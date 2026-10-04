@@ -116,6 +116,19 @@ GAME_HTML = r"""<!doctype html>
 @media(max-width:760px){.controlChoiceGrid{grid-template-columns:1fr}.controlChoiceBox{padding:20px}}
 
 #aotdExitPrompt{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);z-index:29;display:none;pointer-events:none;padding:9px 14px;border:1px solid #777f7b;background:rgba(5,7,7,.92);color:#e7e3d8;font:700 11px Consolas,monospace;letter-spacing:1.5px;text-shadow:2px 2px #000;box-shadow:0 8px 22px #000}#aotdExitPrompt.show{display:block}
+
+.charCard{color:#f4efe2!important;text-align:left!important;text-shadow:2px 2px #000,0 0 5px rgba(0,0,0,.9);background:linear-gradient(160deg,#17201f,#09100f)!important;border:1px solid #69746e!important;min-height:178px!important;padding:18px 16px!important;display:flex!important;flex-direction:column!important;justify-content:flex-end!important;align-items:flex-start!important;position:relative!important;overflow:hidden!important}
+.charCard:before{content:'';position:absolute;left:50%;top:12px;transform:translateX(-50%);width:78px;height:108px;background:linear-gradient(180deg,#d7bca3 0 22%,#111516 22% 45%,#314943 45% 74%,#202527 74% 100%);border:1px solid #84908a;box-shadow:0 0 0 1px #0a0d0c,0 10px 24px rgba(0,0,0,.45);opacity:.88;image-rendering:pixelated}
+.charCard[data-char="Yumi"]:before{background:linear-gradient(180deg,#d7bda5 0 20%,#17191a 20% 42%,#345047 42% 72%,#20292a 72% 100%);box-shadow:inset 18px 0 #222627,inset -18px 0 #222627,0 0 0 1px #88938e,0 10px 28px rgba(0,0,0,.5)}
+.charCard[data-char="Julia"]:before{background:linear-gradient(180deg,#d7b7a0 0 20%,#3a2928 20% 43%,#3b5659 43% 72%,#222a2b 72% 100%)}
+.charCard[data-char="May"]:before{background:linear-gradient(180deg,#d8baa1 0 20%,#5c4032 20% 43%,#4d5061 43% 72%,#272a31 72% 100%)}
+.charCard br{display:none}
+.charCard::after{display:none!important}
+.charCard .small{display:block!important;color:#d4cec0!important;text-shadow:2px 2px #000,0 0 4px #000!important;font-size:10px!important;letter-spacing:1px;margin-top:4px}
+.charCard[data-char="Yumi"]{border-color:#80998e!important}
+.charCard[data-char="Yumi"]::marker{display:none}
+.charSelectBox{background:radial-gradient(circle at 50% 12%,rgba(80,94,88,.16),transparent 32%),linear-gradient(180deg,#0b110f,#030706)!important;border-color:#69746e!important;box-shadow:0 20px 90px rgba(0,0,0,.82),inset 0 0 90px rgba(170,184,174,.035)!important}
+
 </style>
 </style>
 <style id="visualUpgradeStyle">
@@ -4320,6 +4333,92 @@ draw=function(){
  aotdLastDrawForReadableFix();
  aotdReadableCharacterNames();
 };
+
+
+function aotdCharacterSpriteV3(x,y,who,dir,anim,role){
+ const d=dir||1,t=anim||0,moving=mode==='play'&&Math.abs(player.vx)>26;const walk=moving?Math.sin(t*1.15):Math.sin(totalTime*1.2)*.2;const walk2=-walk;const breathe=Math.sin(totalTime*2.05+x*.013)*.7;const coatSwing=moving?Math.sin(t*.8)*1.4:Math.sin(totalTime*1.1+x*.01)*.45;const jump=mode==='play'&&!player.onGround;const skin=who==='Yumi'?'#d7b99f':who==='May'?'#d9b9a1':'#d4b49d';const hair=who==='Yumi'?'#121415':who==='May'?'#4d3028':'#2f2424';const hairHi=who==='Yumi'?'#39413e':who==='May'?'#76513d':'#63453b';const coat=who==='Yumi'?'#315047':who==='May'?'#4b5061':'#355154';const coatHi=who==='Yumi'?'#628075':who==='May'?'#73798a':'#5e777a';const shirt='#e7ded0',pants=who==='Yumi'?'#242c2e':who==='May'?'#272a31':'#252b2d',boot='#0a0e10',gold='#d9bd70',scarf=who==='Yumi'?'#769088':who==='May'?'#737c8c':'#708080';
+ ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(d,1);
+ const shadow=ctx.createRadialGradient(0,74,1,0,74,30);shadow.addColorStop(0,'rgba(0,0,0,.5)');shadow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=shadow;ctx.fillRect(-38,56,76,26);
+ const legLift=jump?3:0;px(-15+walk2*3,46+legLift,12,24,pants);px(4+walk*3,46+legLift,12,24,pants);px(-20+walk2*3,68+legLift,18,7,boot);px(0+walk*3,68+legLift,18,7,boot);
+ px(-19,22+breathe,38,31,coat);px(-13,19+breathe,27,17,shirt);px(-3,21+breathe,9,14,scarf);px(-17+walk*.55,25+coatSwing,9,26,coatHi);px(28+walk2*.55,25-coatSwing,9,26,coatHi);px(-22+walk*.7,48,14,9,coat);px(28+walk2*.7,48,14,9,coat);
+ px(-10,0+breathe,29,28,skin);px(-15,-9+breathe,40,13,hair);px(-11,-16+breathe,32,8,hairHi);
+ if(who==='Yumi'){
+  px(-22,-3+breathe,10,32,hairHi);px(23,-2+breathe,11,34,hairHi);px(-17,6+breathe,8,25,hair);px(26,8+breathe,7,23,hair);px(-5,-19+breathe,22,6,hair);px(11,-15+breathe,12,7,hairHi);px(-2,-3+breathe,20,3,hairHi);
+ }
+ if(who==='May'){
+  px(-20,-3+breathe,9,29,hairHi);px(23,-2+breathe,10,24,hairHi);px(27,6+breathe,7,19,hairHi);px(-24,7+breathe,7,18,hairHi);
+ }
+ if(who==='Julia'){
+  px(15,-7+breathe,14,21,hairHi);px(24,0+breathe,9,24,hairHi);px(-22,1+breathe,8,18,hairHi);
+ }
+ px(-2,7+breathe,4,3,'#151718');px(14,7+breathe,4,3,'#151718');px(-1,5+breathe,3,2,'#f0e4d5');px(13,5+breathe,3,2,'#f0e4d5');px(3,16+breathe,13,3,'#9c6159');
+ px(-9,30+breathe,8,15,coatHi);px(13,30+breathe,8,15,coatHi);px(-10,25,7,8,gold);px(-8,26,3,3,'#fff3af');px(-4,45+breathe,19,5,coat);px(-9,52,7,7,scarf);px(18,52,8,7,scarf);
+ px(-18,37,5,12,skin);px(26,37,5,12,skin);
+ if(jump){px(-22,43+legLift,8,5,coatHi);px(26,43+legLift,8,5,coatHi);}
+ if(role==='Nurse'){px(-7,30,31,6,'#8b958f');px(2,31,5,18,'#f5f1e8');px(0,37,10,5,'#f5f1e8');}
+ if(role==='Soldier'){px(-18,-6,41,8,'#425248');px(-7,-11,24,5,'#2b362f');}
+ if(role==='Mechanic'){px(-11,20,35,7,'#674c3b');px(28,34,8,15,'#99765c');}
+ ctx.restore();
+}
+drawCharacterSprite=aotdCharacterSpriteV3;
+
+function aotdBuildCharacterCards(){
+ const cards=document.querySelectorAll('.charCard');
+ cards.forEach(card=>{
+  const who=card.dataset.char;if(!who||card.querySelector('.charMeta'))return;
+  const existing=card.innerHTML;card.innerHTML='';
+  const title=document.createElement('span');title.className='charName';title.textContent=who.toUpperCase();
+  const desc=document.createElement('span');desc.className='charMeta';desc.textContent=who==='Yumi'?'FEMALE DETECTIVE • INTELLIGENCE • CALM UNDER PRESSURE':who==='May'?'FEMALE DETECTIVE • CRIME SCENE • OBSERVANT':'FEMALE DETECTIVE • FIELD FILES • DETERMINED';
+  card.appendChild(title);card.appendChild(desc);
+  card.setAttribute('aria-label',who+' — '+desc.textContent);
+ });
+}
+aotdBuildCharacterCards();
+function aotdCharacterCardCss(){
+ const s=document.createElement('style');s.textContent='.charCard .charName{display:block;position:relative;z-index:3;color:#fff7e8!important;font:800 22px Consolas,monospace!important;letter-spacing:4px;text-shadow:3px 3px #000,0 0 7px #000!important;margin-top:auto}.charCard .charMeta{display:block;position:relative;z-index:3;color:#ddd6c8!important;font:700 10px Consolas,monospace!important;letter-spacing:1px;text-shadow:2px 2px #000,0 0 5px #000!important;line-height:1.4;margin-top:5px}.charCard[data-char="Yumi"] .charName{color:#e7f0e8!important}.charCard:focus-visible{outline:2px solid #e8d9ad;outline-offset:2px}';document.head.appendChild(s);
+}
+aotdCharacterCardCss();
+
+function aotdSafeMapLayer(){
+ if(mode!=='play'||interior)return;
+ const sf=chapter==='SAN FRANCISCO';
+ ctx.save();
+ ctx.globalAlpha=.92;
+ for(let i=0;i<12;i++){
+  const x=i*132-(camera*.10%132);const h=70+(i%5)*24;const top=GROUND-230-h;
+  px(x,top,84,h,'#111619');px(x+7,top+9,70,5,'#242a2b');
+  for(let q=0;q<4;q++){if((i+q)%3!==1)px(x+12+(q%2)*34,top+25+q*27,18,15,(sf&&(q+i)%4===0)?'#5b5546':'#202628');}
+  px(x+8,top+h-8,68,8,'#181d1e');
+ }
+ for(let i=0;i<22;i++){
+  const x=(i*79-camera*.35)%W;const y=GROUND-18-(i%4)*5;
+  px(x,y,7+(i%5)*3,2,i%4===0?'#64665f':'#353a38');
+ }
+ if(sf){
+  for(let i=0;i<6;i++){const x=110+i*230-(camera*.22%230);px(x,GROUND-188-(i%2)*22,3,150,'#252b2e');px(x-10,GROUND-190-(i%2)*22,23,4,'#343a3b');}
+ }else{
+  for(let i=0;i<5;i++){const x=120+i*250-(camera*.15%250);px(x,GROUND-164-(i%2)*18,3,124,'#2c3232');px(x-9,GROUND-166-(i%2)*18,21,4,'#3a403e');}
+ }
+ ctx.restore();
+}
+aotdMapArt=aotdSafeMapLayer;
+function aotdSafeMapForeground(){
+ if(mode!=='play'||interior)return;
+ ctx.save();
+ for(let i=0;i<30;i++){
+  const x=(i*113-camera*.55)%W;const y=GROUND-3-(i%6)*7;
+  px(x,y,2+(i%4),2,i%5===0?'#76766d':'#454844');
+  if(i%6===0){px(x+7,y-6,2,6,'#262a29');px(x+5,y-8,6,2,'#55574f');}
+ }
+ ctx.restore();
+}
+aotdMapForeground=aotdSafeMapForeground;
+
+function aotdFixDrawPipeline(){
+ const base=draw;
+ draw=function(){base();if(mode==='play'&&!interior){aotdSafeMapLayer();aotdSafeMapForeground();}if(mode==='play'){aotdReadableCharacterNames();}};
+}
+aotdFixDrawPipeline();
 
 </script>
 </div>
