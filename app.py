@@ -94,6 +94,52 @@ h1{margin:0;text-align:center;letter-spacing:7px;font-size:42px;color:#efe9db;te
 #app{border:1px solid #242d2f;background:#10191c}#world{background:#152126;box-shadow:inset 0 0 0 1px rgba(221,221,210,.03)}.appPixelGlow{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(circle at 50% 42%,rgba(220,216,194,.075),transparent 42%),linear-gradient(180deg,rgba(255,255,255,.018),transparent 27%,rgba(0,0,0,.10));mix-blend-mode:screen}.menu{background:#05090b}.menuBackdrop:after{content:"";position:absolute;left:0;right:0;bottom:0;height:23%;background:linear-gradient(180deg,transparent,rgba(0,0,0,.44));pointer-events:none}.menuPrison{filter:drop-shadow(0 0 14px rgba(187,177,145,.06));background:linear-gradient(180deg,#1b2326,#12181a)}.menuTower{box-shadow:0 0 36px rgba(170,177,163,.09),0 0 10px rgba(0,0,0,.8)}.menuLogo{letter-spacing:10px;text-shadow:4px 4px #030506,0 0 10px rgba(238,231,211,.10),0 0 36px rgba(197,184,144,.10)}.menuLore{background:rgba(5,8,9,.27);border:1px solid rgba(96,105,104,.25);padding:12px 16px}.menuTip{margin-top:10px;color:#707a75;letter-spacing:2px;font-size:9px}.menuButtons button{min-width:186px}.charSelectBox{background:linear-gradient(180deg,rgba(17,23,25,.97),rgba(7,10,11,.97));border-color:#596260;box-shadow:0 30px 120px #000,0 0 60px rgba(166,154,114,.04)}.charCard{background:linear-gradient(180deg,#151c1d,#0a0e0f);border-color:#5e6765;min-height:162px}.charCard .name{font-size:24px;color:#f5e7ca;text-shadow:0 2px #090b0c,0 0 12px rgba(213,195,150,.15)}.charCard .meta{color:#d1d6d2}.charCard .skill{color:#b9ae8c}.hudLeft,.hudRight{backdrop-filter:blur(2px)}.objectiveTab{background:linear-gradient(180deg,#1a1e1a,#0b0f0e);color:#efe7d4}.prompt{background:rgba(5,8,8,.72);border-color:#85795e!important;padding:8px 14px!important}.soundButton{background:rgba(6,9,9,.84)!important;border-color:#596360!important}.worldWarningText{letter-spacing:3px;text-shadow:0 0 18px rgba(232,210,177,.28)}.mobileControls{backdrop-filter:blur(2px)}
 
 .visualEnhance{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}.visualEnhance:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 20%,rgba(0,0,0,.12) 100%),repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 4px);mix-blend-mode:screen;opacity:.36}.visualEnhance:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 52%,rgba(0,0,0,.38) 100%);opacity:.72}.pixelTag{position:absolute;left:50%;top:16px;transform:translateX(-50%);padding:5px 10px;border:1px solid rgba(201,190,157,.25);background:rgba(4,7,7,.55);color:#b8ad8f;font-size:9px;letter-spacing:3px;white-space:nowrap}.menuDepth{position:absolute;inset:0;pointer-events:none}.menuDepth:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,16,19,0) 0 56%,rgba(5,9,10,.52) 80%,rgba(3,5,6,.9) 100%)}.menuDepth:after{content:"";position:absolute;left:0;right:0;bottom:18%;height:22%;background:linear-gradient(90deg,transparent,rgba(158,169,168,.04),transparent);filter:blur(11px);animation:depthSweep 9s linear infinite}@keyframes depthSweep{0%{transform:translateX(-25%)}50%{transform:translateX(8%)}100%{transform:translateX(25%)}}.menuButtonPulse{animation:buttonPulse 3.7s ease-in-out infinite}@keyframes buttonPulse{0%,100%{box-shadow:0 0 0 rgba(210,195,151,0)}50%{box-shadow:0 0 34px rgba(210,195,151,.10)}}
+
+#uiEnhance{position:relative}
+.menu{background:#030506}
+.menu:after{content:"";position:absolute;inset:10px;border:1px solid rgba(230,224,207,.08);pointer-events:none;z-index:1}
+.menuContent{z-index:3}
+.menuLogo{font-size:clamp(42px,7vw,92px);letter-spacing:10px;line-height:.95;text-shadow:5px 5px #000,0 0 46px rgba(220,210,185,.18),0 0 3px #fff;}
+.menuTag{font-size:12px;color:#c0b79e}
+.menuLore{font-size:13px;max-width:720px;color:#cbd0cc}
+.menuButtons{gap:14px;margin-top:22px}
+.menuButtons button{min-width:205px;min-height:52px;padding:15px 20px;font-size:13px;border:1px solid #727b78;background:linear-gradient(180deg,#171d1e,#0b0f10);box-shadow:0 8px 25px rgba(0,0,0,.45)}
+.menuButtons button:hover{transform:translateY(-1px);background:linear-gradient(180deg,#262e2e,#101516);border-color:#d8ceb0}
+.menuPlay{border-color:#b9ab7a!important;box-shadow:0 0 30px rgba(180,166,112,.14)!important}
+.charSelectBox{width:min(900px,94%);background:linear-gradient(180deg,rgba(18,23,25,.98),rgba(6,8,9,.98));border:1px solid #707a79;box-shadow:0 30px 120px #000;padding:38px}
+.charCards{gap:14px}
+.charCard{width:245px;min-height:176px;border-color:#6d7674;background:linear-gradient(180deg,#161c1d,#090c0d);display:flex;flex-direction:column;justify-content:center}
+.charCard .name{font-size:27px;color:#fff4d7;text-shadow:2px 2px 0 #000,0 0 12px rgba(239,224,184,.12)}
+.charCard .meta{font-size:11px;color:#d3dad6;text-shadow:1px 1px #000}
+.charCard .skill{font-size:10px;color:#c8b97e}
+#privacyGate{padding:30px}
+#privacyGate .privacyBox{width:min(1050px,96vw);max-height:92vh;padding:42px 44px;background:linear-gradient(180deg,#121819,#050708);border:2px solid #7d8884;box-shadow:0 30px 140px #000}
+#privacyGate h2{font-size:34px;letter-spacing:5px;color:#f3eee3;margin:0 0 10px;text-align:center}
+#privacyGate .subtitle{font-size:12px;color:#c8cfc9;letter-spacing:4px;margin:0 0 22px}
+#privacyGate .privacyGrid{gap:14px}
+#privacyGate .privacyCard{min-height:110px;background:#0a0e0e;border-color:#46504e;padding:16px;font-size:12px;line-height:1.6;color:#c8cfca}
+#privacyGate .privacyCard b{color:#f1eadb;font-size:11px;letter-spacing:1.5px}
+#privacyGate .privacyNote{font-size:12px;line-height:1.65;color:#b8c1bb;background:#090d0d;border-left:3px solid #a99f7a;padding:14px 16px}
+.privacyActions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:20px}
+.privacyActions button{min-width:250px;min-height:50px;font-weight:800;letter-spacing:2px}
+.controlBox{width:min(780px,95%);padding:34px}
+.controlGrid{gap:16px}
+.controlGrid button{min-width:280px;min-height:84px;font-size:13px}
+.controlGrid button.selected{background:linear-gradient(180deg,#27302e,#111614);border-color:#e0d5b0;box-shadow:0 0 35px rgba(210,198,159,.13),inset 0 0 0 1px #8b8060}
+#hud{pointer-events:none}
+#hud button,#hud .objectivePanel{pointer-events:auto}
+.topHud{background:linear-gradient(180deg,rgba(3,5,6,.65),rgba(3,5,6,.12));padding:12px 18px}
+.objective{left:18px;right:250px;max-width:760px;padding:10px 13px;border:1px solid rgba(165,171,165,.28);background:rgba(4,7,7,.52);white-space:pre-line;line-height:1.4}
+.objectiveTab{min-height:42px;border:1px solid #8a8f88;background:#111617;font-weight:800}
+.objectivePanel{width:min(480px,90vw);background:rgba(5,8,8,.97);border:1px solid #717a76;box-shadow:0 24px 80px #000}
+.message{border:1px solid rgba(223,209,167,.55);background:rgba(6,9,9,.88);padding:10px 15px;box-shadow:0 0 35px rgba(0,0,0,.7)}
+.prompt{border:1px solid rgba(223,209,167,.6);background:rgba(7,10,10,.86);padding:11px 16px;font-weight:800;letter-spacing:1px;color:#eee4c9}
+#mobileControls{z-index:60}
+.soundButton{pointer-events:auto}
+.fade{z-index:90;pointer-events:none;background:#000}
+.scare{z-index:100;pointer-events:none}
+.scare.show .scareFace{animation-duration:.65s}
+@media(max-width:760px){#privacyGate .privacyBox{padding:24px 20px}#privacyGate h2{font-size:25px}.charCard{width:min(100%,360px)}.menuButtons button{width:min(360px,90vw)}.objective{right:18px;top:116px;max-width:calc(100% - 36px)}}
 </style>
 </head>
 <body>
@@ -101,10 +147,10 @@ h1{margin:0;text-align:center;letter-spacing:7px;font-size:42px;color:#efe9db;te
 <canvas id="world" width="1280" height="720"></canvas><div class="appPixelGlow"></div><div id="visualEnhance" class="visualEnhance"><div class="pixelTag">NIGHTWATCH FIELD RENDER • PIXEL BUILD</div></div>
 <div id="mainMenu" class="layer menu">
 <div class="menuDepth"></div><div class="menuBackdrop"><div class="menuMoon"></div><div class="menuOcean"></div><div class="menuIsland"></div><div class="menuPrison"></div><div class="menuTower"></div><div class="menuFog"></div><div class="menuFog two"></div><div class="menuRain"></div><div class="menuVignette"></div><div class="menuNoise"></div></div>
-<div class="menuContent"><div class="menuKicker">NIGHTWATCH // ALCATRAZ INCIDENT 01</div><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • THE ISLAND IS LISTENING</div><div class="menuLore">A female detective wakes inside Cell A-17. The prison is quiet. The rain is loud. Something else is awake. Find the docks. Escape the island. Find two survivors.</div><div class="menuButtons"><button id="playButton" class="menuPlay menuButtonPulse">PLAY</button><button id="creditsButton">CREDITS</button><button id="controlsButton">CONTROL MODE</button></div><div class="menuThreat">HEADPHONES RECOMMENDED • DO NOT TRUST EVERY SOUND</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • ALCATRAZ → SAN FRANCISCO</div><div id="menuSignal" class="menuSignal">SIGNAL: <b>UNSTABLE</b></div></div></div>
+<div class="menuContent"><div class="menuKicker">NIGHTWATCH // ALCATRAZ INCIDENT 01</div><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • THE ISLAND IS LISTENING</div><div class="menuLore">A female detective wakes inside Cell A-17. The prison is quiet. The rain is loud. Something else is awake. Find the docks. Escape the island. Find two survivors.</div><div class="menuButtons"><button id="playButton" class="menuPlay menuButtonPulse">PLAY</button><button id="creditsButton">CREDITS</button><button id="controlsButton">CONTROL MODE</button></div><div class="menuThreat">HEADPHONES RECOMMENDED • DO NOT TRUST EVERY SOUND</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • ALCATRAZ → SAN FRANCISCO • NPS-INSPIRED 2D ISLAND LAYOUT</div><div id="menuSignal" class="menuSignal">SIGNAL: <b>UNSTABLE</b></div></div></div>
 <div id="characterMenu" class="layer screen hidden"><div class="charSelectBox"><div class="charSelectTitle">CHOOSE YOUR DETECTIVE</div><div class="charSelectSub">Choose your detective by profile. All three are female field investigators with distinct strengths. Your choice changes her visual identity, animation style, and small gameplay bonuses.</div><div class="charCards"><button class="charCard" data-character="Julia"><span class="name">JULIA</span><span class="meta">FIELD DETECTIVE<br>CALM UNDER PRESSURE</span><span class="skill">BALANCED SURVIVAL</span></button><button class="charCard" data-character="May"><span class="name">MAY</span><span class="meta">CRIME SCENE DETECTIVE<br>FAST INVESTIGATION</span><span class="skill">AGILITY + SEARCH</span></button><button class="charCard" data-character="Yumi"><span class="name">YUMI</span><span class="meta">INTELLIGENCE DETECTIVE<br>OBSERVANT + TECHNICAL</span><span class="skill">STEADY AIM + SANITY</span></button></div><div class="center"><button id="characterBack">BACK</button><button id="characterControls">CONTROL MODE</button><button id="characterPrivacy">PRIVACY</button></div></div></div>
 <div id="credits" class="layer credits hidden"><div class="creditsBox"><h2>CREDITS</h2><p class="creditsName">Mayumi Alingarog (Yumi, Mimi, Yumimi)</p><p>With heartfelt thanks to Mayumi Alingarog (Yumi, Mimi, Yumimi), a wonderful classmate and developer whose kindness, helpfulness, respect, creativity, and encouragement inspired me to join Scream Jam 2026. She is the kind of teammate who makes difficult things feel possible, and I am grateful for every bit of support and inspiration.</p><p>ASHES OF THE DEAD • Scream Jam 2026</p><button id="creditsBack">BACK</button></div></div>
-<div id="controlsOverlay" class="layer controlOverlay hidden"><div class="controlBox"><div class="charSelectTitle">CONTROL MODE</div><div class="charSelectSub">Choose exactly how you want to play. Your choice stays active until you change it.</div><div class="controlGrid"><button data-control="laptop" id="laptopMode">LAPTOP / DESKTOP<small>A / D • W / SPACE • SHIFT • MOUSE</small></button><button data-control="mobile" id="mobileMode">MOBILE / TOUCH<small>VIRTUAL BUTTONS • TOUCH AIM</small></button></div><div class="center"><button id="autoMode">AUTO DETECT</button> <button id="controlsBack">BACK</button></div><div id="controlStatus" class="small" style="margin-top:12px;color:#777f7b"></div></div></div>
+<div id="controlsOverlay" class="layer controlOverlay hidden"><div class="controlBox"><div class="charSelectTitle">CONTROL MODE</div><div class="charSelectSub">SELECT YOUR CONTROL SCHEME. Only one mode is active at a time. Switch here whenever you like.</div><div class="controlGrid"><button data-control="laptop" id="laptopMode">LAPTOP / DESKTOP<small>A / D • W / SPACE • SHIFT • MOUSE</small></button><button data-control="mobile" id="mobileMode">MOBILE / TOUCH<small>VIRTUAL BUTTONS • TOUCH AIM</small></button></div><div class="center"><button id="autoMode">AUTO DETECT</button> <button id="controlsBack">BACK</button></div><div id="controlStatus" class="small" style="margin-top:12px;color:#777f7b"></div></div></div>
 <div id="hud" class="layer hidden"><button id="soundButton" class="soundButton">SOUND: ON</button><div class="topHud"><div class="hudLeft"><div>HEALTH <span id="healthValue"></span></div><div class="bar"><div id="healthFill" class="fill health"></div></div><div>STAMINA <span id="staminaValue"></span></div><div class="bar"><div id="staminaFill" class="fill stamina"></div></div><div>SANITY <span id="sanityValue"></span></div><div class="bar"><div id="sanityFill" class="fill sanity"></div></div></div><div class="hudRight"><div id="locationText" class="loc">ALCATRAZ</div><div id="threatText" class="threat">THE PRISON IS QUIET</div><div id="ammoText">AMMO 12 / 12</div></div></div><div id="objective" class="objective"></div><button id="objectiveTab" class="objectiveTab">OBJECTIVES +</button><div id="objectivePanel" class="objectivePanel"><div class="objectiveHead"><div><div class="objectiveTitle">OBJECTIVES</div><div id="objectiveHint" class="small">CURRENT GOAL</div></div><button id="objectiveClose" class="objectiveClose">×</button></div><div class="objectiveList" id="objectiveList"></div></div><div id="message" class="message hidden"></div><div id="prompt" class="prompt"></div><div id="inventoryHud" class="inventoryHud hidden"></div></div>
 <div id="cutscene" class="layer cutscene hidden"><div id="cutText" class="cutText"></div></div>
 <div id="pause" class="layer screen hidden"><div class="panel"><h1>PAUSED</h1><p class="lore">The rain keeps falling. The island keeps breathing.</p><div class="center"><button id="resumeButton">RESUME</button> <button id="restartButton">RESTART CHAPTER</button> <button id="pauseMenuButton">MAIN MENU</button></div></div></div>
@@ -577,6 +623,294 @@ function bindButton(id,fn){const e=document.getElementById(id);if(e)e.addEventLi
 function initInterface(){loadControlMode();bindButton('privacyEnter',beginExperience);bindButton('privacyDevice',()=>{beginExperience();showOnly('infoOverlay');renderDeviceInfo();});bindButton('playButton',()=>{showOnly('characterMenu');scene='menu';});bindButton('creditsButton',()=>{showOnly('credits');scene='credits';});bindButton('controlsButton',()=>{showOnly('controlsOverlay');scene='controls';updateControlUI();});bindButton('creditsBack',mainMenu);bindButton('characterBack',mainMenu);bindButton('characterControls',()=>{showOnly('controlsOverlay');scene='controls';updateControlUI();});bindButton('characterPrivacy',()=>{show('privacyGate');});document.querySelectorAll('[data-character]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();startGame(b.dataset.character);}));document.querySelectorAll('[data-control]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setControlMode(b.dataset.control);saveControlMode(controlMode);}));bindButton('autoMode',()=>{setControlMode('auto');saveControlMode(controlMode);});bindButton('controlsBack',()=>{showOnly('mainMenu');scene='menu';});bindButton('objectiveTab',()=>{objectivePanelOpen=!objectivePanelOpen;document.getElementById('objectivePanel').classList.toggle('open',objectivePanelOpen);});bindButton('objectiveClose',()=>{objectivePanelOpen=false;document.getElementById('objectivePanel').classList.remove('open');});bindButton('resumeButton',resumeGame);bindButton('restartButton',restartChapter);bindButton('pauseMenuButton',mainMenu);bindButton('endingMenuButton',mainMenu);bindButton('deathRestartButton',restartChapter);bindButton('deathMenuButton',mainMenu);bindButton('infoClose',()=>{hide('infoOverlay');if(scene==='info')scene='menu';});bindButton('chestCloseButton',closeChest);bindButton('takeAllButton',takeAll);bindButton('sortButton',sortChest);bindButton('soundButton',()=>{soundEnabled=!soundEnabled;document.getElementById('soundButton').textContent=`SOUND: ${soundEnabled?'ON':'OFF'}`;if(soundEnabled)startSoundscape();});document.querySelectorAll('[data-touch]').forEach(b=>{const action=b.dataset.touch;b.addEventListener('pointerdown',e=>{e.preventDefault();touch[action]=true;safeAudio();if(action==='jump')tryJump();if(action==='interact')interact();if(action==='melee')useMelee();if(action==='light'){state.light=!state.light;tone(state.light?440:140,.08,'square',.1);}if(action==='inventory'){scene='inventory';show('inventoryUi');}if(action==='reload')soundReload();if(action==='fire')shootRay();});b.addEventListener('pointerup',e=>{e.preventDefault();touch[action]=false;});b.addEventListener('pointercancel',e=>{touch[action]=false;});});window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);canvas.addEventListener('pointermove',onPointerMove);canvas.addEventListener('pointerdown',onPointerDown);window.addEventListener('pointerup',onPointerUp);canvas.addEventListener('contextmenu',e=>e.preventDefault());window.addEventListener('blur',()=>{keys.clear();Object.keys(touch).forEach(k=>touch[k]=false);});setControlMode(controlMode);show('privacyGate');scene='menu';}
 function tick(now){const dt=Math.min(.033,Math.max(.001,(now-last)/1000));last=now;totalTime+=dt;updateInput();if(scene==='play')update(dt);else if(scene==='intro'){introTimer+=dt;if(introTimer>7.5)advanceIntro();}updateMessage(dt);updateFade(dt);updateParticles();if(scene==='play')renderHUD();drawWorld();requestAnimationFrame(tick);}
 function boot(){try{initInterface();resetWorld();positionInsideCell();drawWorld();renderHUD();requestAnimationFrame(tick);}catch(err){document.body.dataset.bootError=String(err);const gate=document.getElementById('privacyGate');if(gate)gate.style.display='none';show('mainMenu');}}
+
+worldWidth.ALCATRAZ=18000;
+worldWidth.SF=26000;
+let islandLandmarks=[];
+let exteriorScenery=[];
+let indoorProps=[];
+let animationClock=0;
+
+function buildMap(){
+ buildings=[
+  {id:'cellA',x:980,w:1680,name:'CELL BLOCK A',type:'prison',floors:2,landmark:'Cellhouse'},
+  {id:'cellB',x:2860,w:1420,name:'CELL BLOCK B',type:'prison',floors:2,landmark:'Cellhouse'},
+  {id:'dining',x:4560,w:760,name:'DINING HALL',type:'dining',floors:1,landmark:'Dining Hall'},
+  {id:'guard',x:5480,w:580,name:'GUARDHOUSE / SALLY PORT',type:'station',floors:2,landmark:'Guardhouse / Sally Port'},
+  {id:'medical',x:6320,w:980,name:'HOSPITAL WING',type:'medical',floors:2,landmark:'Hospital Wing'},
+  {id:'model',x:7540,w:920,name:'MODEL INDUSTRIES',type:'workshop',floors:2,landmark:'Model Industries Building'},
+  {id:'newindustries',x:8700,w:980,name:'NEW INDUSTRIES BUILDING',type:'workshop',floors:2,landmark:'New Industries Building'},
+  {id:'power',x:10080,w:1080,name:'POWER PLANT',type:'power',floors:1,landmark:'Power Plant'},
+  {id:'store',x:11520,w:820,name:'STOREHOUSE',type:'store',floors:1,landmark:'Storehouse'},
+  {id:'warden',x:12680,w:900,name:'WARDEN\'S HOUSE',type:'warden',floors:2,landmark:'Warden\'s House'},
+  {id:'lighthouse',x:14180,w:340,name:'LIGHTHOUSE',type:'lighthouse',floors:2,landmark:'Lighthouse'},
+  {id:'dockoffice',x:14880,w:620,name:'DOCK OFFICE',type:'dock',floors:1,landmark:'Dock'},
+  {id:'police',x:820,w:720,name:'POLICE PRECINCT',type:'police',floors:2,chapter:'SF'},
+  {id:'apartment',x:2620,w:760,name:'BAYVIEW APARTMENTS',type:'apartment',floors:4,chapter:'SF'},
+  {id:'hospitalSF',x:4240,w:900,name:'SAN FRANCISCO HOSPITAL',type:'hospital',floors:4,chapter:'SF'},
+  {id:'funeral',x:5980,w:720,name:'MERCY FUNERAL HOME',type:'funeral',floors:2,chapter:'SF'},
+  {id:'hotel',x:7740,w:900,name:'OLD HOTEL',type:'hotel',floors:5,chapter:'SF'},
+  {id:'shelter',x:10120,w:920,name:'EMERGENCY SHELTER',type:'shelter',floors:2,chapter:'SF'},
+  {id:'research',x:12680,w:1080,name:'ECLIPSE RESEARCH ANNEX',type:'research',floors:3,chapter:'SF'},
+  {id:'warehouse',x:15580,w:980,name:'WATERFRONT WAREHOUSE',type:'warehouse',floors:2,chapter:'SF'},
+  {id:'cityhall',x:18600,w:1150,name:'CITY HALL ANNEX',type:'city',floors:4,chapter:'SF'},
+  {id:'subway',x:22400,w:980,name:'SEALED TRANSIT TERMINAL',type:'subway',floors:1,chapter:'SF'}
+ ];
+ cells=[];
+ for(let i=0;i<24;i++){
+  const block=i<12?'A':'B';
+  const local=i%12;
+  cells.push({id:`${block}-${local+1}`,x:(block==='A'?1130:3010)+local*104,y:GROUND-108,w:78,h:108});
+ }
+ chests=[
+  {id:'a17',x:260,y:460,inside:true,building:'cellA',items:[{id:'key',name:'BRASS KEY',count:1}],opened:false,important:true},
+  {id:'medicalPass',x:870,y:430,inside:true,building:'medical',items:[{id:'dockPass',name:'DOCK PASS',count:1}],opened:false,important:true},
+  {id:'medicalSupplies',x:180,y:430,inside:true,building:'medical',items:[{id:'medkit',name:'MEDKIT',count:1},{id:'bandage',name:'BANDAGE',count:2},{id:'ammo',name:'9MM AMMO',count:8}],opened:false},
+  {id:'workshopChest',x:660,y:430,inside:true,building:'model',items:[{id:'ammo',name:'9MM AMMO',count:8},{id:'scrap',name:'SCRAP',count:4}],opened:false},
+  {id:'industriesChest',x:890,y:430,inside:true,building:'newindustries',items:[{id:'bandage',name:'BANDAGE',count:1},{id:'ammo',name:'9MM AMMO',count:10}],opened:false},
+  {id:'warehouseChest',x:690,y:430,inside:true,building:'warehouse',items:[{id:'medkit',name:'MEDKIT',count:1},{id:'scrap',name:'SCRAP',count:5}],opened:false},
+  {id:'shelterChest',x:700,y:430,inside:true,building:'shelter',items:[{id:'food',name:'CANNED FOOD',count:3},{id:'bandage',name:'BANDAGE',count:2}],opened:false},
+  {id:'researchChest',x:820,y:430,inside:true,building:'research',items:[{id:'medkit',name:'MEDKIT',count:1},{id:'ammo',name:'9MM AMMO',count:12}],opened:false}
+ ];
+ survivors=[
+  {id:'mara',name:'MARA',x:4200,found:false,talked:false,chapter:'SF'},
+  {id:'eli',name:'ELI',x:9600,found:false,talked:false,chapter:'SF'},
+  {id:'noah',name:'NOAH',x:17400,found:false,talked:false,chapter:'SF'},
+  {id:'grace',name:'GRACE',x:20500,found:false,talked:false,chapter:'SF'}
+ ];
+ zombies=[];
+ for(let i=0;i<34;i++) zombies.push({x:650+i*480+(i%4)*73,type:i%9===0?'brute':i%5===0?'runner':'walker',hp:i%9===0?190:i%5===0?86:66,dead:false,phase:i*.43,attack:0,stun:0});
+ islandLandmarks=[
+  ['CELLHOUSE',1820],['RECREATION YARD',3650],['DINING HALL',4940],['GUARDHOUSE',5770],['HOSPITAL',6810],['MODEL INDUSTRIES',8000],['NEW INDUSTRIES',9190],['POWER PLANT',10620],['STOREHOUSE',11900],['WARDEN\'S HOUSE',13130],['LIGHTHOUSE',14340],['DOCK',15480]
+ ];
+}
+function resetWorld(){
+ state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.hunger=100;state.ammo=12;state.reserveAmmo=36;state.grenades=2;state.light=true;state.battery=100;state.medkits=1;state.bandages=2;state.scrap=2;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.archiveKey=false;state.inventory={bandage:2,food:2,scrap:2,ammo_9mm:36,key:0,dockPass:0};camera=0;objectiveIndex=0;goalFocus='escape';interior=null;interiorFloor=1;smiler={active:false,timer:0,cooldown:10,x:0,intensity:0,variant:0};horror={flash:0,shake:0,warning:0,heartbeat:0,glitch:0,blackout:0};currentChest=null;particles=[];footprints=[];shotTracers=[];rainDrops=[];zombies=[];chests=[];buildings=[];cells=[];survivors=[];buildMap();player.x=720;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.doubleJump=true;player.coyote=0;player.jumpBuffer=0;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.hitTimer=0;player.lean=0;chapter='ALCATRAZ';}
+function positionInsideCell(){interior={id:'cellA',name:'CELL A-17',type:'cell',building:{id:'cellA',name:'CELL BLOCK A',type:'prison',floors:2}};interiorFloor=1;player.x=350;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;state.startEscaped=false;camera=0;}
+function startGame(name){selectedCharacter=name;resetWorld();positionInsideCell();scene='intro';introIndex=0;introTimer=0;hide('characterMenu');hide('mainMenu');hide('controlsOverlay');hide('hud');show('cutscene');safeAudio();startSoundscape();updateIntroText();}
+function physics(dt){
+ if(scene!=='play'||fadeBusy)return;
+ const left=keys.has('a')||keys.has('A')||keys.has('ArrowLeft')||touch.left;
+ const right=keys.has('d')||keys.has('D')||keys.has('ArrowRight')||touch.right;
+ const run=keys.has('Shift')||touch.run;
+ const dir=(right?1:0)-(left?1:0);
+ const maxSpeed=(run?310:220)*(interior?.86:1)*(state.stamina<18?.76:1);
+ const accel=dir?1750:2050;
+ if(dir){player.vx=lerp(player.vx,dir*maxSpeed,clamp(accel*dt/Math.max(maxSpeed,1),0,1));player.facing=dir;}
+ else player.vx=lerp(player.vx,0,clamp(1900*dt/Math.max(maxSpeed,1),0,1));
+ player.coyote=player.onGround?.13:Math.max(0,player.coyote-dt);
+ player.jumpBuffer=Math.max(0,player.jumpBuffer-dt);
+ const jumpPressed=keys.has('w')||keys.has('W')||keys.has(' ')||keys.has('ArrowUp')||touch.jump;
+ if(jumpPressed&&!player.jumpLock){player.jumpBuffer=.13;player.jumpLock=true;}
+ if(!jumpPressed)player.jumpLock=false;
+ if(player.jumpBuffer>0&&(player.onGround||player.coyote>0||player.doubleJump)){
+  const second=!player.onGround&&player.coyote<=0;
+  if(second)player.doubleJump=false;
+  player.vy=second?-420:-520;player.onGround=false;player.coyote=0;player.jumpBuffer=0;player.airTime=0;soundJump();spawnDust(player.x+player.w/2,GROUND,8);horror.shake=Math.max(horror.shake,second?3:1);
+ }
+ player.vy+=1380*dt;
+ const wasGround=player.onGround;
+ player.x+=player.vx*dt;player.y+=player.vy*dt;
+ if(player.y+player.h>=GROUND){player.y=GROUND-player.h;player.vy=0;player.onGround=true;if(!wasGround){player.landTimer=.22;player.squash=.16;soundLand();spawnDust(player.x+player.w/2,GROUND,10);}}
+ else player.onGround=false;
+ if(run&&dir&&player.onGround)state.stamina=Math.max(0,state.stamina-24*dt);else state.stamina=Math.min(state.maxStamina,state.stamina+(dir?3:13)*dt);
+ state.hunger=Math.max(0,state.hunger-.03*dt);
+ if(state.hunger<=0)state.health=Math.max(0,state.health-.35*dt);
+ player.anim+=dt*(Math.abs(player.vx)>15?(Math.abs(player.vx)/28):1.15);
+ player.stepTimer-=dt;
+ if(player.onGround&&Math.abs(player.vx)>70&&player.stepTimer<=0){player.stepTimer=Math.abs(player.vx)>230?.23:.34;soundStep();footprints.push({x:player.x+player.w/2,y:GROUND-3,t:2.3,side:player.facing});if(footprints.length>55)footprints.shift();spawnDust(player.x+player.w/2,GROUND-2,2);}
+ player.recoil=Math.max(0,player.recoil-dt*5);player.landTimer=Math.max(0,player.landTimer-dt);player.squash=Math.max(0,player.squash-dt);player.hitTimer=Math.max(0,player.hitTimer);player.lean=lerp(player.lean,dir*.05,dt*9);
+ const maxW=worldWidth[chapter];
+ if(interior)player.x=clamp(player.x,70,1210);else player.x=clamp(player.x,40,maxW-80);
+ const desired=interior?0:clamp(player.x-W*.42,0,maxW-W);camera=lerp(camera,desired,clamp(dt*6.2,0,1));
+}
+function interact(){
+ if(scene!=='play'||fadeBusy)return;
+ if(currentChest){openChest(currentChest);return;}
+ if(interior){
+  if(player.x<165||player.x>1115){exitBuilding();return;}
+  for(const c of chests){if(c.inside&&c.building===interior.id&&Math.abs(player.x-c.x)<110){openChest(c);return;}}
+  if(interior.id==='cellA'&&!state.startKey&&Math.abs(player.x-350)<100){searchStartingCell();return;}
+  if(interior.id==='cellA'&&!state.startEscaped&&Math.abs(player.x-700)<130){unlockCell();return;}
+  setMessage('Look for the EXIT doors on either side.');return;
+ }
+ if(chapter==='ALCATRAZ'){
+  if(!state.startEscaped){setMessage('You are still inside Cell Block A. Find the brass key, then unlock A-17.',1.5);return;}
+  const medical=buildings.find(b=>b.id==='medical');
+  if(medical&&Math.abs(player.x-(medical.x+medical.w/2))<220&&!state.dockPass){enterBuilding(medical);return;}
+  for(const b of buildings){if(b.chapter==='SF')continue;const door=b.x+b.w/2;if(Math.abs(player.x-door)<210){enterBuilding(b);return;}}
+  if(player.x>6200&&player.x<7480&&!state.dockPass){setMessage('HOSPITAL WING AHEAD. Search the bright supply room for the Dock Pass.');return;}
+  if(Math.abs(player.x-15480)<280){
+   if(!state.dockPass){setMessage('The ferry will not leave without the DOCK PASS from the Hospital Wing.',2);return;}
+   if(!state.beacon){state.beacon=true;advanceObjective(1);setMessage('BEACON LIT. A ferry horn answers from the fog.',2);tone(120,.7,'sine',.18,90);showWarning('FERRY APPROACHING');return;}
+   if(!state.boatEscaped){state.boatEscaped=true;transitionTo('ferry',()=>{chapter='SAN FRANCISCO';player.x=180;player.y=GROUND-player.h;interior=null;camera=0;advanceObjective(2);setMessage('SAN FRANCISCO. Find 2 survivors.',2);spawnSFZombies();});return;}
+  }
+ }else{
+  for(const b of buildings){if(b.chapter!=='SF')continue;const door=b.x+b.w/2;if(Math.abs(player.x-door)<210){enterBuilding(b);return;}}
+  for(const s of survivors){if(s.chapter!=='SF'||s.found)continue;if(Math.abs(player.x-s.x)<120){s.found=true;s.talked=true;state.survivors++;tone(280,.18,'sine',.12,90);setMessage(`${s.name}: Thank you. I thought nobody was coming.`,2);if(state.survivors>=2){advanceObjective(2);setMessage('TWO SURVIVORS FOUND. Reach the Emergency Shelter.',2);}return;}}
+  if(state.survivors>=2&&Math.abs(player.x-10600)<240){scene='ending';hide('hud');show('ending');document.getElementById('endingText').textContent='Two survivors made it inside. Outside, the rain kept falling. On the final CCTV frame, the island was still watching.';soundScare();}
+ }
+}
+function setObjective(){
+ let idx=chapter==='SAN FRANCISCO'?2:(state.startEscaped?(state.dockPass?1:0):0);
+ if(chapter==='ALCATRAZ'&&state.startEscaped&&state.dockPass&&state.beacon)idx=1;
+ objectiveIndex=idx;
+ const o=objectives[idx];
+ let step=0;
+ if(chapter==='ALCATRAZ'){if(!state.startEscaped)step=0;else if(!state.dockPass)step=1;else step=2;}else step=state.survivors>=2?2:1;
+ const n=o.steps[Math.min(step,o.steps.length-1)];
+ const e=document.getElementById('objective');if(e)e.textContent=`OBJECTIVE  ${o.title}\nNEXT STEP  ${n}`;
+ setObjectiveHint();renderObjectives();
+}
+function drawSky(){
+ const sf=chapter==='SAN FRANCISCO';
+ const g=ctx.createLinearGradient(0,0,0,440);g.addColorStop(0,sf?'#06101a':'#07131a');g.addColorStop(.55,sf?'#132932':'#172b31');g.addColorStop(1,sf?'#40545a':'#405356');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ const moonX=sf?1035:1065;const moonY=88;glow(moonX,moonY,150,'rgba(230,223,200,.11)','rgba(0,0,0,0)');ctx.fillStyle='rgba(231,224,203,.76)';ctx.beginPath();ctx.arc(moonX,moonY,39,0,Math.PI*2);ctx.fill();
+ for(let i=0;i<180;i++){const x=((i*137-camera*.08)%W+W)%W;const y=24+(i*47)%330;ctx.globalAlpha=.15+.25*((i%7)/6);px(x,y,1+(i%2),1+(i%2),i%11===0?'#c8d1cd':'#6b7d82');}ctx.globalAlpha=1;
+ for(let layer=0;layer<5;layer++){const par=camera*(.03+layer*.04);for(let i=-4;i<20;i++){const x=i*180-(par%180)+layer*31;const h=70+((i*41+layer*33)%150);const w=110+((i*37+layer*21)%100);const colors=['#0f1b20','#122126','#17282d','#1e3135','#284046'];px(x,420-h,w,h,colors[layer]);px(x,420-h,w,5,'#34494d');for(let q=0;q<Math.floor(w/32);q++){if((q+i+layer)%3===0){px(x+12+q*30,440-h+(q%3)*28,14,20,'#27393c');px(x+15+q*30,444-h+(q%3)*28,8,12,(q+layer)%2?'#867957':'#4f6768');}}}}
+ const haze=ctx.createLinearGradient(0,305,0,470);haze.addColorStop(0,'rgba(185,202,198,.02)');haze.addColorStop(.65,'rgba(190,203,198,.09)');haze.addColorStop(1,'rgba(5,9,10,.12)');ctx.fillStyle=haze;ctx.fillRect(0,305,W,165);
+ if(sf){const x=720-camera*.018;line(x,360,x+850,360,'#596367',5);line(x+120,360,x+120,196,'#525c60',10);line(x+680,360,x+680,205,'#525c60',10);for(let i=0;i<18;i++){const t=i/17;line(x+133+t*520,210+Math.sin(t*Math.PI)*112,x+133+t*520,358,'#364347',1);}}
+}
+function drawOcean(){if(chapter!=='ALCATRAZ')return;ctx.fillStyle='#0a1c24';ctx.fillRect(0,360,W,78);for(let i=0;i<80;i++){const x=((i*79-camera*.18)%W+W)%W;const y=370+(i%7)*9;line(x,y,x+22,y,'#2d4e5b',1);line(x+29,y+4,x+48,y+4,'#17323b',1);}for(let i=0;i<12;i++){const x=((i*177-camera*.1)%W+W)%W;pixelDiamond(x,403+(i%3)*6,2,'#5f7e83');}}
+function drawGround(){const wet=chapter==='ALCATRAZ';ctx.fillStyle=wet?'#3d4a49':'#434b4d';ctx.fillRect(0,430,W,H-430);ctx.fillStyle=wet?'#283535':'#30383a';ctx.fillRect(0,555,W,165);px(0,430,W,4,'#64716e');for(let i=0;i<500;i++){const x=((i*71-camera*.92)%W+W)%W;const y=440+(i*37)%270;const c=i%17===0?'#8b8e82':i%5===0?'#626a66':'#394240';px(x,y,1+(i%3),1+(i%2),c);}for(let i=0;i<42;i++){const x=((i*241-camera*.7)%W+W)%W;const y=592+(i%5)*22;line(x,y,x+15+(i%5)*7,y+((i%3)-1),'#1d2525',1);}for(let i=0;i<16;i++){const x=((i*311-camera*.55)%W+W)%W;ctx.fillStyle=`rgba(192,210,207,${.035+(i%4)*.012})`;ctx.beginPath();ctx.ellipse(x,535+(i%5)*7,38+(i%4)*10,5+(i%2),0,0,Math.PI*2);ctx.fill();}}
+function drawAlcatrazStructures(){if(chapter!=='ALCATRAZ')return;for(const [name,wx] of islandLandmarks){const x=wx-camera;if(x<-300||x>W+300)continue;const h=name==='CELLHOUSE'?270:name==='RECREATION YARD'?110:name==='POWER PLANT'?230:170;const w=name==='CELLHOUSE'?760:name==='RECREATION YARD'?650:240;const col=name==='CELLHOUSE'?'#485456':name==='POWER PLANT'?'#445052':'#3d4848';if(name==='RECREATION YARD'){px(x-w/2,GROUND-h,w,h,'#313b3b');for(let j=0;j<9;j++){px(x-w/2+j*(w/8),GROUND-h-16,5,h+16,'#59615e');}}else{px(x-w/2,GROUND-h,w,h,col);px(x-w/2,GROUND-h,w,8,'#737d78');for(let j=0;j<Math.floor(w/55);j++){const wx=x-w/2+18+j*55;px(wx,GROUND-h+26,29,36,'#263334');px(wx+4,GROUND-h+30,21,27,j%4===0?'#8b7b5a':'#3d4d4e');}if(name==='CELLHOUSE'){for(let j=0;j<12;j++){const gx=x-w/2+22+j*62;px(gx,GROUND-h+76,5,h-86,'#1a2324');px(gx+2,GROUND-h+85,2,h-102,'#77817c');}}}text(name,x,GROUND-h-20,10,'#e7e0cf','center');}}
+function buildingPalette(type){return({prison:'#4a5557',dining:'#5b5a54',station:'#4b5b62',medical:'#627272',workshop:'#5d625d',power:'#4a5552',store:'#555b57',warden:'#66625b',lighthouse:'#656b68',dock:'#5c625f',police:'#566872',apartment:'#5d6469',hospital:'#63777a',funeral:'#5f5960',hotel:'#686a69',shelter:'#66736e',research:'#637481',warehouse:'#555f60',city:'#687078',subway:'#4d555a'}[type]||'#5a6462');}
+function drawBuildings(){for(const b of buildings){const allowed=chapter==='ALCATRAZ'?b.chapter!=='SF':b.chapter==='SF';if(!allowed)continue;const x=b.x-camera;if(x<-b.w-200||x>W+200)continue;const h=72+b.floors*96;const body=buildingPalette(b.type);ctx.fillStyle='rgba(0,0,0,.2)';ctx.fillRect(x+18,GROUND-h+18,b.w,h);px(x,GROUND-h,b.w,h,body);px(x,GROUND-h,b.w,9,'#8b948e');px(x+12,GROUND-h+18,b.w-24,7,'#303a3b');for(let f=0;f<b.floors;f++){const yy=GROUND-65-f*96;const count=Math.max(2,Math.floor((b.w-70)/52));for(let q=0;q<count;q++){const wx=x+28+q*52;const lit=((q+f+Math.floor(b.x/80))%6===0);px(wx,yy-33,34,32,lit?'#7e7555':'#263537');px(wx+4,yy-29,26,24,lit?'#b49a62':'#3c4c4d');if(lit)glow(wx+17,yy-17,34,'rgba(223,197,126,.07)','rgba(0,0,0,0)');}}
+ const door=x+b.w/2-34;px(door,GROUND-82,68,82,'#182123');px(door+5,GROUND-77,58,71,'#425052');px(door+47,GROUND-43,5,5,'#e0c67b');px(door-8,GROUND-91,84,6,'#1e2828');text(b.name,x+b.w/2,GROUND-h-14,10,'#efe7d3','center');
+ if(b.type==='power'){px(x+b.w-86,GROUND-h+26,42,42,'#232b2c');for(let j=0;j<3;j++)line(x+b.w-65,GROUND-h+34,x+b.w-65+(j-1)*20,GROUND-h+8,'#6e7773',2);}
+ if(b.type==='lighthouse'){px(x+b.w/2-26,GROUND-h,52,h,'#7b817c');px(x+b.w/2-34,GROUND-h-12,68,14,'#30383a');glow(x+b.w/2,GROUND-h+18,60,'rgba(224,204,142,.11)','rgba(0,0,0,0)');}
+ if(b.type==='medical'){px(x+b.w/2-92,GROUND-h+18,184,38,'#71807f');px(x+b.w/2-12,GROUND-h+23,24,26,'#f2efe8');px(x+b.w/2-35,GROUND-h+31,70,10,'#f2efe8');}
+}}
+function drawStreetProps(){const lamps=chapter==='ALCATRAZ'?[1100,3200,5000,5800,6900,8100,9200,10700,11980,13280,14600,15900]:[700,2200,3600,5200,7000,9200,11200,13800,16000,18400,20800,23600];for(const wx of lamps){const x=wx-camera;if(x<-80||x>W+80)continue;px(x,GROUND-170,7,170,'#1d2425');px(x-12,GROUND-176,30,8,'#444e4e');const flick=.78+.22*Math.sin(totalTime*2.7+wx*.03);px(x-8,GROUND-187,22,12,'#2a3030');px(x-4,GROUND-188,14,5,chapter==='ALCATRAZ'&&interior?'#8d7655':flick>.65?'#e4cb7f':'#9b8660');if(!interior)drawLampGlow(x+2,GROUND-180,88,flick);}
+ if(chapter==='SAN FRANCISCO'){for(let i=0;i<25;i++){const x=500+i*700-camera;if(x<-120||x>W+120)continue;px(x,GROUND-58,92,31,'#2b3233');px(x+9,GROUND-49,74,10,'#505758');px(x+15,GROUND-19,14,5,'#141919');px(x+61,GROUND-19,14,5,'#141919');}}
+}
+function drawSigns(){if(interior)return;const signs=chapter==='ALCATRAZ'?[{x:4540,t:'DINING HALL'},{x:6200,t:'HOSPITAL WING  →'},{x:7420,t:'MODEL INDUSTRIES'},{x:8600,t:'NEW INDUSTRIES'},{x:14980,t:'DOCKS  →'}]:[{x:2450,t:'BAYVIEW'},{x:4140,t:'HOSPITAL'},{x:7600,t:'OLD HOTEL'},{x:10000,t:'EMERGENCY SHELTER'},{x:12600,t:'ECLIPSE ANNEX'}];for(const a of signs){const x=a.x-camera;if(x<-150||x>W+150)continue;px(x-85,GROUND-245,170,44,'#2d3738');px(x-79,GROUND-239,158,32,'#75807a');text(a.t,x,GROUND-218,10,'#f0e6cb','center');}}
+function drawDock(){if(chapter!=='ALCATRAZ'||interior)return;const x=15480-camera;px(x-230,GROUND-32,460,32,'#505755');for(let i=0;i<8;i++)px(x-210+i*58,GROUND-38,38,7,'#777b74');px(x-28,GROUND-165,56,132,'#252d2f');px(x-37,GROUND-177,74,14,'#68716f');const bcol=state.beacon?'#f3d37b':'#796947';px(x-17,GROUND-201,34,22,bcol);glow(x,GROUND-190,118,state.beacon?'rgba(241,205,120,.20)':'rgba(150,132,86,.06)','rgba(0,0,0,0)');px(x-108,GROUND-64,216,8,'#1d2324');px(x-110,GROUND-83,220,20,'#404c4c');px(x-92,GROUND-108,184,22,'#546161');px(x-55,GROUND-128,110,18,'#667171');px(x-11,GROUND-143,22,12,'#303839');text('DOCK',x,GROUND-220,14,'#f0e6cb','center');text(state.beacon?'BOARD FERRY':'FERRY',x,GROUND-198,9,'#d0c9b4','center');}
+function drawMedicalMarker(){if(chapter!=='ALCATRAZ'||interior||state.dockPass)return;const x=6810-camera;px(x-160,GROUND-245,320,46,'#455052');px(x-151,GROUND-237,302,30,'#89908a');text('HOSPITAL WING • DOCK PASS',x,GROUND-217,12,'#fff1cd','center');glow(x,GROUND-192,90,'rgba(223,204,145,.09)','rgba(0,0,0,0)');}
+function drawPlayer(){const x=player.x-camera,y=player.y;const moving=player.onGround&&Math.abs(player.vx)>15;const run=Math.abs(player.vx)>230;const phase=player.anim*(run?1.25:1);const swing=moving?Math.sin(phase)*9:0;const bob=player.onGround?(moving?Math.abs(Math.sin(phase))*2:Math.sin(totalTime*2.1)*.6):0;const skin='#d5ad93',skin2='#efc5a7',dark='#171b1d';const profiles={Julia:{coat:'#506f76',trim:'#86a5a8',hair:'#342629',hairHi:'#6b4a50',scarf:'#ddd6c6',badge:'#ddc77e'},May:{coat:'#5f6881',trim:'#929bb0',hair:'#53362d',hairHi:'#87584b',scarf:'#e4dfd3',badge:'#d9c17c'},Yumi:{coat:'#3d7868',trim:'#76aa96',hair:'#171a1d',hairHi:'#627078',scarf:'#e9e1d2',badge:'#e0c47f'}};const q=profiles[selectedCharacter]||profiles.Julia;ctx.save();ctx.translate(x+17,y+36+bob);ctx.rotate(player.lean||0);const crouch=player.onGround?1:1.04;ctx.scale(1,crouch);const legL=8+swing,legR=8-swing;px(-14+legL,8,10,29,'#2a3234');px(4-legR,8,10,29,'#2a3234');px(-18+legL,34,20,7,dark);px(1-legR,34,20,7,dark);px(-24,-10,48,39,q.coat);px(-28,-5,7,31,q.trim);px(21,-5,7,31,q.trim);px(-14,-14,28,8,'#f1eadf');px(-7,-6,15,5,q.scarf);px(-12,-40,25,30,skin);px(-8,-36,19,19,skin2);if(selectedCharacter==='Yumi'){px(-19,-49,38,13,q.hair);px(-23,-43,10,43,q.hair);px(18,-44,10,45,q.hair);px(-17,-54,28,6,q.hairHi);px(20,-21,8,24,q.hair);px(-20,-20,8,24,q.hair);px(-11,-43,5,3,q.hairHi);px(4,-43,5,3,q.hairHi);px(-13,-8,7,15,q.hairHi);px(17,-7,8,16,q.hairHi);}else{px(-18,-48,37,13,q.hair);px(-22,-42,10,36,q.hair);px(18,-42,9,33,q.hair);px(-15,-54,27,6,q.hairHi);}px(-8,-29,3,3,'#191713');px(5,-29,3,3,'#191713');px(-1,-19,8,2,'#9c7464');const arm=Math.sin(phase+1.1)*(moving?7:1.5);px(-30-arm,-6,9,29,q.coat);px(22+arm,-6,9,29,q.coat);px(-34-arm,18,9,9,skin);px(26+arm,18,9,9,skin);px(-6,-7,13,5,q.badge);px(-2,-5,5,2,'#f4dda0');const gunX=player.facing>0?29:-49;px(gunX,-1,20,5,'#1f2a2c');px(player.facing>0?43:-43,3,9,3,'#687471');if(player.recoil>0){px(player.facing>0?47:-59,-3,11,5,'#ffe08a');}if(!player.onGround){px(-20,42,12,5,'#65706d');px(7,40,12,5,'#65706d');}if(player.landTimer>0){ctx.globalAlpha=.08;px(-34,44,68,5,'#e7dec9');ctx.globalAlpha=1;}ctx.restore();}
+function drawSurvivor(s){if(s.found)return;const x=s.x-camera,y=GROUND-72;const phase=totalTime*3.2+s.x*.01;const sw=Math.sin(phase)*6;const profiles={MARA:{coat:'#765a49',shirt:'#8d6c58',hair:'#2e2725'},ELI:{coat:'#506a79',shirt:'#6d8390',hair:'#2e2927'},NOAH:{coat:'#6b625a',shirt:'#81786f',hair:'#413a35'},GRACE:{coat:'#634f70',shirt:'#866b92',hair:'#2a252d'}};const q=profiles[s.name]||profiles.NOAH;ctx.save();ctx.translate(0,Math.sin(totalTime*1.7+s.x)*.8);px(x-13+sw,y+42,10,27,'#22292a');px(x+4-sw,y+42,10,27,'#22292a');px(x-20,y+21,40,30,q.shirt);px(x-14,y+7,29,17,q.coat);px(x-11,y-8,24,29,'#d0aa91');px(x-16,y-16,33,12,q.hair);px(x-24,y+28+sw,8,24,q.coat);px(x+22,y+28-sw,8,24,q.coat);text(s.name,x+1,y-31,12,'#fff0cf','center');ctx.restore();if(Math.abs(player.x-s.x)<130)text('E • TALK',x+1,y-52,10,'#eed7a0','center');}
+function drawZombie(z){if(z.dead)return;const x=z.x-camera,y=GROUND-66;const p=totalTime*(z.type==='runner'?6.7:z.type==='brute'?2.3:3.6)+z.phase;const a=Math.sin(p),b=Math.sin(p+1.6),bob=Math.sin(p*.8)*2;const body=z.type==='brute'?'#60484c':z.type==='runner'?'#76534f':'#536360';const skin=z.type==='brute'?'#715052':'#80695e';ctx.save();ctx.translate(0,bob);const sc=z.type==='brute'?1.15:1;ctx.scale(sc,1);px(x-15+a*2,y+9,30,48,body);px(x-12,y-16,24,29,skin);px(x-9,y-12,18,19,body);px(x-27-b*4,y+22,9,31,body);px(x+18+a*4,y+22,9,31,body);px(x-15-b*3,y+53,11,15,'#1a1e20');px(x+5+a*3,y+53,11,15,'#1a1e20');px(x-8,y-7,4,4,'#ea6b5a');px(x+5,y-7,4,4,'#ea6b5a');px(x-4,y+5,11,3,'#251b1e');if(z.type==='brute'){px(x-22,y-24,44,7,'#384340');px(x-30,y+31,9,13,'#71504f');px(x+22,y+31,9,13,'#71504f');}if(z.type==='runner'){px(x-19,y+1,38,4,'#9d7061');}ctx.restore();}
+function drawSmiler(){if(!smiler.active||interior)return;const x=smiler.x-camera;const alpha=clamp(smiler.intensity,0,1);if(x<-220||x>W+220)return;const h=300+Math.sin(totalTime*1.1)*12;ctx.save();ctx.globalAlpha=.98*alpha;px(x-27,GROUND-h,54,h,'#030405');px(x-39,GROUND-h-48,78,58,'#020304');px(x-20,GROUND-h-27,10,7,'#f4eadb');px(x+10,GROUND-h-27,10,7,'#f4eadb');px(x-11,GROUND-h-7,22,4,'#f2e9dd');for(let i=0;i<7;i++)px(x-15+i*5,GROUND-h,4,4,'#c9c0b5');px(x-45,GROUND-h+31,12,148,'#030405');px(x+33,GROUND-h+31,12,148,'#030405');ctx.globalAlpha=.11*alpha;glow(x,GROUND-h*.5,220,'rgba(242,234,220,.12)','rgba(0,0,0,0)');ctx.restore();}
+function drawInterior(){const b=interior?.building||{type:'cell',name:'CELL A-17'};const wall=buildingPalette(b.type);ctx.fillStyle='#1b2020';ctx.fillRect(0,0,W,H);px(0,0,W,375,wall);px(0,0,W,8,'#9aa09a');px(0,375,W,9,'#2b3030');px(0,384,W,186,'#3b3a35');for(let y=402;y<560;y+=32){for(let x=0;x<W;x+=48){px(x+(y%64),y,28,2,'#5e625c');if((x+y)%144===0)px(x+16,y+9,2,2,'#777a71');}}
+ const flick=.68+.32*Math.sin(totalTime*6.2+(b.id||'').length);const exitCol='#34403f';px(30,430,190,100,exitCol);px(44,445,162,68,'#1f2829');text('EXIT TO STREET',125,487,12,'#f0e5c9','center');px(1060,430,190,100,exitCol);px(1074,445,162,68,'#1f2829');text('EXIT TO STREET',1150,487,12,'#f0e5c9','center');
+ if(b.type==='cell'){px(65,116,348,190,'#404744');px(78,127,322,8,'#7a8078');for(let i=0;i<9;i++){const x=91+i*36;px(x,136,6,159,'#20292a');px(x+2,140,2,151,'#737b75');}px(486,126,292,137,'#4d4b43');px(512,141,205,46,'#6e6758');px(518,194,217,17,'#252725');px(528,214,180,11,'#97806b');px(553,222,14,19,'#b99e7e');text('CELL BLOCK A • A-17',640,82,18,'#f0e7d1','center');text('SEARCH UNDER THE MATTRESS',640,103,10,'#aaa79a','center');px(598,385,84,185,'#1c2526');px(606,393,68,177,'#414a49');px(654,452,5,5,'#ddc57e');if(!state.startKey){px(535,226,150,10,'#9a836e');px(540,222,142,5,'#b09274');}}
+ else {px(54,106,356,202,'#364244');px(72,122,320,172,'#566363');for(let i=0;i<5;i++){px(91+i*58,139,40,57,'#263335');px(95+i*58,143,32,49,flick>.72&&i%2===0?'#907b55':'#3c4b4b');}px(438,112,356,6,'#78817b');for(let i=0;i<7;i++){px(452+i*47,138,34,5,'#2f3938');px(456+i*47,146,26,17,'#5c6461');}px(862,104,344,199,'#414946');px(884,120,300,162,'#293030');for(let i=0;i<9;i++){px(902+i*28,141,18,18,i%3===0?'#847353':'#434b49');}text(b.name,640,74,18,'#f0eadb','center');text('ROOM / FLOOR 1',640,97,9,'#aab0aa','center');
+ if(b.id==='medical'){px(852,319,338,80,'#5c6a68');px(880,335,100,46,'#edeadf0');px(900,342,60,31,'#9fa7a1');px(992,338,170,40,'#2c3635');text('SUPPLY DESK',1074,363,11,'#f2e4c6','center');if(!state.dockPass){px(1012,309,125,18,'#8f7152');text('DOCK PASS',1075,322,9,'#fff0c5','center');}}
+ if(b.type==='power'){for(let i=0;i<5;i++){px(70+i*120,210,70,120,'#2c3434');px(80+i*120,220,50,95,'#58615f');line(95+i*120,235,125+i*120,235,'#a08e65',3);}}
+ if(b.type==='research'){for(let i=0;i<7;i++){px(92+i*62,220,44,90,'#253234');px(98+i*62,228,32,75,i%2?'#4a6a68':'#6a554b');}}
+ }
+ const pulse=.65+.35*Math.sin(totalTime*5.7+(b.id||'').length);px(620,350,40,4,pulse>.7?'#b5a976':'#746b54');}
+function drawInteriorLight(){if(!interior)return;const flick=.82+.18*Math.sin(totalTime*5.4+(interior.id||'').length*1.7);const g=ctx.createRadialGradient(640,160,0,640,160,430);g.addColorStop(0,`rgba(239,225,187,${.16*flick})`);g.addColorStop(.5,'rgba(214,207,183,.05)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);if(horror.blackout>0){ctx.fillStyle=`rgba(0,0,0,${clamp(horror.blackout*.12,0,.18)})`;ctx.fillRect(0,0,W,H);}}
+function drawLighting(){if(scene!=='play')return;ctx.save();if(interior){const flick=.85+.15*Math.sin(totalTime*6.5);if(state.light){const x=640,y=175;const g=ctx.createRadialGradient(x,y,15,x,y,420);g.addColorStop(0,`rgba(248,235,198,${.09*flick})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}}else{ctx.fillStyle='rgba(0,0,0,.13)';ctx.fillRect(0,0,W,H);}ctx.restore();}
+function drawWorldDepthFX(){if(scene!=='play')return;ctx.save();if(!interior){for(let i=0;i<22;i++){const x=((i*83-camera*.35)%W+W)%W;const y=430+(i%7)*18;px(x,y,18+(i%4)*8,2,i%3?'#52605c':'#788078');}}else{for(let i=0;i<18;i++){px(i*76,505+(i%3)*15,38,3,'#5d615b');}}ctx.restore();}
+function updateHorror(dt){horror.flash=Math.max(0,horror.flash-dt*2.8);horror.shake=Math.max(0,horror.shake-dt*8);horror.warning=Math.max(0,horror.warning-dt);horror.heartbeat=Math.max(0,horror.heartbeat-dt*3);horror.glitch=Math.max(0,horror.glitch-dt*2.2);if(horror.warning<=0){const e=document.getElementById('warningText');if(e)e.style.opacity='0';}if(scene!=='play')return;scareTimer-=dt;const danger=clamp((100-state.sanity)/100,0,1);if(scareTimer<=0){scareTimer=10+Math.random()*22;const chance=.065+danger*.11;if(Math.random()<chance)triggerJumpscare();else if(Math.random()<.6){showWarning(Math.random()<.5?'DID YOU HEAR THAT?':'KEEP MOVING.');randomHorrorAudio();}}if(state.sanity<55&&Math.random()<dt*.003){horror.glitch=.7;showWarning(Math.random()<.5?'THE WINDOW MOVED':'SOMETHING WAS IN THE ROOM');}if(interior&&Math.random()<dt*.025){tone(62,.18,'sine',.025,-12);}}
+function triggerJumpscare(){if(scene!=='play')return;horror.flash=.95;horror.shake=22;horror.glitch=.7;showWarning('RUN');soundScare();const e=document.getElementById('scare');if(e){e.classList.add('show');setTimeout(()=>e.classList.remove('show'),620);}}
+function updateSmiler(dt){if(scene!=='play'||interior)return;smiler.cooldown-=dt;if(smiler.active){smiler.timer-=dt;smiler.intensity=Math.min(1,smiler.intensity+dt*1.7);state.sanity=Math.max(0,state.sanity-.18*dt);if(smiler.timer<=0){smiler.active=false;smiler.intensity=0;smiler.cooldown=15+Math.random()*28;}}else if(smiler.cooldown<=0){const danger=clamp((100-state.sanity)/100,0,1);if(Math.random()<dt*(.0015+danger*.0026)){smiler.active=true;smiler.timer=2.2+Math.random()*3.6;smiler.x=clamp(player.x+(Math.random()<.5?-1:1)*(420+Math.random()*450),90,worldWidth[chapter]-90);soundScare();showWarning('YOU ARE NOT ALONE');horror.shake=7;}}}
+
+function exitBuilding(){
+ if(!interior||fadeBusy)return;
+ const b=interior.building;
+ const side=player.x>640?1:-1;
+ transitionTo('exit',()=>{
+  const outside=side>0?b.x+b.w+110:b.x-110;
+  player.x=clamp(outside,50,worldWidth[chapter]-90);
+  player.y=GROUND-player.h;
+  player.vx=0;player.vy=0;player.onGround=true;
+  interior=null;
+  camera=clamp(player.x-W*.42,0,worldWidth[chapter]-W);
+  soundDoor();
+  setMessage(`Back outside — ${b.name}.`,1.6);
+ });
+}
+function unlockCell(){
+ if(!state.startKey){setMessage('The door is locked. Search beneath the mattress.',1.7);return;}
+ if(state.startEscaped){setMessage('Cell A-17 is already open.',1);return;}
+ transitionTo('cellEscape',()=>{
+  state.startEscaped=true;
+  interior=null;
+  player.x=2650;
+  player.y=GROUND-player.h;
+  player.vx=0;player.vy=0;player.onGround=true;
+  camera=clamp(player.x-W*.42,0,worldWidth.ALCATRAZ-W);
+  objectiveIndex=0;
+  setMessage('CELL A-17 OPEN. You are in Cell Block A. Find the Hospital Wing.',2.4);
+  soundDoor();soundScare();horror.flash=.32;horror.shake=6;setObjective();
+ });
+}
+function drawLandmarkRail(){
+ if(scene!=='play'||interior||chapter!=='ALCATRAZ')return;
+ const near=islandLandmarks.reduce((a,b)=>Math.abs(b[1]-player.x)<Math.abs(a[1]-player.x)?b:a,islandLandmarks[0]);
+ const d=Math.round(Math.abs(near[1]-player.x)/10)*10;
+ const dir=near[1]>=player.x?'→':'←';
+ ctx.save();ctx.globalAlpha=.88;px(360,690,560,20,'rgba(4,7,7,.75)');text(`${dir} ${near[0]}  •  ${d} m`,640,704,10,'#ddd5bf','center');ctx.restore();
+}
+function drawWorld(){
+ ctx.save();
+ ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);
+ drawSky();drawOcean();drawGround();drawAlcatrazStructures();drawBuildings();drawStreetProps();drawSigns();drawDock();drawMedicalMarker();
+ if(!interior){
+  drawFootprints();
+  for(const s of survivors)if(s.chapter===chapter&&!s.found&&Math.abs(s.x-player.x)<1600)drawSurvivor(s);
+  for(const z of zombies)if(!z.dead&&Math.abs(z.x-player.x)<1700)drawZombie(z);
+  drawSmiler();drawPlayer();drawRain();
+ }else{
+  drawInterior();drawInteriorLight();drawInteriorCharacter();
+ }
+ drawLandmarkRail();drawWorldDepthFX();drawParticles();drawPrompt();drawDynamicLight();drawLighting();drawHorrorOverlay();
+ ctx.restore();
+}
+function setControlMode(v){
+ if(v==='auto')v=/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)?'mobile':'laptop';
+ controlMode=v==='mobile'?'mobile':'laptop';
+ updateControlUI();
+}
+function updateControlUI(){
+ document.querySelectorAll('[data-control]').forEach(b=>b.classList.toggle('selected',b.dataset.control===controlMode));
+ const s=document.getElementById('controlStatus');
+ if(s)s.textContent=`ACTIVE: ${controlMode==='mobile'?'MOBILE / TOUCH':'LAPTOP / DESKTOP'}`;
+ const m=document.getElementById('mobileControls');if(m)m.classList.toggle('hidden',controlMode!=='mobile');
+}
+function keyDown(e){
+ const k=e.key;
+ if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','A','d','D','w','W','Shift','e','E','q','Q','f','F','r','R','g','G','i','I','Tab','Escape','Enter','c','C','p','P'].includes(k))e.preventDefault();
+ keys.add(k);
+ if(scene==='intro'&&(k==='Enter'||k===' '||k==='ArrowRight')){advanceIntro();return;}
+ if(scene==='menu'&&(k==='Enter'||k===' ')){scene='character';showOnly('characterMenu');return;}
+ if(scene==='play'){
+  if(k==='e'||k==='E')interact();
+  else if(k==='q'||k==='Q')useMelee();
+  else if(k==='f'||k==='F'){state.light=!state.light;tone(state.light?440:140,.08,'square',.09);}
+  else if(k==='r'||k==='R')soundReload();
+  else if(k==='g'||k==='G'){state.grenades=Math.max(0,state.grenades-1);tone(75,.25,'square',.16);horror.shake=5;}
+  else if(k==='i'||k==='I'){scene='inventory';show('inventoryUi');}
+  else if(k==='Escape')togglePause();
+  else if(k==='Tab'){objectivePanelOpen=!objectivePanelOpen;document.getElementById('objectivePanel').classList.toggle('open',objectivePanelOpen);}
+  else if(k==='p'||k==='P'){showOnly('infoOverlay');renderDeviceInfo();}
+ }
+ else if(k==='Escape'){if(scene==='pause')resumeGame();else if(scene==='credits'||scene==='controls')showOnly('mainMenu');}
+}
+function boot(){
+ try{
+  initInterface();resetWorld();positionInsideCell();scene='menu';drawWorld();renderHUD();show('privacyGate');
+  requestAnimationFrame(tick);
+ }catch(err){
+  const gate=document.getElementById('privacyGate');if(gate)gate.style.display='flex';
+  const msg=document.getElementById('warningText');if(msg){msg.textContent='BOOT RECOVERY: PRESS ENTER TO CONTINUE';msg.style.opacity='1';}
+ }
+}
+
+function drawRain(){if(interior)return;ctx.save();ctx.globalAlpha=.43;for(let i=0;i<190;i++){const x=(i*83+totalTime*410)%W;const y=(i*47+totalTime*620)%H;line(x,y,x-6,y+18,'#9db7bf',1);}ctx.restore();}
+function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(player.x<180||player.x>1100)t='E  /  USE  — EXIT TO STREET';else if(currentChest)t='E  /  USE  — OPEN CHEST';else if(interior.id==='cellA'&&!state.startKey&&Math.abs(player.x-350)<110)t='E  /  USE  — SEARCH MATTRESS';else if(interior.id==='cellA'&&!state.startEscaped&&Math.abs(player.x-700)<140)t='E  /  USE  — UNLOCK CELL A-17';else{for(const c of chests)if(c.inside&&c.building===interior.id&&Math.abs(player.x-c.x)<110){t='E  /  USE  — OPEN CHEST';break;}}}else if(chapter==='ALCATRAZ'){if(Math.abs(player.x-15480)<300)t=state.dockPass?(state.beacon?'E  /  USE  — BOARD FERRY':'E  /  USE  — LIGHT FERRY BEACON'):'DOCK PASS REQUIRED';else if(!state.dockPass&&Math.abs(player.x-6810)<260)t='E  /  USE  — ENTER HOSPITAL WING';else{for(const b of buildings){if(b.chapter==='SF')continue;const door=b.x+b.w/2;if(Math.abs(player.x-door)<220){t='E  /  USE  — ENTER '+b.name;break;}}}}else{for(const b of buildings){if(b.chapter!=='SF')continue;const door=b.x+b.w/2;if(Math.abs(player.x-door)<220){t='E  /  USE  — ENTER '+b.name;break;}}for(const s of survivors)if(s.chapter==='SF'&&!s.found&&Math.abs(player.x-s.x)<130)t='E  /  USE  — TALK TO '+s.name;}e.textContent=t;}
+function showOnly(id){['mainMenu','characterMenu','credits','controlsOverlay','hud','cutscene','pause','ending','death','inventoryUi','infoOverlay'].forEach(x=>{const e=document.getElementById(x);if(e)e.classList.add('hidden');});if(id){const e=document.getElementById(id);if(e)e.classList.remove('hidden');}}
+function beginExperience(){safeAudio();hide('privacyGate');showOnly('mainMenu');scene='menu';}
+function initInterface(){
+ const bind=(id,fn)=>{const e=document.getElementById(id);if(!e)return;e.onclick=(ev)=>{ev.preventDefault();ev.stopPropagation();safeAudio();fn();};};
+ bind('privacyEnter',()=>beginExperience());bind('privacyDevice',()=>{beginExperience();showOnly('infoOverlay');renderDeviceInfo();});bind('playButton',()=>{scene='character';showOnly('characterMenu');});bind('creditsButton',()=>{scene='credits';showOnly('credits');});bind('controlsButton',()=>{scene='controls';showOnly('controlsOverlay');updateControlUI();});bind('creditsBack',()=>{scene='menu';showOnly('mainMenu');});bind('characterBack',()=>{scene='menu';showOnly('mainMenu');});bind('characterControls',()=>{scene='controls';showOnly('controlsOverlay');updateControlUI();});bind('characterPrivacy',()=>{show('privacyGate');});bind('controlsBack',()=>{scene='menu';showOnly('mainMenu');});bind('autoMode',()=>{setControlMode('auto');saveControlMode(controlMode);});bind('resumeButton',resumeGame);bind('restartButton',restartChapter);bind('pauseMenuButton',mainMenu);bind('endingMenuButton',mainMenu);bind('deathRestartButton',restartChapter);bind('deathMenuButton',mainMenu);bind('infoClose',()=>hide('infoOverlay'));bind('chestCloseButton',closeChest);bind('takeAllButton',takeAll);bind('sortButton',sortChest);bind('soundButton',()=>{soundEnabled=!soundEnabled;const e=document.getElementById('soundButton');if(e)e.textContent='SOUND: '+(soundEnabled?'ON':'OFF');if(soundEnabled)startSoundscape();});document.querySelectorAll('[data-character]').forEach(b=>b.onclick=(ev)=>{ev.preventDefault();ev.stopPropagation();safeAudio();startGame(b.dataset.character);});document.querySelectorAll('[data-control]').forEach(b=>b.onclick=(ev)=>{ev.preventDefault();ev.stopPropagation();safeAudio();setControlMode(b.dataset.control);saveControlMode(controlMode);updateControlUI();});document.querySelectorAll('[data-touch]').forEach(b=>{const a=b.dataset.touch;b.onpointerdown=(ev)=>{ev.preventDefault();touch[a]=true;safeAudio();if(a==='jump')tryJump();if(a==='interact')interact();if(a==='melee')useMelee();if(a==='fire')shootRay();if(a==='light'){state.light=!state.light;tone(state.light?440:140,.08,'square',.08);}if(a==='inventory'){scene='inventory';show('inventoryUi');}if(a==='reload')soundReload();};b.onpointerup=(ev)=>{ev.preventDefault();touch[a]=false;};b.onpointercancel=()=>touch[a]=false;});
+ window.onkeydown=keyDown;window.onkeyup=keyUp;canvas.onpointermove=onPointerMove;canvas.onpointerdown=onPointerDown;window.onpointerup=onPointerUp;window.onblur=()=>{keys.clear();Object.keys(touch).forEach(k=>touch[k]=false);};loadControlMode();updateControlUI();
+ const gate=document.getElementById('privacyGate');if(gate)gate.style.display='flex';
+}
+function boot(){try{initInterface();resetWorld();positionInsideCell();scene='menu';drawWorld();renderHUD();show('privacyGate');requestAnimationFrame(tick);}catch(err){const e=document.getElementById('bootError');if(e)e.textContent=String(err);const gate=document.getElementById('privacyGate');if(gate)gate.style.display='flex';}}
+
 boot();
 
 </script>
