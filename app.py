@@ -98,12 +98,29 @@ GAME_HTML = r"""<!doctype html>
 @keyframes menuSweep{0%,70%{left:-35%}92%,100%{left:115%}}
 @keyframes threatPulse{0%,100%{opacity:.5}50%{opacity:1}}
 
+
+<style id="competitionUpgradeStyle">
+.roomTransitionScreen{position:absolute;inset:0;z-index:75;pointer-events:none;background:#000;opacity:0;display:block;transition:opacity .42s ease}
+.roomTransitionScreen.on{opacity:1}
+.controlChoiceFix{position:absolute;inset:0;z-index:90;display:grid;place-items:center;background:rgba(0,0,0,.92);backdrop-filter:blur(8px)}
+.controlChoiceBox{width:min(720px,92%);padding:30px;border:1px solid #66716c;background:linear-gradient(180deg,#0b100f,#030506);box-shadow:0 25px 100px #000;text-align:center}
+.controlChoiceBox h2{margin:0 0 10px;color:#e9e6dd;letter-spacing:4px;font-size:25px}
+.controlChoiceBox p{color:#8b958f;font-size:11px;line-height:1.7;margin:0 auto 20px;max-width:560px}
+.controlChoiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.controlChoiceGrid button{min-height:105px;font:700 13px Consolas,monospace;letter-spacing:2px;color:#e8e5dc;background:#111716;border:1px solid #4f5955;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 12px 25px rgba(0,0,0,.3)}
+.controlChoiceGrid button:hover,.controlChoiceGrid button.selected{background:#222925;border-color:#c2c7c0;box-shadow:inset 0 0 22px rgba(205,205,195,.08),0 12px 28px rgba(0,0,0,.45)}
+.controlChoiceGrid small{display:block;margin-top:9px;color:#7f8984;font-size:9px;letter-spacing:1px;font-weight:400}
+.controlChoiceFoot{margin-top:15px;color:#666f6a;font-size:10px;letter-spacing:1px}
+.medicalPassMarker{position:absolute;z-index:27;display:none;pointer-events:none;color:#e0d2a0;font:700 10px Consolas,monospace;letter-spacing:2px;text-shadow:2px 2px #000;background:rgba(8,10,10,.72);border:1px solid #575349;padding:7px 9px}
+.roomTransitionLabel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:76;color:#ded9cf;font:700 12px Consolas,monospace;letter-spacing:4px;text-shadow:0 0 18px #fff}
+@media(max-width:760px){.controlChoiceGrid{grid-template-columns:1fr}.controlChoiceBox{padding:20px}}
+</style>
 </style>
 </head>
 <body>
 <div id="privacyGate"><div class="privacyBox"><h1>NIGHTWATCH SECURITY TERMINAL</h1><p class="privacyLead">ASHES OF THE DEAD — DEVICE INFORMATION NOTICE</p><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform details, screen size, language, timezone, online state, network hints, CPU thread count, touch support, cookies state, referrer, battery information when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>The game does not read passwords, personal files, photos, contacts, saved documents, account contents, or arbitrary data from your computer.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone information require separate browser permission.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV alerts, tracking messages, The Smiler observations, and horror-terminal events are fictional game elements unless explicitly identified as browser/server information.</div></div><div class="privacyNotice">The server can only see the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This is an entertainment game, not a security or diagnostic product.</div><div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button id="privacyAccept">ENTER ASHES OF THE DEAD</button><button id="privacyDetails">VIEW DEVICE PANEL</button></div></div></div><div id="privacyDashboard"><div class="dashBox"><div class="dashTop"><div><h2>NIGHTWATCH / PERSONAL DEVICE RECORD</h2><div class="dashSub">Press P to open or close this record</div></div><button id="privacyClose">CLOSE</button></div><div id="dashGrid" class="dashGrid"></div><div style="margin-top:14px;color:#7f8983;font-size:11px;line-height:1.5">Browser-exposed values can be unavailable or approximate. Location, camera, and microphone require permission. The server-seen address may be a proxy address. No passwords, personal files, photos, contacts, or account contents are read by this game.</div></div></div>
 
-<div id="mainMenu" class="layer screen mainMenu"><div class="mainMenuBox"><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • THE ALCATRAZ ESCAPE</div><div class="menuLore">A detective wakes alone inside Cell A-17. The island is quiet. The rain is not. Find the docks. Escape the island. Then find the people who are still alive.</div><div class="menuButtons"><button id="mainMenuPlay" class="menuPlay">PLAY</button><button id="mainMenuCredits" class="menuButton">CREDITS</button><button id="mainMenuControls" class="menuButton">CONTROL MODE</button></div><div class="menuThreat">DO NOT STAY IN ONE PLACE TOO LONG.</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • ALCATRAZ → SAN FRANCISCO</div></div></div><div id="credits" class="layer credits hidden"><div class="creditsBox"><h2>CREDITS</h2><p class="creditsName">Mayumi Alingarog (Yumi, Mimi, Yumimi)</p><p>Thank you to Mayumi Alingarog (Yumi, Mimi, Yumimi), a wonderful classmate and developer who is very helpful, kind, and respectful, for inspiring me to join <b>Scream Jam 2026</b> and motivating this project.</p><p>Ashes of the Dead is an original horror game experience built for the jam.</p><button id="creditsBack">BACK</button></div></div>
+<div id="mainMenu" class="layer screen mainMenu"><div class="mainMenuBox"><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • THE ALCATRAZ ESCAPE</div><div class="menuLore">A detective wakes alone inside Cell A-17. The island is quiet. The rain is not. Find the docks. Escape the island. Then find the people who are still alive.</div><div class="menuButtons"><button id="mainMenuPlay" class="menuPlay">PLAY</button><button id="mainMenuCredits" class="menuButton">CREDITS</button><button id="mainMenuControls" class="menuButton">CONTROL MODE</button></div><div class="menuThreat">DO NOT STAY IN ONE PLACE TOO LONG.</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • ALCATRAZ → SAN FRANCISCO • MADE WITH GRATITUDE</div></div></div><div id="credits" class="layer credits hidden"><div class="creditsBox"><h2>CREDITS</h2><p class="creditsName">Mayumi Alingarog (Yumi, Mimi, Yumimi)</p><p>With heartfelt thanks to Mayumi Alingarog (Yumi, Mimi, Yumimi), a wonderful classmate and fellow developer whose kindness, patience, creativity, helpful nature, and respectful spirit made a lasting difference and inspired me to take the leap into <b>Scream Jam 2026</b>. Her encouragement and love for building things helped turn this little idea into a game I could proudly share.</p><p>Ashes of the Dead is an original horror game experience built for the jam.</p><button id="creditsBack">BACK</button></div></div>
 <div id="modePicker" class="modePicker layer hidden">
 <div class="modeBox">
 <div class="modeTitle">CONTROL PROFILE</div>
@@ -374,7 +391,7 @@ g.connect(ac.destination);
 o.start(t);
 o.stop(t+duration+.02);
 }
-function scareSound(){tone(72,.6,'sawtooth',.16,-45);
+function scareSound(){tone(72,.6,'sawtooth',.22,-45);
 setTimeout(()=>tone(41,.8,'square',.08,-10),80);
 }
 function setMsg(text,time=2){const el=document.getElementById('message');
@@ -385,7 +402,7 @@ messageTimer=time;
 function updateMessage(dt){if(messageTimer>0){messageTimer-=dt;
 if(messageTimer<=0)document.getElementById('message').classList.add('hidden');
 }}
-function getObjectiveData(){if(chapter==='ALCATRAZ'){return[{t:'SEARCH CELL A-17: find the key under the mattress, then unlock the door.',d:0},{t:'SEARCH CELL BLOCK A: inspect the cells and follow the blood marks.',d:1},{t:'SEARCH CELL BLOCK B: find a way toward the prison dock.',d:2},{t:'FIND THE DOCK PASS: search the upper cells and offices.',d:3},{t:'REACH THE DOCK BEACON: use the pass and signal the ferry.',d:4},{t:'ESCAPE ALCATRAZ: board the waiting ferry.',d:5}];}return[{t:'FIND THE SURVIVORS IN SAN FRANCISCO.',d:0},{t:'FIND THE RESEARCH ANNEX ARCHIVE.',d:1},{t:'RETURN TO THE EMERGENCY SHELTER.',d:2}];}
+function getObjectiveData(){if(chapter==='ALCATRAZ'){return[{t:'SEARCH CELL A-17: find the key under the mattress, then unlock the door.',d:0},{t:'SEARCH CELL BLOCK A: inspect the cells and follow the blood marks.',d:1},{t:'SEARCH CELL BLOCK B: find a way toward the prison dock.',d:2},{t:'FIND THE DOCK PASS: enter the Medical Wing and search the marked supply desk.',d:3},{t:'REACH THE DOCK BEACON: use the pass and signal the ferry.',d:4},{t:'ESCAPE ALCATRAZ: board the waiting ferry.',d:5}];}return[{t:'FIND THE SURVIVORS IN SAN FRANCISCO.',d:0},{t:'FIND THE RESEARCH ANNEX ARCHIVE.',d:1},{t:'RETURN TO THE EMERGENCY SHELTER.',d:2}];}
 function getCurrentObjectiveIndex(){if(chapter==='ALCATRAZ')return Math.min(objectiveStep,5);if(archiveOpened)return 2;if(survivorsFound>=3)return 1;return 0;}
 function renderObjectivePanel(){const list=document.getElementById('objectiveList');const sub=document.getElementById('objectivePanelSub');if(!list||!sub)return;const data=getObjectiveData();const current=getCurrentObjectiveIndex();sub.textContent=chapter==='ALCATRAZ'?'ALCATRAZ ISLAND • CELL BLOCK A / ESCAPE ROUTE':'SAN FRANCISCO • SURVIVOR / ARCHIVE ROUTE';list.innerHTML='';data.forEach((o,i)=>{const item=document.createElement('div');item.className='objectiveItem '+(i<current?'done ':'')+(i===current?'current':'');const mark=i<current?'✓':i===current?'›':'○';item.innerHTML='<div class="objectiveMark">'+mark+'</div><div>'+o.t+'</div>';list.appendChild(item);});}
 function setObjective(){const data=getObjectiveData();const current=getCurrentObjectiveIndex();const el=document.getElementById('objective');if(el)el.textContent='OBJECTIVE\n'+data[current].t;renderObjectivePanel();}
@@ -451,7 +468,7 @@ if(i%3===0)addChest((block===0?410:1410)+local*82,GROUND-40,i===18);
 }addWriting(430,GROUND-210,'KEEP QUIET',.7);
 addWriting(870,GROUND-205,'HE IS STILL HERE',.65);
 addWriting(1540,GROUND-210,'DO NOT TRUST THE LIGHT',.58);
-addWriting(2050,GROUND-210,'B-4 HAS THE PASS',.65);
+addWriting(2860,GROUND-205,'MEDICAL WING HAS THE DOCK PASS',.68);
 addWriting(2580,GROUND-150,'THEY CLOSED THE WARD',.6);
 addWriting(3650,GROUND-150,'THE DOCK IS NOT EMPTY',.55);
 addSkeleton(1120);
@@ -659,7 +676,7 @@ setMsg(`${c.id} unlocked.`,1.2);
 state.sanity=Math.max(0,state.sanity-2);
 if(c.id==='B-4'){state.dockPass=true;
 objectiveStep=4;
-setMsg('You found the DOCK PASS. The writing was true.',3);
+setMsg('The Medical Wing should have the Dock Pass.',2.4);
 addItem('ammo',8);
 }else{const roll=Math.random();
 if(roll<.4)addItem('bandage',1);
@@ -1817,7 +1834,7 @@ function interact(){
  const c=currentCell();
  if(c){
   if(!c.open){if(state.keys>0){state.keys--;c.open=true;setMsg(`${c.id} unlocked.`,1.2);}else setMsg('Locked. Search for a key.',1.5);return;}
-  if(!c.searched){c.searched=true;state.sanity=Math.max(0,state.sanity-2);if(c.id==='B-4'){state.dockPass=true;objectiveStep=4;setMsg('You found the DOCK PASS. The writing was true.',3);addItem('ammo',8);}else{const roll=Math.random();if(roll<.4)addItem('bandage',1);else if(roll<.7)addItem('ammo',6);else addItem('scrap',randi(1,3));setMsg('Cell searched.',1);}}return;
+  if(!c.searched){c.searched=true;state.sanity=Math.max(0,state.sanity-2);if(c.id==='B-4'){state.dockPass=true;objectiveStep=4;setMsg('The Medical Wing should have the Dock Pass.',2.4);addItem('ammo',8);}else{const roll=Math.random();if(roll<.4)addItem('bandage',1);else if(roll<.7)addItem('ammo',6);else addItem('scrap',randi(1,3));setMsg('Cell searched.',1);}}return;
  }
  const ch=currentChest();if(ch){openChest(ch);return;}
  const b=currentBuilding();
@@ -2260,7 +2277,7 @@ function finalInteractV2(){
  const cell=currentCell();
  if(cell&&!startingCell){
   if(!cell.open){if(state.keys>0){state.keys--;cell.open=true;setMsg(`${cell.id} unlocked.`,1.1);}else setMsg('Locked. Search another cell first.',1.1);return;}
-  if(!cell.searched){cell.searched=true;if(cell.id==='B-4'){state.dockPass=true;objectiveStep=4;addItem('ammo',8);setMsg('DOCK PASS FOUND IN B-4.',2.7);setObjective();}else{const r=Math.random();addItem(r<.45?'bandage':r<.78?'ammo':'scrap',r<.45?1:r<.78?6:randi(1,3));setMsg(`${cell.id} searched.`,1);}}return;
+  if(!cell.searched){cell.searched=true;if(cell.id==='B-4'){state.dockPass=true;objectiveStep=4;addItem('ammo',8);setMsg('The Dock Pass is in the Medical Wing.',2.0);setObjective();}else{const r=Math.random();addItem(r<.45?'bandage':r<.78?'ammo':'scrap',r<.45?1:r<.78?6:randi(1,3));setMsg(`${cell.id} searched.`,1);}}return;
  }
  if(chapter==='SAN FRANCISCO'){
   for(const sv of survivors){if(!sv.found&&Math.abs(player.x-sv.x)<82){sv.found=true;sv.follow=true;survivorsFound++;state.sanity=Math.min(100,state.sanity+7);setMsg(`${sv.name}: "Stay close. I heard something behind us."`,2.5);setObjective();tone(115,.2,'triangle',.025,35);return;}}
@@ -2536,7 +2553,7 @@ function ferryStatusPrompt(){
 }
 function boardFerryNow(){
  if(chapter!=='ALCATRAZ'||interior)return false;
- if(!state.dockPass){setMsg('You need the dock pass from Cell B-4.',1.8);showWarning('DOCK PASS REQUIRED');tone(74,.25,'square',.025,-20);return true;}
+ if(!state.dockPass){setMsg('You need the Dock Pass from the Medical Wing.',1.8);showWarning('DOCK PASS REQUIRED');tone(74,.25,'square',.025,-20);return true;}
  const d=Math.abs(player.x-finalBoat.x);
  if(d>250){setMsg('The ferry is farther down the pier.',1.2);return true;}
  if(finalBoat.signal===0){finalBoat.signal=1;finalBoat.lit=true;objectiveStep=5;setObjective();setMsg('FERRY BEACON LIT. The engine starts in the fog.',2.4);stepParticles(finalBoat.x,finalBoat.y,18,'spark');tone(180,.3,'triangle',.035,50);shake=3;return true;}
@@ -2570,7 +2587,7 @@ canvas.addEventListener('dblclick',ferryTapHandler);
 document.querySelectorAll('#mobileControls button').forEach(btn=>btn.addEventListener('pointerup',()=>{if(mode==='play'&&ferryZone()&&btn.dataset.key==='e')boardFerryNow();}));
 
 
-function ultimateObjectiveData(){if(chapter==='ALCATRAZ'){return[{t:'SEARCH CELL A-17 AND ESCAPE CELL BLOCK A.',steps:['1. Walk to the mattress on the left side of Cell A-17.','2. Press E to search beneath it and take the brass key.','3. Walk to the barred cell door on the right.','4. Press E again to unlock the door.'],d:0},{t:'SEARCH CELL BLOCK A AND FOLLOW THE BLOOD MARKS.',steps:['1. Walk through the Cell Block A corridor.','2. Look for open or locked cells and blood writing.','3. Press E at cells that can be searched.','4. Keep moving toward the center of the island.'],d:1},{t:'CROSS CELL BLOCK B AND FIND THE DOCK ROUTE.',steps:['1. Continue right past the guard station.','2. Search Cell Block B for useful supplies.','3. Unlock cells when you find spare keys.','4. Look for the B-4 clue near the prison route.'],d:2},{t:'FIND THE DOCK PASS IN CELL B-4.',steps:['1. Reach Cell B-4 in Cell Block B.','2. Make sure the cell is unlocked.','3. Press E while standing at the cell to search it.','4. Take the Dock Pass and follow the signs to the dock.'],d:3},{t:'REACH THE DOCK BEACON AND SIGNAL THE FERRY.',steps:['1. Follow the dock signs all the way right.','2. Stand near the ferry beacon.','3. Press E to light the beacon when the Dock Pass is in your inventory.','4. Stay near the dock and listen for the ferry engine.'],d:4},{t:'ESCAPE ALCATRAZ BY BOARDING THE FERRY.',steps:['1. Walk close to the ferry ladder.','2. Wait until the prompt says BOARD FERRY.','3. Press E to board.','4. Do not leave the dock until the boarding sequence begins.'],d:5}];}return[{t:'FIND THE THREE SURVIVORS.',steps:['1. Explore the abandoned city from left to right.','2. Approach Mara, Eli and Noah.','3. Press E near each survivor to recruit them.','4. Check OBJECTIVES again after each rescue.'],d:0},{t:'FIND THE RESEARCH ANNEX ARCHIVE.',steps:['1. Keep the survivors together.','2. Travel to the Research Annex.','3. Enter the building through the main entrance.','4. Reach the archive area and press E to open it.'],d:1},{t:'RETURN TO THE EMERGENCY SHELTER.',steps:['1. Leave the Research Annex.','2. Travel back toward the Emergency Shelter.','3. Enter the shelter area with all three survivors found.','4. Press E at the shelter objective point to finish the chapter.'],d:2}];}
+function ultimateObjectiveData(){if(chapter==='ALCATRAZ'){return[{t:'SEARCH CELL A-17 AND ESCAPE CELL BLOCK A.',steps:['1. Walk to the mattress on the left side of Cell A-17.','2. Press E to search beneath it and take the brass key.','3. Walk to the barred cell door on the right.','4. Press E again to unlock the door.'],d:0},{t:'SEARCH CELL BLOCK A AND FOLLOW THE BLOOD MARKS.',steps:['1. Walk through the Cell Block A corridor.','2. Look for open or locked cells and blood writing.','3. Press E at cells that can be searched.','4. Keep moving toward the center of the island.'],d:1},{t:'CROSS CELL BLOCK B AND FIND THE DOCK ROUTE.',steps:['1. Continue right past the guard station.','2. Search Cell Block B for useful supplies.','3. Unlock cells when you find spare keys.','4. Look for the B-4 clue near the prison route.'],d:2},{t:'FIND THE DOCK PASS IN THE MEDICAL WING.',steps:['1. Follow the red MEDICAL WING sign.','2. Enter the Medical Wing through the main door.','3. Go to the clearly marked supply desk.','4. Press E to take the Dock Pass.'],d:3},{t:'REACH THE DOCK BEACON AND SIGNAL THE FERRY.',steps:['1. Follow the dock signs all the way right.','2. Stand near the ferry beacon.','3. Press E to light the beacon when the Dock Pass is in your inventory.','4. Stay near the dock and listen for the ferry engine.'],d:4},{t:'ESCAPE ALCATRAZ BY BOARDING THE FERRY.',steps:['1. Walk close to the ferry ladder.','2. Wait until the prompt says BOARD FERRY.','3. Press E to board.','4. Do not leave the dock until the boarding sequence begins.'],d:5}];}return[{t:'FIND THE THREE SURVIVORS.',steps:['1. Explore the abandoned city from left to right.','2. Approach Mara, Eli and Noah.','3. Press E near each survivor to recruit them.','4. Check OBJECTIVES again after each rescue.'],d:0},{t:'FIND THE RESEARCH ANNEX ARCHIVE.',steps:['1. Keep the survivors together.','2. Travel to the Research Annex.','3. Enter the building through the main entrance.','4. Reach the archive area and press E to open it.'],d:1},{t:'RETURN TO THE EMERGENCY SHELTER.',steps:['1. Leave the Research Annex.','2. Travel back toward the Emergency Shelter.','3. Enter the shelter area with all three survivors found.','4. Press E at the shelter objective point to finish the chapter.'],d:2}];}
 function ultimateCurrentObjectiveIndex(){if(chapter==='ALCATRAZ')return Math.min(objectiveStep,5);if(archiveOpened)return 2;if(survivorsFound>=3)return 1;return 0;}
 function ultimateRenderObjectivePanel(){const list=document.getElementById('objectiveList');const sub=document.getElementById('objectivePanelSub');if(!list||!sub)return;const data=ultimateObjectiveData();const current=ultimateCurrentObjectiveIndex();sub.textContent=chapter==='ALCATRAZ'?'ALCATRAZ ISLAND • CELL BLOCK A / ESCAPE ROUTE':'SAN FRANCISCO • SURVIVOR / ARCHIVE ROUTE';list.innerHTML='';data.forEach((o,i)=>{const item=document.createElement('div');item.className='objectiveItem '+(i<current?'done ':'')+(i===current?'current':'');const mark=i<current?'✓':i===current?'›':'○';const steps=o.steps.map((step,n)=>'<div class="'+(i<current?'stepDone':i===current&&n===0?'stepNow':'')+'">'+step+'</div>').join('');const help=i===current?'<div class="objectiveHelp">Need help? Follow the numbered steps above. Use E when a prompt appears.</div>':'';item.innerHTML='<div class="objectiveMark">'+mark+'</div><div><strong>'+o.t+'</strong><div class="objectiveSteps">'+steps+'</div>'+help+'</div>';list.appendChild(item);});}
 function ultimateSetObjective(){const data=ultimateObjectiveData();const current=ultimateCurrentObjectiveIndex();const el=document.getElementById('objective');if(el){const lead='OBJECTIVE\n'+data[current].t;const next=data[current].steps[0]||'';el.textContent=lead+'\nNEXT STEP\n'+next;}ultimateRenderObjectivePanel();}
@@ -3039,7 +3056,7 @@ function jamOpenCharacterSelect(){hide('mainMenu');hide('credits');show('menu');
 function jamOpenCredits(){hide('mainMenu');show('credits');mode='menu';}
 function jamSimpleGoalData(){
  if(chapter==='ALCATRAZ')return[
-  {t:'FIND THE DOCKS',steps:['Follow the prison signs toward the dock.','Search Cell B-4 for the Dock Pass.','Reach the ferry beacon.']},
+  {t:'FIND THE DOCKS',steps:['Follow the prison signs toward the dock.','Enter the Medical Wing and search the clearly marked supply desk for the Dock Pass.','Reach the ferry beacon.']},
   {t:'ESCAPE THE ISLAND',steps:['Use the Dock Pass at the ferry beacon.','Light the beacon and listen for the engine.','Walk to the ferry ladder and press E.']}
  ];
  return[
@@ -3344,11 +3361,11 @@ const aotdSoundscapeV1=(()=>{
   ctx=audio();
   if(!ctx)return null;
   if(!master){
-   master=ctx.createGain();master.gain.value=1.08;
+   master=ctx.createGain();master.gain.value=1.42;
    const limiter=ctx.createDynamicsCompressor();limiter.threshold.value=-8;limiter.knee.value=12;limiter.ratio.value=6;limiter.attack.value=.003;limiter.release.value=.16;master.connect(limiter);limiter.connect(ctx.destination);
-   musicGain=ctx.createGain();musicGain.gain.value=.30;musicGain.connect(master);
-   sfxGain=ctx.createGain();sfxGain.gain.value=1.18;sfxGain.connect(master);
-   rainGain=ctx.createGain();rainGain.gain.value=.11;rainGain.connect(master);
+   musicGain=ctx.createGain();musicGain.gain.value=.34;musicGain.connect(master);
+   sfxGain=ctx.createGain();sfxGain.gain.value=1.78;sfxGain.connect(master);
+   rainGain=ctx.createGain();rainGain.gain.value=.16;rainGain.connect(master);
   }
   return ctx;
  }
@@ -3379,7 +3396,7 @@ const aotdSoundscapeV1=(()=>{
  }
  function startRain(){
   const ac=ensure();if(!ac||rainSource)return;
-  rainBuffer=noise(2.4);rainSource=ac.createBufferSource();rainFilter=ac.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=3100;rainFilter.Q.value=.55;rainSource.buffer=rainBuffer;rainSource.loop=true;rainGain.gain.value=.075;rainSource.connect(rainFilter);rainFilter.connect(rainGain);rainSource.start();
+  rainBuffer=noise(2.4);rainSource=ac.createBufferSource();rainFilter=ac.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=3100;rainFilter.Q.value=.55;rainSource.buffer=rainBuffer;rainSource.loop=true;rainGain.gain.value=.105;rainSource.connect(rainFilter);rainFilter.connect(rainGain);rainSource.start();
  }
  function startMusic(){
   const ac=ensure();if(!ac||droneA)return;
@@ -3411,9 +3428,9 @@ const aotdSoundscapeV1=(()=>{
  }
  function unlock(){if(enabled){audio();start();}}
  function footstep(){
-  noiseBurst(.095,.10,'lowpass',1050,1);
-  burst(72,.10,'sine',.050,-15,'lowpass',430);
-  burst(118,.045,'triangle',.025,-10,'bandpass',760);
+  noiseBurst(.095,.18,'lowpass',1050,1);
+  burst(72,.10,'sine',.085,-15,'lowpass',430);
+  burst(118,.045,'triangle',.042,-10,'bandpass',760);
  }
  function jump(){burst(180,.12,'triangle',.07,55,'lowpass',900);noiseBurst(.09,.04,'highpass',1500,1);}
  function land(){burst(58,.14,'sine',.09,-22,'lowpass',360);noiseBurst(.13,.05,'lowpass',700,1);}
@@ -3638,7 +3655,7 @@ document.body.appendChild(aotdJumpScareEl);
 const aotdRoomBanner=document.createElement('div');
 aotdRoomBanner.id='aotdRoomBanner';
 document.body.appendChild(aotdRoomBanner);
-let aotdScareDirector={timer:18+Math.random()*16,cooldown:0,flash:0,active:false,face:0};
+let aotdScareDirector={timer:10+Math.random()*12,cooldown:0,flash:0,active:false,face:0};
 let aotdFootAudioSafety=0;
 function aotdTriggerJumpscare(power=1){
  if(mode!=='play'||chestUIOpen||gadgetOpen||aotdScareDirector.cooldown>0)return;
@@ -3662,7 +3679,7 @@ function aotdUpdateScareDirector(dt){
  aotdScareDirector.flash=Math.max(0,aotdScareDirector.flash-dt*2.7);
  if(aotdScareDirector.timer<=0&&aotdScareDirector.cooldown<=0){
   const danger=state.sanity<55?1.35:state.sanity<75?1.12:1;
-  aotdScareDirector.timer=(24+Math.random()*24)/danger;
+  aotdScareDirector.timer=(18+Math.random()*20)/danger;
   if(Math.random()<.48||state.sanity<38)aotdTriggerJumpscare(state.sanity<38?1.18:1);
  }
  if(smiler.active&&Math.abs(smiler.x-player.x)<320&&Math.random()<dt*.085)aotdSoundscapeV1.scream(.75);
@@ -3709,6 +3726,290 @@ draw=function(){
  aotdPreFinalDraw();
  if(mode==='play'&&aotdScareDirector.flash>0){ctx.save();ctx.globalAlpha=aotdScareDirector.flash*.12;ctx.fillStyle='#f0e8dc';ctx.fillRect(0,0,W,H);ctx.restore();}
 };
+
+
+const aotdUpgradeRoot=document.querySelector('.shell')||document.body;
+const aotdRoomTransition=document.createElement('div');
+aotdRoomTransition.className='roomTransitionScreen';
+aotdRoomTransition.innerHTML='<div class="roomTransitionLabel"></div>';
+aotdUpgradeRoot.appendChild(aotdRoomTransition);
+let aotdRoomTransitionState={active:false,phase:'idle',timer:0,duration:.44,pending:null};
+function aotdRoomTransitionStart(label,fn){
+ if(aotdRoomTransitionState.active)return;
+ aotdRoomTransitionState={active:true,phase:'out',timer:0,duration:.44,pending:fn};
+ const labelEl=aotdRoomTransition.querySelector('.roomTransitionLabel');
+ if(labelEl)labelEl.textContent=label||'ENTERING...';
+ aotdRoomTransition.classList.add('on');
+ tone(42,.18,'sine',.025,-6);
+}
+function aotdRoomTransitionUpdate(dt){
+ if(!aotdRoomTransitionState.active)return;
+ aotdRoomTransitionState.timer+=dt;
+ if(aotdRoomTransitionState.phase==='out'&&aotdRoomTransitionState.timer>=aotdRoomTransitionState.duration*.52){
+  aotdRoomTransitionState.phase='in';
+  aotdRoomTransitionState.timer=0;
+  const fn=aotdRoomTransitionState.pending;
+  aotdRoomTransitionState.pending=null;
+  if(fn)fn();
+  tone(58,.2,'triangle',.02,18);
+ }
+ if(aotdRoomTransitionState.phase==='in'&&aotdRoomTransitionState.timer>=aotdRoomTransitionState.duration){
+  aotdRoomTransition.classList.remove('on');
+  aotdRoomTransitionState={active:false,phase:'idle',timer:0,duration:.44,pending:null};
+ }
+}
+const aotdOriginalInsideBuildingV3=finalInsideBuildingV2;
+const aotdOriginalExitBuildingV3=finalExitBuildingV2;
+function aotdInsideBuildingSmooth(b){
+ if(!b||aotdRoomTransitionState.active)return;
+ aotdRoomTransitionStart(b.name.toUpperCase(),()=>aotdOriginalInsideBuildingV3(b));
+}
+function aotdExitBuildingSmooth(side){
+ if(!interior||aotdRoomTransitionState.active)return;
+ const name=interior.building.name;
+ aotdRoomTransitionStart('RETURNING TO STREET',()=>aotdOriginalExitBuildingV3(side));
+}
+finalInsideBuildingV2=aotdInsideBuildingSmooth;
+finalExitBuildingV2=aotdExitBuildingSmooth;
+insideBuilding=aotdInsideBuildingSmooth;
+exitBuilding=aotdExitBuildingSmooth;
+const aotdFinalUpdateV3=update;
+update=function(dt){
+ aotdFinalUpdateV3(dt);
+ aotdRoomTransitionUpdate(dt);
+};
+const aotdFinalInteractV3=interact;
+let aotdMedicalPassClaimed=false;
+const aotdOriginalResetWorldV3=resetWorld;
+resetWorld=function(){aotdOriginalResetWorldV3();aotdMedicalPassClaimed=false;};
+function aotdMedicalPassInteract(){
+ if(mode!=='play'||!interior||interior.building.name!=='MEDICAL WING'||aotdMedicalPassClaimed)return false;
+ if(player.x>=650&&player.x<=980){
+  aotdMedicalPassClaimed=true;
+  state.dockPass=true;
+  state.sanity=Math.min(100,state.sanity+4);
+  objectiveStep=Math.max(objectiveStep,4);
+  addItem('ammo',8);
+  setObjective();
+  setMsg('DOCK PASS FOUND — MEDICAL WING SUPPLY DESK.',3);
+  stepParticles(820,460,16,'spark');
+  aotdSoundscapeV1.pickup();
+  aotdSoundscapeV1.chest();
+  aotdTriggerJumpscare(.72);
+  return true;
+ }
+ return false;
+}
+interact=function(){
+ if(mode!=='play'||gadgetOpen||chestUIOpen||aotdRoomTransitionState.active)return;
+ if(interior&&interior.building.name==='MEDICAL WING'&&aotdMedicalPassInteract())return;
+ if(interior){
+  if(player.x<95){aotdExitBuildingSmooth('left');return;}
+  if(player.x>1135){aotdExitBuildingSmooth('right');return;}
+ }
+ if(!interior){
+  const b=finalCurrentBuildingV2();
+  if(b&&Math.abs(player.x-(b.x+b.w*.5))<220){aotdInsideBuildingSmooth(b);return;}
+ }
+ aotdFinalInteractV3();
+};
+function aotdRoomProximityPrompt(){
+ const b=document.getElementById('aotdRoomBanner');
+ if(!b||mode!=='play')return;
+ if(interior&&interior.building.name==='MEDICAL WING'&&!aotdMedicalPassClaimed){
+  b.textContent='MEDICAL WING  //  SUPPLY DESK → DOCK PASS';
+  b.style.opacity='1';
+ }else if(interior){
+  b.textContent=`${interior.building.name.toUpperCase()}  //  FLOOR ${floor}  //  SEARCH THE ROOM`;
+  b.style.opacity='1';
+ }
+ const pm=document.getElementById('medicalPassMarker');
+ if(pm){
+  const visible=mode==='play'&&interior&&interior.building.name==='MEDICAL WING'&&!aotdMedicalPassClaimed;
+  pm.style.display=visible?'block':'none';
+  if(visible){pm.style.left='52%';pm.style.top='48%';}
+ }
+}
+const aotdRoomPromptUpdate=update;
+update=function(dt){aotdRoomPromptUpdate(dt);aotdRoomProximityPrompt();};
+
+const aotdOldGetObjectiveData=getObjectiveData;
+getObjectiveData=function(){
+ if(chapter==='ALCATRAZ')return[
+  {t:'FIND THE DOCKS',d:0},
+  {t:'ESCAPE THE ISLAND',d:1},
+  {t:'FIND 2 SURVIVORS',d:2}
+ ];
+ return[{t:'FIND 2 SURVIVORS',d:0}];
+};
+const aotdOldJamSimpleGoalData=jamSimpleGoalData;
+jamSimpleGoalData=function(){
+ if(chapter==='ALCATRAZ')return[
+  {t:'FIND THE DOCKS',steps:['Leave Cell A-17 and follow the prison signs.','Enter the Medical Wing and search the clearly marked supply desk for the Dock Pass.','Reach the ferry dock beacon.']},
+  {t:'ESCAPE THE ISLAND',steps:['Use the Dock Pass at the ferry dock.','Light the beacon and wait for the ferry.','Walk to the ferry ladder and press E to board.']}
+ ];
+ return[{t:'FIND 2 SURVIVORS',steps:['Explore the city streets.','Approach a survivor and press E.','Repeat until two survivors are found.']}];
+};
+jamRenderSimpleObjectives();
+
+
+const aotdMedicalMarker=document.createElement('div');
+aotdMedicalMarker.id='medicalPassMarker';
+aotdMedicalMarker.className='medicalPassMarker';
+aotdMedicalMarker.textContent='DOCK PASS • SUPPLY DESK • PRESS E';
+aotdUpgradeRoot.appendChild(aotdMedicalMarker);
+const aotdControlFix=document.createElement('div');
+aotdControlFix.className='controlChoiceFix hidden';
+aotdControlFix.innerHTML='<div class="controlChoiceBox"><h2>CONTROL MODE</h2><p>Choose exactly how you want to play. The selected mode stays active until you change it here again.</p><div class="controlChoiceGrid"><button id="chooseLaptop">LAPTOP / DESKTOP<small>A / D or ARROWS • W / SPACE • MOUSE • KEYBOARD</small></button><button id="chooseMobile">MOBILE / TOUCH<small>VIRTUAL MOVE + ACTION BUTTONS • TOUCH AIM</small></button></div><div class="controlChoiceFoot">You can change this any time from the menu.</div></div>';
+aotdUpgradeRoot.appendChild(aotdControlFix);
+function aotdOpenControlChoice(){
+ aotdControlFix.classList.remove('hidden');
+ aotdControlFix.style.display='grid';
+ const l=document.getElementById('chooseLaptop');const m=document.getElementById('chooseMobile');
+ if(l)l.classList.toggle('selected',controlMode==='laptop');
+ if(m)m.classList.toggle('selected',controlMode==='mobile');
+}
+function aotdCloseControlChoice(){aotdControlFix.classList.add('hidden');aotdControlFix.style.display='none';}
+function aotdChooseMode(v){setControlMode(v);aotdCloseControlChoice();setMsg(v==='mobile'?'MOBILE MODE ENABLED.':'LAPTOP MODE ENABLED.',1.5);}
+document.getElementById('chooseLaptop').onclick=()=>aotdChooseMode('laptop');
+document.getElementById('chooseMobile').onclick=()=>aotdChooseMode('mobile');
+document.getElementById('mainMenuControls').onclick=aotdOpenControlChoice;
+document.getElementById('controlModeOpen').onclick=aotdOpenControlChoice;
+
+const aotdOldDrawCharacter=drawCharacterSprite;
+function aotdPremiumCharacter(x,y,who,dir,anim,role){
+ const facing=dir||1;
+ const walk=Math.sin(anim*1.22);
+ const walk2=Math.sin(anim*1.22+Math.PI);
+ const idle=Math.sin(totalTime*2.2+x*.02)*.6;
+ const crouch=!player.onGround&&player.vy>180?2:0;
+ const p=who==='May'?{skin:'#d7b89e',hair:'#241816',hair2:'#5a3a2d',coat:'#3f4654',coatHi:'#6b7180',shirt:'#ddd4c5',pants:'#272a30',boot:'#0b0d0f',badge:'#d8ba6e'}:who==='Yumi'?{skin:'#d6baa0',hair:'#151719',hair2:'#313736',coat:'#30453f',coatHi:'#50665d',shirt:'#ddd6c9',pants:'#242b2d',boot:'#0a0e10',badge:'#d8ba6e'}:{skin:'#d1b197',hair:'#332322',hair2:'#6a493b',coat:'#32474b',coatHi:'#56686c',shirt:'#ddd3c0',pants:'#252a2d',boot:'#0b0e10',badge:'#d7b96b'};
+ ctx.save();ctx.translate(x,y-crouch);ctx.scale(facing,1);
+ px(-24,73,48,6,'rgba(0,0,0,.42)');
+ px(-14+walk2*3,47,12,24,p.pants);px(4+walk*3,47,12,24,p.pants);
+ px(-18+walk2*3,69,18,7,p.boot);px(0+walk*3,69,18,7,p.boot);
+ px(-19,19+idle,40,34,p.coat);px(-13,17+idle,29,18,p.shirt);px(0,20+idle,8,15,who==='May'?'#5a6570':'#45564f');
+ px(-23+walk*2,24,10,29,p.coatHi);px(27+walk2*2,24,10,29,p.coatHi);
+ px(-25+walk*2,49,15,8,p.coat);px(28+walk2*2,49,15,8,p.coat);
+ px(-11,-2+idle,31,27,p.skin);px(-16,-9+idle,41,12,p.hair);px(-12,-15+idle,32,8,p.hair2);
+ if(who==='Julia'){px(13,-6+idle,14,21,p.hair2);px(24,1+idle,8,22,p.hair2);px(-18,0+idle,7,17,p.hair2);}
+ if(who==='May'){px(-20,-2+idle,8,27,p.hair2);px(23,-3+idle,10,22,p.hair2);px(28,6+idle,7,17,p.hair2);}
+ if(who==='Yumi'){px(-20,-1+idle,8,26,p.hair2);px(23,-1+idle,9,27,p.hair2);px(-5,-16+idle,20,6,p.hair);px(12,-20+idle,8,7,p.hair2);}
+ px(-2,7+idle,4,4,'#121516');px(15,7+idle,4,4,'#121516');px(2,16+idle,16,3,'#98635b');
+ px(-8,30,8,15,p.coatHi);px(13,30,8,15,p.coatHi);px(-10,25,6,7,p.badge);px(-8,26,3,3,'#fff0a0');
+ const aiming=typeof state!=='undefined'&&typeof state.light!=='undefined';
+ px(25,32,26,6,'#121618');px(45,30,8,4,'#737671');
+ if(typeof player!=='undefined'&&player.shootTimer>0){px(52,-1,8,14,'#e8cf77');px(60,2,7,7,'#fff1ad');}
+ ctx.restore();
+}
+drawCharacterSprite=aotdPremiumCharacter;
+function aotdPremiumInteriorPlayer(){drawCharacterSprite(player.x,player.y,selectedCharacter,player.facing,player.anim,'');}
+drawEnhancedInteriorPlayer=aotdPremiumInteriorPlayer;
+
+const aotdSmilerBase=aotdTriggerJumpscare;
+const aotdOldHorrorUpdate=aotdUpdateScareDirector;
+aotdUpdateScareDirector=function(dt){
+ aotdOldHorrorUpdate(dt);
+ if(mode!=='play'||chestUIOpen||gadgetOpen)return;
+ const near=typeof smiler!=='undefined'&&smiler.active&&Math.abs(smiler.x-player.x)<240;
+ if(near&&Math.random()<dt*.16){aotdSoundscapeV1.whisper();if(Math.random()<.2)aotdSoundscapeV1.scream(.8);}
+ if(state.sanity<45&&Math.random()<dt*.008&&aotdScareDirector.cooldown<=0){aotdSmilerBase(1.15);}
+};
+
+
+const aotdInteractSmoothCellBase=interact;
+interact=function(){
+ if(mode!=='play'||aotdRoomTransitionState.active)return;
+ if(chapter==='ALCATRAZ'&&startingCell&&!state.startEscaped&&state.startKey&&player.x>=235){
+  aotdRoomTransitionStart('OPENING CELL A-17',()=>{
+   state.startEscaped=true;
+   startingCell=false;
+   state.keys=Math.max(0,state.keys-1);
+   player.x=330;
+   player.y=GROUND-player.h;
+   player.vx=35;
+   player.vy=0;
+   objectiveStep=1;
+   setObjective();
+   setMsg('CELL A-17 OPEN. CELL BLOCK A IS STILL AROUND YOU.',2.5);
+   finalHorrorPulse=1;
+   finalDoorFlash=1;
+   shake=7;
+   aotdSoundscapeV1.door();
+   setTimeout(()=>aotdSoundscapeV1.scream(.95),180);
+  });
+  return;
+ }
+ aotdInteractSmoothCellBase();
+};
+
+function aotdScareMenuDetails(){
+ const m=document.getElementById('mainMenu');
+ if(!m)return;
+ if(!m.querySelector('.menuRedEye')){
+  const e=document.createElement('div');e.className='menuRedEye';e.innerHTML='<i></i><i></i>';m.appendChild(e);
+ }
+}
+aotdScareMenuDetails();
+
+
+const aotdMovementBeforeTransition=updatePlayer;
+updatePlayer=function(dt){
+ if(aotdRoomTransitionState.active){player.vx=0;player.vy=0;return;}
+ aotdMovementBeforeTransition(dt);
+};
+const aotdMedicalPromptCanvasBase=draw;
+draw=function(){
+ aotdMedicalPromptCanvasBase();
+ if(mode==='play'&&!interior&&chapter==='ALCATRAZ'){
+  const b=buildings.find(v=>v.name==='MEDICAL WING');
+  if(b){
+   const x=b.x-camera;
+   if(x>-320&&x<W+320){
+    ctx.save();
+    const near=Math.abs(player.x-(b.x+b.w*.5))<520;
+    ctx.globalAlpha=near?.92:.48;
+    ctx.fillStyle='#b8b1a2';
+    ctx.font='bold 12px Consolas';
+    ctx.fillText('MEDICAL WING',x+125,GROUND-235);
+    ctx.fillStyle='#9a4745';
+    ctx.fillText('DOCK PASS →',x+132,GROUND-215);
+    if(near){
+     line(x+190,GROUND-206,x+190,GROUND-177,'#9a4745',2);
+     poly([[x+184,GROUND-181],[x+190,GROUND-173],[x+196,GROUND-181]],'#9a4745');
+    }
+    ctx.restore();
+   }
+  }
+ }
+};
+const aotdRoomRenderWithPassBase=aotdRoomRender;
+aotdRoomRender=function(){
+ aotdRoomRenderWithPassBase();
+ if(mode==='play'&&interior&&interior.building.name==='MEDICAL WING'&&!aotdMedicalPassClaimed){
+  ctx.save();
+  const pulse=.72+Math.sin(totalTime*4)*.16;
+  ctx.globalAlpha=pulse;
+  ctx.fillStyle='#d7c17a';
+  px(781,430,78,5,'#6f6250');
+  px(790,438,60,24,'#1b2020');
+  px(814,443,14,9,'#d2b66d');
+  px(790,471,62,3,'#8c7a54');
+  ctx.font='bold 10px Consolas';ctx.fillStyle='#e3d7a7';ctx.fillText('DOCK PASS',759,414);
+  ctx.font='9px Consolas';ctx.fillStyle='#aaa298';ctx.fillText('SUPPLY DESK  •  PRESS E',744,490);
+  ctx.restore();
+ }
+};
+function aotdForceControlChoice(){
+ const p=document.getElementById('modePicker');
+ if(p){p.classList.remove('hidden');p.style.display='grid';p.style.zIndex='88';}
+ aotdOpenControlChoice();
+}
+document.getElementById('mainMenuControls').onclick=aotdForceControlChoice;
+document.getElementById('controlModeOpen').onclick=aotdForceControlChoice;
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&aotdRoomTransitionState.active){e.preventDefault();return;}if(e.key==='Escape'&&!aotdControlFix.classList.contains('hidden')){aotdCloseControlChoice();}});
+const aotdSoundStartBase=aotdSoundscapeV1.start;
+if(aotdSoundscapeV1&&aotdSoundscapeV1.setEnabled){aotdSoundscapeV1.setEnabled(true);}
 
 renderLoop();
 
