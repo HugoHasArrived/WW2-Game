@@ -22,12 +22,38 @@ GAME_HTML = r"""<!doctype html>
 @media(max-width:760px){.chestSections{grid-template-columns:1fr}.chestPanel{padding:12px}.slotGrid{gap:4px}.slotIcon{font-size:13px}}
 
 
-.objectiveSteps{margin-top:9px;padding-top:8px;border-top:1px solid #242b28;color:#858f89;font-size:10px;line-height:1.55}.objectiveSteps div{padding:3px 0}.objectiveSteps .stepNow{color:#ded9ca}.objectiveSteps .stepDone{color:#66716b;text-decoration:line-through}.objectiveHelp{margin-top:8px;color:#69736e;font-size:9px;letter-spacing:.5px}.objectiveItem.current .objectiveHelp{color:#b1b6ad}
+.objectiveSteps{margin-top:9px;padding-top:8px;border-top:1px solid #242b28;color:#858f89;font-size:10px;line-height:1.55}.objectiveSteps div{padding:3px 0}.objectiveSteps .stepNow{color:#ded9ca}.objectiveSteps .stepDone{color:#66716b;text-decoration:line-through}.objectiveHelp{margin-top:8px;color:#69736e;font-size:9px;letter-spacing:.5px}.objectiveItem.current .objectiveHelp{color:#b1b6ad} .goalFocus{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:9px 10px;border-bottom:1px solid #252b28;background:#080b0a}.goalFocus span{font-size:9px;color:#656e69;letter-spacing:1px;margin-right:auto}.goalFocus button{font:inherit;font-size:9px;letter-spacing:1px;color:#9ca49f;background:#111615;border:1px solid #39413d;padding:6px 8px;cursor:pointer}.goalFocus button.active{color:#e8e2d5;border-color:#818b85;background:#222925}.goalFocus button:hover{background:#1a201d}.goalNote{padding:8px 10px;color:#747d78;font-size:9px;border-bottom:1px solid #1f2522}
+
+.mainMenu{z-index:58;background:radial-gradient(circle at 50% 42%,rgba(43,47,43,.32),rgba(0,0,0,.96) 72%),linear-gradient(180deg,#060909,#020303)}
+.mainMenuBox{width:min(860px,92%);padding:38px 36px 30px;border:1px solid #68716d;background:linear-gradient(180deg,rgba(12,16,15,.96),rgba(3,5,5,.98));box-shadow:0 0 110px #000,0 0 0 1px #161b19;position:relative;overflow:hidden}
+.mainMenuBox:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(255,255,255,.018) 5px),linear-gradient(90deg,rgba(255,255,255,.02),transparent 18%,transparent 82%,rgba(255,255,255,.02));pointer-events:none}
+.menuLogo{position:relative;font-size:52px;letter-spacing:9px;text-align:center;color:#e7e1d7;text-shadow:4px 4px #000,0 0 22px rgba(190,186,174,.22);margin-bottom:6px}
+.menuTag{position:relative;text-align:center;color:#8a928e;letter-spacing:5px;font-size:11px;margin-bottom:24px}
+.menuLore{position:relative;max-width:700px;margin:0 auto 25px;text-align:center;color:#a2a8a4;font-size:12px;line-height:1.7}
+.menuButtons{position:relative;display:flex;justify-content:center;flex-wrap:wrap;gap:11px}
+.menuPlay{min-width:240px!important;font-size:19px!important;letter-spacing:4px;padding:15px 28px!important;background:#18201d!important;border-color:#a6afa7!important;box-shadow:0 0 20px rgba(180,180,170,.08),inset 0 0 0 1px #28302c!important}
+.menuButton{min-width:170px!important}
+.menuFooter{position:relative;text-align:center;margin-top:20px;color:#646d68;font-size:9px;letter-spacing:2px}
+.menuThreat{position:relative;text-align:center;margin:15px auto 0;color:#6f4949;font-size:10px;letter-spacing:2px;min-height:14px}
+.charSelectBox{width:min(920px,94%);padding:30px;border:1px solid #5d6661;background:linear-gradient(180deg,#0d1210,#050706);box-shadow:0 0 90px #000}
+.charSelectTitle{font-size:25px;letter-spacing:5px;text-align:center;color:#e3dfd6}
+.charSelectSub{text-align:center;color:#737c77;font-size:11px;letter-spacing:2px;margin:8px 0 22px}
+.charCards{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.charCard{min-width:210px;min-height:135px!important;position:relative;overflow:hidden}
+.charCard:after{content:'';position:absolute;right:9px;top:8px;width:38px;height:58px;background:linear-gradient(180deg,#c9bfa8 0 18%,#544b43 18% 46%,#25282a 46% 100%);opacity:.18;image-rendering:pixelated;pointer-events:none}
+.charBack{margin-top:19px!important}
+.credits{z-index:59;background:rgba(0,0,0,.94);backdrop-filter:blur(5px)}
+.creditsBox{width:min(700px,92%);padding:32px;border:1px solid #606863;background:#080b0a;box-shadow:0 0 100px #000;text-align:center}
+.creditsBox h2{margin:0 0 14px;font-size:29px;letter-spacing:5px;color:#e4e0d8}
+.creditsBox p{color:#9ca39f;line-height:1.75;font-size:12px}
+.creditsName{font-size:17px!important;color:#d5d0c4!important;letter-spacing:2px}
+
 </style>
 </head>
 <body>
 <div id="privacyGate"><div class="privacyBox"><h1>NIGHTWATCH SECURITY TERMINAL</h1><p class="privacyLead">ASHES OF THE DEAD — DEVICE INFORMATION NOTICE</p><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform details, screen size, language, timezone, online state, network hints, CPU thread count, touch support, cookies state, referrer, battery information when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>The game does not read passwords, personal files, photos, contacts, saved documents, account contents, or arbitrary data from your computer.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone information require separate browser permission.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV alerts, tracking messages, The Smiler observations, and horror-terminal events are fictional game elements unless explicitly identified as browser/server information.</div></div><div class="privacyNotice">The server can only see the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This is an entertainment game, not a security or diagnostic product.</div><div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button id="privacyAccept">ENTER ASHES OF THE DEAD</button><button id="privacyDetails">VIEW DEVICE PANEL</button></div></div></div><div id="privacyDashboard"><div class="dashBox"><div class="dashTop"><div><h2>NIGHTWATCH / PERSONAL DEVICE RECORD</h2><div class="dashSub">Press P to open or close this record</div></div><button id="privacyClose">CLOSE</button></div><div id="dashGrid" class="dashGrid"></div><div style="margin-top:14px;color:#7f8983;font-size:11px;line-height:1.5">Browser-exposed values can be unavailable or approximate. Location, camera, and microphone require permission. The server-seen address may be a proxy address. No passwords, personal files, photos, contacts, or account contents are read by this game.</div></div></div>
 
+<div id="mainMenu" class="layer screen mainMenu"><div class="mainMenuBox"><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • THE ALCATRAZ ESCAPE</div><div class="menuLore">A detective wakes alone inside Cell A-17. The island is quiet. The rain is not. Find the docks. Escape the island. Then find the people who are still alive.</div><div class="menuButtons"><button id="mainMenuPlay" class="menuPlay">PLAY</button><button id="mainMenuCredits" class="menuButton">CREDITS</button><button id="mainMenuControls" class="menuButton">CONTROL MODE</button></div><div class="menuThreat">DO NOT STAY IN ONE PLACE TOO LONG.</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • ALCATRAZ → SAN FRANCISCO</div></div></div><div id="credits" class="layer credits hidden"><div class="creditsBox"><h2>CREDITS</h2><p class="creditsName">Yumi Alingarog</p><p>Thank you for inspiring me to join <b>Scream Jam 2026</b> and motivating this project.</p><p>Ashes of the Dead is an original horror game experience built for the jam.</p><button id="creditsBack">BACK</button></div></div>
 <div id="modePicker" class="modePicker layer hidden">
 <div class="modeBox">
 <div class="modeTitle">CONTROL PROFILE</div>
@@ -42,12 +68,11 @@ GAME_HTML = r"""<!doctype html>
 </div>
 <div class="shell">
 <canvas id="game" width="1280" height="720"></canvas>
-<div id="menu" class="layer screen">
-<div class="panel">
-<h1>ASHES OF THE DEAD</h1>
-<div class="subtitle">THE ALCATRAZ ESCAPE</div>
+<div id="menu" class="layer screen hidden">
+<div class="charSelectBox">
+<div class="charSelectTitle">CHOOSE YOUR DETECTIVE</div><div class="charSelectSub">All three are female detectives. Their skills and look differ, but the story can be completed with any of them.</div>
 <div class="intro">Rain hits the island. Your cell is open. The prison is empty, but the walls are covered in warnings. Search the cell blocks, survive the island, discover what happened, and escape to San Francisco.</div>
-<div class="choices"><button data-char="Julia">JULIA<br><span class="small">FEMALE DETECTIVE • FIELD FILES</span></button><button data-char="May">MAY<br><span class="small">FEMALE DETECTIVE • CRIME SCENE</span></button><button data-char="Yumi">YUMI<br><span class="small">FEMALE DETECTIVE • INTELLIGENCE</span></button></div>
+<div class="charCards"><button class="charCard" data-char="Julia">JULIA<br><span class="small">FEMALE DETECTIVE • FIELD FILES</span></button><button class="charCard" data-char="May">MAY<br><span class="small">FEMALE DETECTIVE • CRIME SCENE</span></button><button class="charCard" data-char="Yumi">YUMI<br><span class="small">FEMALE DETECTIVE • INTELLIGENCE</span></button></div><div class="center"><button id="charBack">BACK TO MAIN MENU</button></div>
 <div class="warning">HEADPHONES RECOMMENDED • THE QUIET PART IS IMPORTANT</div><div class="center" style="margin-top:12px"><button id="privacyReopen">PRIVACY / DEVICE NOTICE</button><button id="controlModeOpen">CONTROL MODE</button></div>
 <div class="controls">A/D OR ARROWS MOVE • SHIFT RUN • W/SPACE JUMP • E INTERACT • I INVENTORY • TAB GADGET • P PERSONAL INFO<br>F FLASHLIGHT • Q MELEE • G GRENADE • R RELOAD • MOUSE SHOOT • ESC PAUSE</div>
 </div>
@@ -71,7 +96,7 @@ GAME_HTML = r"""<!doctype html>
 
 <div id="hud" class="layer hud hidden">
 <div class="top"><div class="bars"><div>HEALTH <span id="healthText"></span></div><div class="bar"><div id="healthFill" class="fill health"></div></div><div>STAMINA <span id="staminaText"></span></div><div class="bar"><div id="staminaFill" class="fill stamina"></div></div><div>SANITY <span id="sanityText"></span></div><div class="bar"><div id="sanityFill" class="fill sanity"></div></div></div><div class="center"><div id="locationText">ALCATRAZ</div><div id="threatText">THE PRISON IS QUIET</div><div id="ammoText">AMMO 12 / 12</div></div></div>
-<button id="objectiveTab" class="objectiveTab">OBJECTIVES <span>+</span></button><div id="objectivePanel" class="objectivePanel" aria-hidden="true"><div class="objectivePanelHead"><div><div class="objectivePanelTitle">OBJECTIVES</div><div id="objectivePanelSub" class="objectivePanelSub">CURRENT MISSION</div></div><button id="objectiveClose" class="objectiveClose">×</button></div><div id="objectiveList" class="objectiveList"></div></div><div id="objective" class="objective"></div><div id="message" class="message hidden"></div><div id="prompt" class="prompt"></div><div id="inventory" class="inventory hidden"></div><div class="vignette"></div><div id="warningText" class="warningText hidden"></div>
+<button id="objectiveTab" class="objectiveTab">OBJECTIVES <span>+</span></button><div id="objectivePanel" class="objectivePanel" aria-hidden="true"><div class="objectivePanelHead"><div><div class="objectivePanelTitle">OBJECTIVES</div><div id="objectivePanelSub" class="objectivePanelSub">CURRENT MISSION</div></div><button id="objectiveClose" class="objectiveClose">×</button></div><div id="goalFocus" class="goalFocus"><span>GOAL FOCUS</span><button data-goal="escape">ESCAPE</button><button data-goal="search">SEARCH</button><button data-goal="survivors">SURVIVORS</button></div><div id="objectiveList" class="objectiveList"></div></div><div id="objective" class="objective"></div><div id="message" class="message hidden"></div><div id="prompt" class="prompt"></div><div id="inventory" class="inventory hidden"></div><div class="vignette"></div><div id="warningText" class="warningText hidden"></div>
 </div>
 <div id="infoFlash" class="layer infoFlash hidden"><div class="infoFlashBox"><div class="infoFlashTitle">PERSONAL DEVICE RECORD</div><div class="infoFlashGrid"><div><b>SERVER IP</b><br><span id="flashIp">READING...</span></div><div><b>DEVICE</b><br><span id="flashDevice">READING...</span></div><div><b>BROWSER</b><br><span id="flashBrowser">READING...</span></div><div><b>SCREEN</b><br><span id="flashScreen">READING...</span></div><div><b>LANGUAGE</b><br><span id="flashLanguage">READING...</span></div><div><b>TIME ZONE</b><br><span id="flashTimezone">READING...</span></div><div><b>NETWORK</b><br><span id="flashNetwork">READING...</span></div><div><b>ONLINE</b><br><span id="flashOnline">READING...</span></div><div><b>CORES</b><br><span id="flashCores">READING...</span></div><div><b>BATTERY</b><br><span id="flashBattery">READING...</span></div><div><b>LOCATION</b><br><span id="flashLocation">NOT SHARED</span></div><div><b>TOUCH</b><br><span id="flashTouch">READING...</span></div><div><b>COOKIES</b><br><span id="flashCookies">AVAILABLE TO THIS SITE</span></div><div><b>REFERRER</b><br><span id="flashReferrer">NONE</span></div></div><div class="infoFlashClose">ESC OR ENTER TO CLOSE • THIS SCREEN USES INFORMATION AVAILABLE TO THE BROWSER OR GAME SERVER</div></div></div><div id="gadget" class="layer gadget hidden"><div class="gadgetBox"><div class="gadgetTitle">NIGHTWATCH // DEVICE PANEL</div><p class="small">Real browser information is shown only when the browser exposes it. Camera and microphone are never accessed unless you deliberately press the permission button.</p><div class="gadgetGrid"><div>SERVER-SEEN IP: <span id="gip">READING...</span></div><div>PLATFORM: <span id="gplatform">-</span></div><div>BROWSER: <span id="gbrowser">-</span></div><div>SCREEN: <span id="gscreen">-</span></div><div>LANGUAGE: <span id="glang">-</span></div><div>TIME ZONE: <span id="gtz">-</span></div><div>CPU THREADS: <span id="gcpu">-</span></div><div>NETWORK: <span id="gnet">-</span></div><div>BATTERY: <span id="gbat">-</span></div><div>ONLINE: <span id="gonline">-</span></div></div><div style="margin-top:14px">LOCATION: <span id="gloc">NOT SHARED</span> <button id="locate">SHARE LOCATION</button></div><div style="margin-top:10px">CAMERA/MIC: <span id="gperm">NOT ACCESSED</span> <button id="perm">OPTIONAL CHECK</button></div><div style="margin-top:20px;border:1px solid #333;padding:18px;color:#737b7d">P — SHOW PERSONAL DEVICE INFO • TAB TO CLOSE • THIS PANEL IS PART OF THE GAME. IT DOES NOT READ FILES, PASSWORDS, CONTACTS, OR ACCOUNTS.</div></div></div>
 </div>
@@ -2952,6 +2977,107 @@ function enhDrawOverlay(){
 }
 const enhDrawBase=draw;
 draw=function(){enhDrawBase();enhDrawOverlay();};
+
+let jamGoalFocus='escape';
+function jamMainMenu(){mode='menu';hide('menu');hide('hud');hide('pause');hide('ending');hide('death');hide('cutscene');hide('gadget');hide('infoFlash');hide('modePicker');hide('credits');show('mainMenu');}
+function jamOpenCharacterSelect(){hide('mainMenu');hide('credits');show('menu');mode='menu';}
+function jamOpenCredits(){hide('mainMenu');show('credits');mode='menu';}
+function jamSimpleGoalData(){
+ if(chapter==='ALCATRAZ')return[
+  {t:'FIND THE DOCKS',steps:['Follow the prison signs toward the dock.','Search Cell B-4 for the Dock Pass.','Reach the ferry beacon.']},
+  {t:'ESCAPE THE ISLAND',steps:['Use the Dock Pass at the ferry beacon.','Light the beacon and listen for the engine.','Walk to the ferry ladder and press E.']}
+ ];
+ return[
+  {t:'FIND 2 SURVIVORS',steps:['Explore the city streets.','Stand near a survivor and press E.','Repeat until two survivors are with you.']}
+ ];
+}
+function jamGoalIndex(){
+ if(chapter==='ALCATRAZ')return finalBoat&&finalBoat.signal>=1?1:0;
+ return 0;
+}
+function jamRenderGoalFocus(){
+ const holder=document.getElementById('goalFocus');
+ if(!holder)return;
+ const buttons=holder.querySelectorAll('button[data-goal]');
+ const allowed=chapter==='ALCATRAZ'?['escape','search']:['survivors','search'];
+ buttons.forEach(b=>{const g=b.dataset.goal;b.disabled=allowed.indexOf(g)<0;b.classList.toggle('active',g===jamGoalFocus&&!b.disabled);});
+}
+function jamRenderSimpleObjectives(){
+ const list=document.getElementById('objectiveList');
+ const sub=document.getElementById('objectivePanelSub');
+ const el=document.getElementById('objective');
+ if(!list||!sub)return;
+ const data=jamSimpleGoalData();
+ const current=jamGoalIndex();
+ sub.textContent=chapter==='ALCATRAZ'?'ALCATRAZ ISLAND • SIMPLE GOALS':'SAN FRANCISCO • SIMPLE GOAL';
+ list.innerHTML='';
+ data.forEach((o,i)=>{
+  const item=document.createElement('div');
+  item.className='objectiveItem '+(i<current?'done ':'')+(i===current?'current':'');
+  const mark=i<current?'✓':i===current?'›':'○';
+  const steps=o.steps.map((step,n)=>'<div class="'+(i<current?'stepDone':i===current&&n===0?'stepNow':'')+'">'+step+'</div>').join('');
+  const note=i===current?'<div class="goalNote">MAIN GOAL • Pick a goal focus above for extra direction.</div>':'';
+  item.innerHTML='<div class="objectiveMark">'+mark+'</div><div><strong>'+o.t+'</strong><div class="objectiveSteps">'+steps+'</div>'+note+'</div>';
+  list.appendChild(item);
+ });
+ jamRenderGoalFocus();
+ if(el){const o=data[current];const next=o.steps[0]||'';el.textContent='OBJECTIVE\n'+o.t+'\nNEXT STEP\n'+next;}
+}
+setObjective=jamRenderSimpleObjectives;
+renderObjectivePanel=jamRenderSimpleObjectives;
+
+const jamOrigInteractForGoal=interact;
+interact=function(){
+ const before=survivorsFound;
+ jamOrigInteractForGoal();
+ if(chapter==='SAN FRANCISCO'&&survivorsFound>=2&&before<2){win('You found two survivors. The city is still full of things that should not be alive.');}
+};
+
+document.querySelectorAll('#goalFocus button[data-goal]').forEach(b=>b.addEventListener('click',()=>{jamGoalFocus=b.dataset.goal;jamRenderSimpleObjectives();setMsg('GOAL FOCUS: '+b.textContent,1.1);}));
+document.getElementById('mainMenuPlay').onclick=jamOpenCharacterSelect;
+document.getElementById('mainMenuCredits').onclick=jamOpenCredits;
+document.getElementById('creditsBack').onclick=jamMainMenu;
+document.getElementById('mainMenuControls').onclick=()=>{hide('mainMenu');showModePicker();};
+document.getElementById('charBack').onclick=jamMainMenu;
+document.getElementById('backMenu').onclick=jamMainMenu;
+document.getElementById('endingMenu').onclick=jamMainMenu;
+document.getElementById('deathMenu').onclick=jamMainMenu;
+const jamAccept=document.getElementById('privacyAccept');
+if(jamAccept)jamAccept.onclick=()=>{const gate=document.getElementById('privacyGate');if(gate)gate.remove();jamMainMenu();};
+
+function jamExtraPixelGraphics(){
+ if(mode==='menu'||mode==='intro')return;
+ ctx.save();
+ const seedX=Math.floor(camera/17);
+ for(let i=0;i<55;i++){
+  const wx=(seedX*17+i*127)%((chapter==='ALCATRAZ'?ALCATRAZ_WIDTH:SF_WIDTH));
+  const x=wx-camera;
+  if(x<-30||x>W+30)continue;
+  const y=GROUND-(i%5)*9-(i%3)*4;
+  if(i%4===0){px(x,y,9,3,'#252a29');px(x+3,y-4,3,4,'#3a3f3c');}
+  else if(i%4===1){px(x,y,3,12,'#343a37');px(x+4,y+2,5,3,'#525650');}
+  else if(i%4===2){line(x,y,x+12,y+1,'#3b403e',1);line(x+7,y+1,x+10,y+7,'#282d2c',1);}
+  else{px(x,y,2,2,'#656863');px(x+6,y+3,2,2,'#4b4f4d');}
+ }
+ if(chapter==='ALCATRAZ'&&!interior){
+  const waterY=GROUND+95;
+  ctx.globalAlpha=.18;
+  for(let i=0;i<18;i++){const x=(i*89-camera*.35)%W;line(x,waterY+(i%4)*7,x+38,waterY+(i%4)*7,'#6a7778',1);}
+ }
+ if(chapter==='SAN FRANCISCO'&&!interior){
+  for(let i=0;i<12;i++){const x=(i*123-camera*.18)%W;const h=28+(i%4)*13;px(x,GROUND-115-h,4,h,'#1b2020');px(x-7,GROUND-115-h,18,4,'#2f3331');}
+ }
+ if(interior){
+  for(let y=105;y<520;y+=47){for(let x=30;x<W;x+=96){if(((x+y)/47)%2===0)px(x,y,17,2,'#222827');}}
+ }
+ ctx.restore();
+}
+const jamBaseDrawUltra=draw;
+draw=function(){jamBaseDrawUltra();jamExtraPixelGraphics();};
+
+hide('menu');
+hide('credits');
+show('mainMenu');
 
 renderLoop();
 
