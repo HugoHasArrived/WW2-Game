@@ -151,6 +151,13 @@ GAME_HTML = r"""<!doctype html>
 .charCards .charCard[data-char="Yumi"]{border-color:#87a095!important;background:linear-gradient(160deg,#17211e,#080c0b)!important}
 .charCards .charCard[data-char="Yumi"] .charName{color:#eef8ee!important}
 </style>
+<style id="aotdBlackScreenGuard">
+canvas#game{z-index:2!important;opacity:1!important;visibility:visible!important;filter:none!important}
+#hud .vignette{display:none!important}
+.hud{mix-blend-mode:normal!important}
+#aotdSceneFX{background:transparent!important}
+.roomTransitionScreen{background:#020405!important}
+</style>
 </head>
 <body>
 <div id="privacyGate"><div class="privacyBox"><h1>NIGHTWATCH SECURITY TERMINAL</h1><p class="privacyLead">ASHES OF THE DEAD — DEVICE INFORMATION NOTICE</p><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform details, screen size, language, timezone, online state, network hints, CPU thread count, touch support, cookies state, referrer, battery information when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>The game does not read passwords, personal files, photos, contacts, saved documents, account contents, or arbitrary data from your computer.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone information require separate browser permission.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV alerts, tracking messages, The Smiler observations, and horror-terminal events are fictional game elements unless explicitly identified as browser/server information.</div></div><div class="privacyNotice">The server can only see the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This is an entertainment game, not a security or diagnostic product.</div><div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button id="privacyAccept">ENTER ASHES OF THE DEAD</button><button id="privacyDetails">VIEW DEVICE PANEL</button></div></div></div><div id="privacyDashboard"><div class="dashBox"><div class="dashTop"><div><h2>NIGHTWATCH / PERSONAL DEVICE RECORD</h2><div class="dashSub">Press P to open or close this record</div></div><button id="privacyClose">CLOSE</button></div><div id="dashGrid" class="dashGrid"></div><div style="margin-top:14px;color:#7f8983;font-size:11px;line-height:1.5">Browser-exposed values can be unavailable or approximate. Location, camera, and microphone require permission. The server-seen address may be a proxy address. No passwords, personal files, photos, contacts, or account contents are read by this game.</div></div></div>
@@ -4551,6 +4558,173 @@ function aotdCompetitionRenderLoop(){
  }
  totalTime+=dt;
 }
+function aotdUltimateVisibleScene(){
+ ctx.save();
+ ctx.setTransform(1,0,0,1,0,0);
+ ctx.globalAlpha=1;
+ ctx.globalCompositeOperation='source-over';
+ ctx.filter='none';
+ ctx.shadowBlur=0;
+ ctx.shadowColor='transparent';
+ ctx.clearRect(0,0,W,H);
+ const sf=chapter==='SAN FRANCISCO';
+ const sky=ctx.createLinearGradient(0,0,0,430);
+ sky.addColorStop(0,sf?'#08111a':'#081116');
+ sky.addColorStop(.5,sf?'#172932':'#17262c');
+ sky.addColorStop(1,sf?'#364548':'#2f3e40');
+ ctx.fillStyle=sky;
+ ctx.fillRect(0,0,W,H);
+ for(let i=0;i<70;i++){
+  const x=((i*97-camera*.10)%W+W)%W;
+  const y=45+(i*43)%300;
+  px(x,y,1+(i%3),1+(i%2),i%7===0?'#79848a':'#2a3438');
+ }
+ if(sf){
+  ctx.fillStyle='#1b3138';ctx.fillRect(0,350,W,80);
+  for(let i=0;i<9;i++){
+   const x=i*170-camera*.07;
+   const h=100+(i%5)*30;
+   px(x,350-h,95,h,i%2?'#1b252a':'#202c31');
+   px(x+12,366-h,70,7,'#3e494d');
+   for(let q=0;q<4;q++)if((i+q)%3===0)px(x+18+q*18,386-h,7,13,'#7e6d4f');
+  }
+  px(0,409,W,24,'#12191d');
+ }else{
+  ctx.fillStyle='#18292f';ctx.fillRect(0,350,W,80);
+  for(let i=0;i<8;i++){
+   const x=i*190-camera*.05;
+   px(x,278-(i%2)*18,130,100,'#1b272b');
+   px(x+18,264-(i%2)*18,94,12,'#2d393c');
+  }
+  for(let i=0;i<10;i++){
+   const x=i*150-camera*.12;
+   px(x,378,110,6,'#243438');
+  }
+ }
+ ctx.fillStyle=sf?'#444a49':'#3b4544';
+ ctx.fillRect(0,430,W,H-430);
+ ctx.fillStyle='#65706d';ctx.fillRect(0,565,W,6);
+ for(let i=0;i<85;i++){
+  const x=((i*73-camera*.9)%W+W)%W;
+  const y=455+(i*31)%245;
+  px(x,y,2+(i%4),1+(i%2),i%5===0?'#72766e':i%3===0?'#565c58':'#303636');
+ }
+ ctx.fillStyle=sf?'#33393a':'#303837';ctx.fillRect(0,610,W,110);
+ for(let i=0;i<10;i++){const x=i*155-camera*.25;px(x,650,72,5,'#8b8b81');}
+ if(!sf){
+  for(let i=0;i<4;i++){
+   const x=95+i*320-camera*.06;
+   px(x,315,170,255,'#293437');
+   px(x+10,326,150,7,'#485153');
+   for(let q=0;q<7;q++)px(x+24+q*20,345,4,190,'#11191b');
+   for(let q=0;q<5;q++)px(x+28+q*25,340,7,12,'#59605b');
+  }
+ }
+ for(const b of buildings){
+  const x=b.x-camera;
+  if(x<-b.w-50||x>W+50)continue;
+  const h=b.type==='prison'?250:b.floors*105+82;
+  const body=b.type==='hospital'?'#465154':b.type==='police'?'#424e54':b.type==='prison'?'#4a5152':'#414b4d';
+  px(x,GROUND-h,b.w,h,body);
+  px(x,GROUND-h,b.w,9,'#727a78');
+  for(let f=0;f<b.floors;f++){
+   const fy=GROUND-74-f*105;
+   for(let q=0;q<Math.max(2,Math.floor((b.w-50)/48));q++){
+    const wx=x+25+q*48;
+    const lit=(q+f+Math.floor(b.x/100))%5===0;
+    px(wx,fy-31,26,25,lit?'#736849':'#1a2427');
+    if(lit){px(wx+5,fy-27,5,8,'#b79d61');px(wx+15,fy-27,5,8,'#a48d59');}
+   }
+  }
+  px(x+b.w*.5-28,GROUND-72,56,72,'#111719');
+  px(x+b.w*.5+18,GROUND-42,5,5,'#c5aa69');
+  if(b.type==='hospital'){px(x+b.w*.5-58,GROUND-h+18,116,31,'#59666a');px(x+b.w*.5-8,GROUND-h+22,16,22,'#e1e3db');px(x+b.w*.5-19,GROUND-h+29,38,8,'#e1e3db');}
+  if(b.type==='police'){aotdReadableText('POLICE',x+28,GROUND-h+31,13,'#e5e0d4');}
+ }
+ if(chapter==='ALCATRAZ'&&!state.startEscaped){
+  ctx.fillStyle='#252e30';ctx.fillRect(35,145,1210,500);
+  px(35,145,1210,10,'#69716f');
+  for(let i=0;i<16;i++){px(80+i*72,165,46,7,'#454d4c');px(89+i*72,172,3,395,'#141b1c');}
+  px(72,430,365,86,'#1e2628');px(52,405,405,24,'#4d5351');px(105,366,120,39,'#101617');
+  px(500,370,275,145,'#13191a');px(530,385,220,118,'#2d3536');
+  px(900,392,235,122,'#1b2223');px(882,370,272,22,'#4c5251');
+  px(1015,318,110,42,'#242b2c');
+  for(let i=0;i<14;i++)px(1040+i*7,360,3,151,'#65706d');
+  ctx.font='700 18px Consolas';ctx.fillStyle='#ded6c6';ctx.strokeStyle='#090b0c';ctx.lineWidth=4;ctx.strokeText('CELL BLOCK A • A-17',70,190);ctx.fillText('CELL BLOCK A • A-17',70,190);
+  ctx.font='12px Consolas';ctx.fillStyle='#a5aea8';ctx.fillText(state.startKey?'THE KEY IS IN YOUR HAND':'SEARCH UNDER THE MATTRESS',72,215);
+ }else{
+  if(chapter==='ALCATRAZ'&&state.startEscaped){
+   ctx.font='700 11px Consolas';ctx.fillStyle='#dad3c3';ctx.fillText('CELL BLOCK A',35,315);ctx.fillText('MEDICAL WING',840,315);
+   px(2520-camera,GROUND-135,310,8,'#565d5b');
+   px(2860-camera,GROUND-150,520,10,'#4f5755');
+  }
+ }
+ for(const c of chests){if(c.inside)continue;const x=c.x-camera;if(x<-80||x>W+80)continue;const yy=c.y;px(x,yy,58,38,c.opened?'#5d5144':'#7a5a36');px(x,yy,58,7,'#a27d4d');px(x+25,yy+13,9,10,'#e0c06c');}
+ for(const s of survivors){const x=s.x-camera;if(x<-60||x>W+60||s.found)continue;aotdSafeCharacter(x,GROUND-72,s.name==='Mara'?'May':s.name==='Eli'?'Julia':'Yumi',s.x<player.x?-1:1,totalTime*4,s.role);}
+ for(const z of zombies){if(z.dead)continue;const x=z.x-camera;if(x<-70||x>W+70)continue;aotdSafeZombie(x,GROUND-64,z.type,totalTime*4+z.phase);}
+ if(typeof smiler!=='undefined'&&smiler.active){const sx=smiler.x-camera;if(sx>-120&&sx<W+120){ctx.save();ctx.globalAlpha=.7;px(sx-24,GROUND-255,48,255,'#050607');px(sx-34,GROUND-280,68,40,'#050607');px(sx-17,GROUND-238,7,5,'#f0e7d7');px(sx+10,GROUND-238,7,5,'#f0e7d7');ctx.restore();}}
+ if(interior){
+  ctx.save();
+  ctx.fillStyle='#293638';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#3c4748';ctx.fillRect(0,66,W,8);
+  for(let row=0;row<8;row++)for(let col=0;col<17;col++){const x=col*78+(row%2)*39,y=96+row*50;line(x,y,x+50,y,'#66706c',1);}
+  ctx.fillStyle='#202829';ctx.fillRect(0,505,W,215);
+  for(let i=0;i<18;i++)px(i*72,520,50,5,'#48514f');
+  px(46,365,260,150,'#353e3f');px(65,338,222,27,'#5d625f');px(92,312,110,25,'#202627');
+  px(815,390,190,125,'#5a493b');px(836,355,150,35,'#374041');
+  px(1040,355,125,160,'#364041');
+  for(let i=0;i<6;i++)px(1050,370+i*24,105,5,'#65716d');
+  px(582,350,76,165,'#111719');px(593,365,54,150,'#2b3435');px(632,435,5,5,'#d0b064');
+  ctx.font='700 17px Consolas';ctx.fillStyle='#e1d9c9';ctx.strokeStyle='#111516';ctx.lineWidth=4;ctx.strokeText(interior.building.name.toUpperCase(),255,104);ctx.fillText(interior.building.name.toUpperCase(),255,104);
+  ctx.font='11px Consolas';ctx.fillStyle='#c1c9c4';ctx.fillText(`FLOOR ${floor}  •  INTERIOR`,500,126);
+  ctx.font='700 10px Consolas';ctx.fillStyle='#f0e7d7';ctx.fillText('LEFT EXIT',30,335);ctx.fillText('RIGHT EXIT',1090,335);
+  drawInteriorLoot();
+  aotdSafeCharacter(player.x,player.y,selectedCharacter,player.facing,player.anim,'player');
+  ctx.restore();
+ }else{
+  aotdSafeCharacter(player.x-camera,player.y,selectedCharacter,player.facing,player.anim,'player');
+ }
+ if(!interior){
+  for(let i=0;i<140;i++){const x=((i*53+totalTime*220-camera*.45)%W+W)%W;const y=(i*79+totalTime*315)%430;line(x,y,x-5,y+14,'rgba(189,207,214,.42)',1);}
+ }
+ ctx.restore();
+}
+function aotdSafeCharacter(x,y,who,dir,anim,role){
+ const t=Number(anim)||0;
+ const walk=Math.sin(t)*4;
+ const bounce=Math.sin(t*2)*1.2;
+ const step=walk*(role==='player'?1.15:.8);
+ const isY=who==='Yumi';
+ const hair=isY?'#141719':who==='May'?'#3c2924':'#2b2220';
+ const coat=isY?'#386057':who==='May'?'#505872':'#3f6268';
+ const skin='#d8b69f';
+ px(x-9+step,y+67,18,7,'#111719');px(x+5-step,y+67,18,7,'#111719');
+ px(x-14+step,y+43,12,25,'#242b2c');px(x+5-step,y+43,12,25,'#242b2c');
+ px(x-20,y+23+bounce,40,29,coat);px(x-15,y+17+bounce,30,11,'#e9e2d4');
+ px(x-10,y-4+bounce,27,28,skin);px(x-16,y-13+bounce,39,15,hair);
+ px(x-19,y-2+bounce,8,38,hair);px(x+16,y-2+bounce,8,38,hair);
+ if(isY){px(x-23,y+6+bounce,7,31,hair);px(x+23,y+6+bounce,7,31,hair);px(x-7,y+4+bounce,4,3,'#111');px(x+8,y+4+bounce,4,3,'#111');px(x+1,y+13+bounce,8,3,'#965e57');}
+ else{px(x-7,y+5+bounce,4,3,'#111');px(x+8,y+5+bounce,4,3,'#111');px(x+1,y+14+bounce,8,2,'#935e58');}
+ px(x-27+walk,y+25+bounce,9,25,coat);px(x+26-walk,y+25+bounce,9,25,coat);
+ px(x-7,y+25+bounce,14,5,'#bca15d');
+ if(role==='player'&&player.shootTimer>0)px(x+(dir>0?33:-41),y+33,10,5,'#f2dc8b');
+}
+function aotdSafeZombie(x,y,type,anim){const bob=Math.sin(anim)*2;const c=type==='runner'?'#624a49':type==='brute'?'#554948':'#495150';px(x-15,y+8+bob,30,50,c);px(x-11,y-15+bob,22,27,c);px(x-24,y+22+bob,8,30,c);px(x+16,y+22+bob,8,30,c);px(x-15,y+54+bob,10,15,'#171b1c');px(x+6,y+54+bob,10,15,'#171b1c');px(x-7,y-5+bob,4,4,'#d86a56');px(x+5,y-5+bob,4,4,'#d86a56');}
+function aotdFinalSafeDraw(){if(mode!=='play')return;aotdUltimateVisibleScene();}
+draw=aotdFinalSafeDraw;
+const aotdSafeUpdatePlayer=updatePlayer;
+updatePlayer=function(dt){
+ if(typeof inputState!=='undefined'){
+  if(inputState.left)keys.add('a');else keys.delete('a');
+  if(inputState.right)keys.add('d');else keys.delete('d');
+  if(inputState.run)keys.add('Shift');else keys.delete('Shift');
+  if(inputState.jump)keys.add('w');
+ }
+ aotdSafeUpdatePlayer(dt);
+ if(inputState.jump&&player.onGround===false){inputState.jump=false;}
+ if(!Number.isFinite(player.x))player.x=220;
+ if(!Number.isFinite(player.y))player.y=GROUND-player.h;
+};
 aotdCompetitionRenderLoop();
 
 </script>
