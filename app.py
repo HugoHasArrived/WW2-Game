@@ -136,7 +136,16 @@ GAME_HTML = r"""<!doctype html>
 @keyframes aotdThreatPulse{0%,100%{opacity:.58}50%{opacity:1;text-shadow:0 0 12px rgba(190,30,34,.32)}}
 #aotdWorldLabel{position:absolute;left:18px;top:152px;z-index:14;pointer-events:none;color:#b8b3a7;font:700 10px Consolas,monospace;letter-spacing:2px;text-shadow:2px 2px #000;opacity:.7}
 #aotdSceneFX{position:absolute;inset:0;pointer-events:none;z-index:13}
-</style></head>
+</style><style id="finalCharacterSelectionFix">
+.charCards .charCard::before,.charCards .charCard:before{display:none!important;content:none!important;background:none!important;box-shadow:none!important}
+.charCards .charCard{min-height:154px!important;padding:22px!important;display:flex!important;justify-content:center!important;align-items:center!important;text-align:center!important;background:linear-gradient(160deg,#141b1b,#080b0c)!important;border:1px solid #69736d!important;box-shadow:inset 0 0 24px rgba(180,190,180,.035),0 10px 28px rgba(0,0,0,.45)!important}
+.charCards .charCard:hover{transform:translateY(-3px)!important;border-color:#c7c1af!important}
+.charCards .charCard .charName{color:#fff7e6!important;font:900 25px Consolas,monospace!important;letter-spacing:5px!important;text-shadow:3px 3px #000,0 0 9px #000!important}
+.charCards .charCard .charMeta{color:#cfd5d0!important;font:700 10px Consolas,monospace!important;letter-spacing:1px!important;line-height:1.5!important;text-shadow:2px 2px #000!important}
+.charCards .charCard[data-char="Yumi"]{border-color:#87a095!important;background:linear-gradient(160deg,#17211e,#080c0b)!important}
+.charCards .charCard[data-char="Yumi"] .charName{color:#eef8ee!important}
+</style>
+</head>
 <body>
 <div id="privacyGate"><div class="privacyBox"><h1>NIGHTWATCH SECURITY TERMINAL</h1><p class="privacyLead">ASHES OF THE DEAD — DEVICE INFORMATION NOTICE</p><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform details, screen size, language, timezone, online state, network hints, CPU thread count, touch support, cookies state, referrer, battery information when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>The game does not read passwords, personal files, photos, contacts, saved documents, account contents, or arbitrary data from your computer.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone information require separate browser permission.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV alerts, tracking messages, The Smiler observations, and horror-terminal events are fictional game elements unless explicitly identified as browser/server information.</div></div><div class="privacyNotice">The server can only see the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This is an entertainment game, not a security or diagnostic product.</div><div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button id="privacyAccept">ENTER ASHES OF THE DEAD</button><button id="privacyDetails">VIEW DEVICE PANEL</button></div></div></div><div id="privacyDashboard"><div class="dashBox"><div class="dashTop"><div><h2>NIGHTWATCH / PERSONAL DEVICE RECORD</h2><div class="dashSub">Press P to open or close this record</div></div><button id="privacyClose">CLOSE</button></div><div id="dashGrid" class="dashGrid"></div><div style="margin-top:14px;color:#7f8983;font-size:11px;line-height:1.5">Browser-exposed values can be unavailable or approximate. Location, camera, and microphone require permission. The server-seen address may be a proxy address. No passwords, personal files, photos, contacts, or account contents are read by this game.</div></div></div>
 
@@ -1512,7 +1521,28 @@ function drawEnhancedChests(){for(const c of chests){if(c.inside)continue;const 
 function drawEnhancedLoot(){for(const l of loot){if(l.taken)continue;const x=l.x-camera;const bob=Math.sin(totalTime*3+l.x)*2;const colors={ammo:'#cdb15d',medkit:'#e1ddd0',food:'#77705a',scrap:'#929794',battery:'#739985',key:'#d1af62',pass:'#c5aa72'};px(x,l.y+bob,17,12,colors[l.item]||'#8b8e8a');px(x+3,l.y+bob-5,11,5,colors[l.item]||'#8b8e8a');if(l.item==='ammo')px(x+6,l.y+bob-9,5,4,'#f2d47b');if(l.item==='medkit'){px(x+7,l.y+bob-6,4,14,'#984649');px(x+2,l.y+bob-1,14,4,'#984649');}}
 }
 function drawEnhancedZombies(){
-for(const z of zombies){if(z.dead)continue;const x=z.x-camera;if(x<-90||x>W+90)continue;const bob=Math.sin(z.phase)*2.5;const shirt=z.type==='runner'?'#3f4d43':z.type==='brute'?'#463836':'#3a403c';const skin=z.type==='brute'?'#625a51':'#74776e';ctx.save();if(z.hit>0&&Math.floor(totalTime*30)%2===0)ctx.globalAlpha=.55;px(x-14,GROUND+2,58,8,'rgba(0,0,0,.5)');px(x-2,z.y+29+bob,38,z.h-29,shirt);px(x-1,z.y+1+bob,35,30,skin);px(x-4,z.y+19+bob,42,10,'#151819');px(x+5,z.y+8+bob,6,5,'#e1d9bd');px(x+23,z.y+8+bob,6,5,'#ccd4c8');px(x-11,z.y+35+bob,11,31,shirt);px(x+31,z.y+35+bob,11,31,shirt);const swing=Math.sin(z.phase)*9;line(x+2,z.y+42+bob,x-12,z.y+59+bob+swing,'#575c58',6);line(x+33,z.y+42+bob,x+49,z.y+59+bob-swing,'#575c58',6);px(x+2,GROUND-1,14,7,'#141718');px(x+23,GROUND-1,14,7,'#141718');if(z.type==='runner'){px(x+6,z.y-8+bob,22,6,'#57493f');px(x+12,z.y-13+bob,9,5,'#6d5d4d');}if(z.type==='brute'){px(x-7,z.y+25+bob,46,33,'#392f2f');px(x-14,z.y+49+bob,12,23,'#423735');px(x+41,z.y+49+bob,12,23,'#423735');}ctx.restore();}
+ for(const z of zombies){
+  if(z.dead)continue;
+  const x=z.x-camera;if(x<-90||x>W+90)continue;
+  const bob=Math.sin(totalTime*2.2+z.phase)*2.2;
+  const swing=Math.sin(totalTime*3.1+z.phase)*8;
+  const shirt=z.type==='runner'?'#455347':z.type==='brute'?'#493836':'#3d4540';
+  const skin=z.type==='brute'?'#655c52':'#767970';
+  ctx.save();
+  if(z.hit>0&&Math.floor(totalTime*30)%2===0)ctx.globalAlpha=.52;
+  px(x-14,GROUND+2,58,7,'rgba(0,0,0,.45)');
+  px(x-2,z.y+31+bob,38,z.h-31,shirt);
+  px(x-1,z.y+1+bob,35,30,skin);
+  px(x-4,z.y+19+bob,42,10,'#171b1b');
+  px(x+5,z.y+8+bob,6,5,'#e5dcc0');px(x+23,z.y+8+bob,6,5,'#d0d7cc');
+  line(x+2,z.y+42+bob,x-12,z.y+61+bob+swing,'#555b56',6);
+  line(x+33,z.y+42+bob,x+49,z.y+61+bob-swing,'#555b56',6);
+  const leg=Math.sin(totalTime*3.1+z.phase)*5;
+  px(x-3+leg,GROUND-2,14,7,'#141819');px(x+23-leg,GROUND-2,14,7,'#141819');
+  if(z.type==='runner'){px(x+6,z.y-8+bob,22,6,'#594a40');px(x+12,z.y-13+bob,9,5,'#6e5d4f');}
+  if(z.type==='brute'){px(x-7,z.y+25+bob,46,33,'#382e2d');px(x-14,z.y+49+bob,12,23,'#443835');px(x+41,z.y+49+bob,12,23,'#443835');}
+  ctx.restore();
+ }
 }
 function drawEnhancedSurvivors(){for(const s of survivors){const x=s.x-camera;if(x<-90||x>W+90)continue;const who=s.name==='Mara'?'May':s.name==='Eli'?'Julia':'Yumi';drawCharacterSprite(x+7,GROUND-72,who,s.x<player.x?-1:1,totalTime*2.2,s.role);if(s.follow){ctx.fillStyle='#d0c9ba';ctx.font='11px Consolas';ctx.fillText('FOLLOWING',x-30,GROUND-90);}}}
 function drawEnhancedSmiler(){if(!smiler.active||mode!=='play')return;const sx=smiler.x-camera;if(sx<-210||sx>W+210)return;const a=clamp(smiler.intensity,0,1)*.96;ctx.save();ctx.globalAlpha=a;ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=24;px(sx-34,GROUND-222,68,144,'#020203');px(sx-47,GROUND-143,94,70,'#020203');px(sx-28,GROUND-280,56,65,'#010102');px(sx-20,GROUND-270,40,16,'#050506');px(sx-11,GROUND-257,8,6,'#d5d1c8');px(sx+4,GROUND-257,8,6,'#d5d1c8');ctx.strokeStyle='#ded7ce';ctx.lineWidth=4;ctx.beginPath();ctx.arc(sx,GROUND-233,23,.12,3.02);ctx.stroke();for(let i=0;i<5;i++){line(sx-21+i*10,GROUND-202,sx-30+i*14,GROUND-101,'#050506',6);}line(sx-13,GROUND-256,sx-33,GROUND-223,'#080809',4);line(sx+13,GROUND-256,sx+34,GROUND-223,'#080809',4);ctx.restore();}
@@ -3899,320 +3929,95 @@ document.getElementById('controlModeOpen').onclick=aotdOpenControlChoice;
 const aotdOldDrawCharacter=drawCharacterSprite;
 function aotdPremiumCharacter(x,y,who,dir,anim,role){
  const facing=dir||1;
- const walk=Math.sin(anim*1.22);
- const walk2=Math.sin(anim*1.22+Math.PI);
- const idle=Math.sin(totalTime*2.2+x*.02)*.6;
- const crouch=!player.onGround&&player.vy>180?2:0;
- const p=who==='May'?{skin:'#d7b89e',hair:'#241816',hair2:'#5a3a2d',coat:'#3f4654',coatHi:'#6b7180',shirt:'#ddd4c5',pants:'#272a30',boot:'#0b0d0f',badge:'#d8ba6e'}:who==='Yumi'?{skin:'#d6baa0',hair:'#151719',hair2:'#313736',coat:'#30453f',coatHi:'#50665d',shirt:'#ddd6c9',pants:'#242b2d',boot:'#0a0e10',badge:'#d8ba6e'}:{skin:'#d1b197',hair:'#332322',hair2:'#6a493b',coat:'#32474b',coatHi:'#56686c',shirt:'#ddd3c0',pants:'#252a2d',boot:'#0b0e10',badge:'#d7b96b'};
- ctx.save();ctx.translate(x,y-crouch);ctx.scale(facing,1);
- px(-24,73,48,6,'rgba(0,0,0,.42)');
- px(-14+walk2*3,47,12,24,p.pants);px(4+walk*3,47,12,24,p.pants);
- px(-18+walk2*3,69,18,7,p.boot);px(0+walk*3,69,18,7,p.boot);
- px(-19,19+idle,40,34,p.coat);px(-13,17+idle,29,18,p.shirt);px(0,20+idle,8,15,who==='May'?'#5a6570':'#45564f');
- px(-23+walk*2,24,10,29,p.coatHi);px(27+walk2*2,24,10,29,p.coatHi);
- px(-25+walk*2,49,15,8,p.coat);px(28+walk2*2,49,15,8,p.coat);
- px(-11,-2+idle,31,27,p.skin);px(-16,-9+idle,41,12,p.hair);px(-12,-15+idle,32,8,p.hair2);
- if(who==='Julia'){px(13,-6+idle,14,21,p.hair2);px(24,1+idle,8,22,p.hair2);px(-18,0+idle,7,17,p.hair2);}
- if(who==='May'){px(-20,-2+idle,8,27,p.hair2);px(23,-3+idle,10,22,p.hair2);px(28,6+idle,7,17,p.hair2);}
- if(who==='Yumi'){px(-20,-1+idle,8,26,p.hair2);px(23,-1+idle,9,27,p.hair2);px(-5,-16+idle,20,6,p.hair);px(12,-20+idle,8,7,p.hair2);}
- px(-2,7+idle,4,4,'#121516');px(15,7+idle,4,4,'#121516');px(2,16+idle,16,3,'#98635b');
- px(-8,30,8,15,p.coatHi);px(13,30,8,15,p.coatHi);px(-10,25,6,7,p.badge);px(-8,26,3,3,'#fff0a0');
- const aiming=typeof state!=='undefined'&&typeof state.light!=='undefined';
- px(25,32,26,6,'#121618');px(45,30,8,4,'#737671');
- if(typeof player!=='undefined'&&player.shootTimer>0){px(52,-1,8,14,'#e8cf77');px(60,2,7,7,'#fff1ad');}
- ctx.restore();
-}
-drawCharacterSprite=aotdPremiumCharacter;
-function aotdPremiumInteriorPlayer(){drawCharacterSprite(player.x,player.y,selectedCharacter,player.facing,player.anim,'');}
-drawEnhancedInteriorPlayer=aotdPremiumInteriorPlayer;
-
-const aotdSmilerBase=aotdTriggerJumpscare;
-const aotdOldHorrorUpdate=aotdUpdateScareDirector;
-aotdUpdateScareDirector=function(dt){
- aotdOldHorrorUpdate(dt);
- if(mode!=='play'||chestUIOpen||gadgetOpen)return;
- const near=typeof smiler!=='undefined'&&smiler.active&&Math.abs(smiler.x-player.x)<240;
- if(near&&Math.random()<dt*.16){aotdSoundscapeV1.whisper();if(Math.random()<.2)aotdSoundscapeV1.scream(.8);}
- if(state.sanity<45&&Math.random()<dt*.008&&aotdScareDirector.cooldown<=0){aotdSmilerBase(1.15);}
-};
-
-
-const aotdInteractSmoothCellBase=interact;
-interact=function(){
- if(mode!=='play'||aotdRoomTransitionState.active)return;
- if(chapter==='ALCATRAZ'&&startingCell&&!state.startEscaped&&state.startKey&&player.x>=235){
-  aotdRoomTransitionStart('OPENING CELL A-17',()=>{
-   state.startEscaped=true;
-   startingCell=false;
-   state.keys=Math.max(0,state.keys-1);
-   player.x=330;
-   player.y=GROUND-player.h;
-   player.vx=35;
-   player.vy=0;
-   objectiveStep=1;
-   setObjective();
-   setMsg('CELL A-17 OPEN. CELL BLOCK A IS STILL AROUND YOU.',2.5);
-   finalHorrorPulse=1;
-   finalDoorFlash=1;
-   shake=7;
-   aotdSoundscapeV1.door();
-   setTimeout(()=>aotdSoundscapeV1.scream(.95),180);
-  });
-  return;
- }
- aotdInteractSmoothCellBase();
-};
-
-function aotdScareMenuDetails(){
- const m=document.getElementById('mainMenu');
- if(!m)return;
- if(!m.querySelector('.menuRedEye')){
-  const e=document.createElement('div');e.className='menuRedEye';e.innerHTML='<i></i><i></i>';m.appendChild(e);
- }
-}
-aotdScareMenuDetails();
-
-
-const aotdMovementBeforeTransition=updatePlayer;
-updatePlayer=function(dt){
- if(aotdRoomTransitionState.active){player.vx=0;player.vy=0;return;}
- aotdMovementBeforeTransition(dt);
-};
-const aotdMedicalPromptCanvasBase=draw;
-draw=function(){
- aotdMedicalPromptCanvasBase();
- if(mode==='play'&&!interior&&chapter==='ALCATRAZ'){
-  const b=buildings.find(v=>v.name==='MEDICAL WING');
-  if(b){
-   const x=b.x-camera;
-   if(x>-320&&x<W+320){
-    ctx.save();
-    const near=Math.abs(player.x-(b.x+b.w*.5))<520;
-    ctx.globalAlpha=near?.92:.48;
-    ctx.fillStyle='#b8b1a2';
-    ctx.font='bold 12px Consolas';
-    ctx.fillText('MEDICAL WING',x+125,GROUND-235);
-    ctx.fillStyle='#9a4745';
-    ctx.fillText('DOCK PASS →',x+132,GROUND-215);
-    if(near){
-     line(x+190,GROUND-206,x+190,GROUND-177,'#9a4745',2);
-     poly([[x+184,GROUND-181],[x+190,GROUND-173],[x+196,GROUND-181]],'#9a4745');
-    }
-    ctx.restore();
-   }
-  }
- }
-};
-const aotdRoomRenderWithPassBase=aotdRoomRender;
-aotdRoomRender=function(){
- aotdRoomRenderWithPassBase();
- if(mode==='play'&&interior&&interior.building.name==='MEDICAL WING'&&!aotdMedicalPassClaimed){
-  ctx.save();
-  const pulse=.72+Math.sin(totalTime*4)*.16;
-  ctx.globalAlpha=pulse;
-  ctx.fillStyle='#d7c17a';
-  px(781,430,78,5,'#6f6250');
-  px(790,438,60,24,'#1b2020');
-  px(814,443,14,9,'#d2b66d');
-  px(790,471,62,3,'#8c7a54');
-  ctx.font='bold 10px Consolas';ctx.fillStyle='#e3d7a7';ctx.fillText('DOCK PASS',759,414);
-  ctx.font='9px Consolas';ctx.fillStyle='#aaa298';ctx.fillText('SUPPLY DESK  •  PRESS E',744,490);
-  ctx.restore();
- }
-};
-function aotdForceControlChoice(){
- const p=document.getElementById('modePicker');
- if(p){p.classList.remove('hidden');p.style.display='grid';p.style.zIndex='88';}
- aotdOpenControlChoice();
-}
-document.getElementById('mainMenuControls').onclick=aotdForceControlChoice;
-document.getElementById('controlModeOpen').onclick=aotdForceControlChoice;
-window.addEventListener('keydown',e=>{if(e.key==='Escape'&&aotdRoomTransitionState.active){e.preventDefault();return;}if(e.key==='Escape'&&!aotdControlFix.classList.contains('hidden')){aotdCloseControlChoice();}});
-const aotdSoundStartBase=aotdSoundscapeV1.start;
-if(aotdSoundscapeV1&&aotdSoundscapeV1.setEnabled){aotdSoundscapeV1.setEnabled(true);}
-
-renderLoop();
-
-
-const aotdReliableExitPrompt=document.getElementById('aotdExitPrompt');
-function aotdExitZone(){
- if(!interior)return null;
- if(player.x<=210)return 'left';
- if(player.x>=1010)return 'right';
- return null;
-}
-function aotdDrawExitDoors(){
- if(mode!=='play'||!interior)return;
- const y=GROUND-122;
- const leftX=58;
- const rightX=1152;
- ctx.save();
- ctx.fillStyle='#080a0b';
- ctx.fillRect(leftX,y,74,122);
- ctx.fillRect(rightX,y,74,122);
- ctx.fillStyle='#2f3535';
- ctx.fillRect(leftX+8,y+8,58,106);
- ctx.fillRect(rightX+8,y+8,58,106);
- ctx.fillStyle='#777052';
- ctx.fillRect(leftX+56,y+54,5,7);
- ctx.fillRect(rightX+13,y+54,5,7);
- ctx.font='bold 10px Consolas';
- ctx.fillStyle='#aaa79c';
- ctx.fillText('EXIT',leftX+22,y-10);
- ctx.fillText('EXIT',rightX+22,y-10);
- ctx.restore();
-}
-function aotdUpdateExitPrompt(){
- if(!aotdReliableExitPrompt)return;
- if(mode!=='play'||!interior){aotdReliableExitPrompt.classList.remove('show');return;}
- const side=aotdExitZone();
- if(side){
-  aotdReliableExitPrompt.textContent=side==='left'?'E — EXIT TO STREET ←':'E — EXIT TO STREET →';
-  aotdReliableExitPrompt.classList.add('show');
- }else{
-  aotdReliableExitPrompt.classList.remove('show');
- }
-}
-const aotdExitInteractBase=interact;
-interact=function(){
- if(mode!=='play'||gadgetOpen||chestUIOpen||aotdRoomTransitionState.active)return;
- const side=aotdExitZone();
- if(side){
-  aotdExitBuildingSmooth(side);
-  return;
- }
- aotdExitInteractBase();
-};
-const aotdExitUpdateBase=update;
-update=function(dt){
- aotdExitUpdateBase(dt);
- aotdUpdateExitPrompt();
-};
-const aotdExitDrawBase=draw;
-draw=function(){
- aotdExitDrawBase();
- aotdDrawExitDoors();
-};
-window.addEventListener('keydown',e=>{
- if(mode==='play'&&interior&&(e.key==='e'||e.key==='E')){
-  const side=aotdExitZone();
-  if(side){e.preventDefault();interact();}
- }
- if(mode==='play'&&interior&&(e.key==='q'||e.key==='Q')){
-  const side=aotdExitZone();
-  if(side){e.preventDefault();interact();}
- }
-});
-
-
-function aotdPixelNoise(x,y,w,h,c,step=4,alpha=.18){ctx.save();ctx.globalAlpha=alpha;for(let yy=y;yy<y+h;yy+=step){for(let xx=x;xx<x+w;xx+=step){if(((xx/step|0)+(yy/step|0))%5===0)px(xx,yy,step-1,step-1,c);}}ctx.restore();}
-function aotdBrickWall(x,y,w,h,base,edge){px(x,y,w,h,base);for(let row=0;row<Math.ceil(h/22);row++){const yy=y+row*22;line(x,yy,x+w,yy,edge,1);const off=row%2?23:0;for(let col=-1;col<Math.ceil(w/46)+1;col++){const xx=x+col*46+off;line(xx,yy,xx,yy+22,'#171c1d',1);}}}
-function aotdLamp(x,y,on=true,scale=1){px(x,y,5,26,'#1a1e1e');px(x-7,y+24,19,5,'#303532');px(x-5,y+29,15,3,'#4a4a40');if(on){ctx.save();ctx.globalAlpha=.12;const g=ctx.createRadialGradient(x,y+31,2,x,y+31,55*scale);g.addColorStop(0,'#d6c48a');g.addColorStop(1,'rgba(214,196,138,0)');ctx.fillStyle=g;ctx.fillRect(x-70*scale,y-40*scale,140*scale,150*scale);ctx.restore();px(x-3,y+26,11,7,'#b6a06a');}}
-function aotdMapArt(){
- if(mode!=='play')return;
- const sf=chapter==='SAN FRANCISCO';
- ctx.save();
- if(!interior){
-  for(let i=0;i<14;i++){
-   const wx=90+i*520;const x=wx-camera*.18;
-   const h=110+(i%5)*34;
-   if(x<-180||x>W+180)continue;
-   px(x,GROUND-h,145,h,'#0d1214');
-   px(x+10,GROUND-h+12,126,7,'#1e2528');
-   for(let q=0;q<5;q++){
-    const wy=GROUND-h+34+q*34;
-    for(let k=0;k<3;k++){
-     if((i+q+k)%3!==1){px(x+16+k*35,wy,16,18,(i+q+k)%4===0?'#4c493e':'#161b1d');}
-    }
-   }
-  }
-  if(sf){
-   for(let i=0;i<9;i++){
-    const x=100+i*150-(camera*.28%160);
-    px(x,GROUND-54-(i%3)*7,82,54,'#151b1e');
-    px(x+8,GROUND-61-(i%3)*7,66,8,'#20282b');
-    px(x+16,GROUND-40-(i%3)*7,12,19,i%2?'#534e42':'#273033');
-    px(x+38,GROUND-40-(i%3)*7,12,19,'#273033');
-    px(x+60,GROUND-40-(i%3)*7,12,19,'#534e42');
-   }
-  }else{
-   for(let i=0;i<7;i++){
-    const x=120+i*210-(camera*.12%220);
-    px(x,GROUND-75,118,75,'#1b2123');
-    px(x+14,GROUND-92,90,17,'#222829');
-    px(x+23,GROUND-57,18,30,'#080b0c');px(x+55,GROUND-57,18,30,'#080b0c');px(x+87,GROUND-57,18,30,'#080b0c');
-   }
-  }
-  for(let i=0;i<10;i++){const x=(i*147-camera*.7)%W;const y=GROUND-7-(i%4)*8;px(x,y,20+(i%3)*11,3,'#383b39');px(x+5,y-3,6,3,'#56564e');}
-  if(sf){for(let i=0;i<10;i++)aotdLamp(55+i*137-camera%137,GROUND-160-(i%3)*18,i%4!==1,.9+(i%3)*.08);}else{for(let i=0;i<8;i++)aotdLamp(95+i*165-camera%165,GROUND-185-(i%2)*18,i%3!==1,1);}
- }
- ctx.restore();
-}
-function aotdMapForeground(){
- if(mode!=='play'||interior)return;
- ctx.save();
- const sf=chapter==='SAN FRANCISCO';
- for(let i=0;i<26;i++){
-  const x=(i*97+camera*.15)%W;const y=GROUND-1-(i%5)*8;const w=5+(i%6)*3;
-  px(x,y,w,2,i%3===0?'#6a6a61':'#3d403e');
-  if(i%5===0){px(x+7,y-7,2,7,'#252928');px(x+5,y-9,6,2,'#51504a');}
- }
- if(sf){
-  for(let i=0;i<6;i++){
-   const x=120+i*210-camera%210;
-   px(x,GROUND-38,54,8,'#242a2b');px(x+9,GROUND-48,7,10,'#3f4647');px(x+38,GROUND-48,7,10,'#3f4647');px(x+10,GROUND-27,10,4,'#090b0c');px(x+34,GROUND-27,10,4,'#090b0c');
-  }
- }else{
-  for(let i=0;i<5;i++){
-   const x=150+i*270-camera%270;
-   px(x,GROUND-18,76,7,'#272a29');px(x+17,GROUND-29,42,11,'#171a1b');px(x+27,GROUND-43,19,14,'#111516');
-  }
- }
- ctx.restore();
-}
-function aotdPremiumCharacter(x,y,who,dir,anim,role){
- const facing=dir||1;
  const t=anim||0;
- const moving=Math.abs(player&&player.vx||0)>35;
- const stride=moving?Math.sin(t*1.08)*5.2:Math.sin(t*.32)*.7;
- const stride2=-stride;
- const breathe=Math.sin(totalTime*2.05+x*.015)*.7;
- const hairWave=Math.sin(t*.7+x*.01)*1.4;
- const air=player&&!player.onGround;
- const fall=air&&player.vy>160;
- const skin=who==='Yumi'?'#d8b79d':who==='May'?'#d6b69c':'#d1b198';
- const hair=who==='Yumi'?'#161718':who==='May'?'#3a2826':'#2a2120';
- const hair2=who==='Yumi'?'#34393a':who==='May'?'#69483a':'#5a4036';
- const coat=who==='Yumi'?'#324b44':who==='May'?'#484c5e':'#334b50';
- const coatHi=who==='Yumi'?'#58716a':who==='May'?'#6b7182':'#5c7377';
- const shirt='#e2d8c9';
- const pants=who==='Yumi'?'#20282a':who==='May'?'#252831':'#22292b';
- const boot='#090d0f';
- const gold='#d7b968';
- const scarf=who==='Yumi'?'#687b72':who==='May'?'#667080':'#657977';
- ctx.save();ctx.translate(Math.round(x),Math.round(y-(fall?1:0)));ctx.scale(facing,1);
- const shadow=ctx.createRadialGradient(0,72,2,0,72,31);shadow.addColorStop(0,'rgba(0,0,0,.40)');shadow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=shadow;ctx.fillRect(-38,52,76,30);
- const legA=air?0:stride;const legB=air?0:stride2;
- px(-16+legA,47,13,23,pants);px(4+legB,47,13,23,pants);px(-20+legA,68,19,7,boot);px(1+legB,68,19,7,boot);
- px(-20,20+breathe,42,32,coat);px(-13,18+breathe,31,17,shirt);px(-3,20+breathe,10,14,scarf);
- px(-25+stride*.25,23,10,27,coatHi);px(29+stride2*.25,23,10,27,coatHi);
- px(-27+stride*.12,48,14,8,coat);px(29+stride2*.12,48,14,8,coat);
- px(-10,0+breathe,30,28,skin);px(-16,-10+breathe,42,13,hair);px(-12,-17+breathe,34,8,hair2);
+ const isPlayer=!role||role==='player';
+ const moving=isPlayer?(mode==='play'&&Math.abs(player.vx)>28):true;
+ const cycle=moving?Math.sin(t*1.45):Math.sin(t*.7);
+ const cycle2=-cycle;
+ const breathe=Math.sin(totalTime*2.1+(x%47)*.07)*.8;
+ const idleShift=Math.sin(t*.5+(x%31)*.04)*.45;
+ const jump=isPlayer&&mode==='play'&&!player.onGround;
+ const fall=jump&&player.vy>180;
+ const skin=who==='Yumi'?'#d9b79c':who==='May'?'#d7b89f':'#d2b399';
+ const hair=who==='Yumi'?'#16181a':who==='May'?'#3d2926':'#2b2221';
+ const hairHi=who==='Yumi'?'#3d4442':who==='May'?'#6a483d':'#65483e';
+ const coat=who==='Yumi'?'#31524a':who==='May'?'#4a5062':'#355459';
+ const coatHi=who==='Yumi'?'#648176':who==='May'?'#737b8c':'#5d777b';
+ const shirt='#e8dfd0';
+ const pants=who==='Yumi'?'#222b2c':who==='May'?'#282b32':'#252c2e';
+ const boot='#090c0e';
+ const gold='#ddbf70';
+ const scarf=who==='Yumi'?'#78978d':who==='May'?'#737c8d':'#708488';
+ const legLift=jump?(fall?2:4):0;
+ const armSwing=moving?cycle*2.5:idleShift;
+ const legA=moving?cycle*4.2:idleShift;
+ const legB=moving?cycle2*4.2:-idleShift;
+ ctx.save();
+ ctx.translate(Math.round(x),Math.round(y-(fall?1:0)));
+ ctx.scale(facing,1);
+ const shadow=ctx.createRadialGradient(0,75,2,0,75,31);
+ shadow.addColorStop(0,'rgba(0,0,0,.48)');
+ shadow.addColorStop(1,'rgba(0,0,0,0)');
+ ctx.fillStyle=shadow;ctx.fillRect(-38,59,76,24);
+ px(-15+legA,48+legLift,12,23,pants);
+ px(5+legB,48+legLift,12,23,pants);
+ px(-19+legA,69+legLift,18,7,boot);
+ px(1+legB,69+legLift,18,7,boot);
+ px(-21,20+breathe,42,32,coat);
+ px(-13,18+breathe,30,16,shirt);
+ px(-3,19+breathe,10,16,scarf);
+ px(-26+armSwing*.3,23+breathe,10,27,coatHi);
+ px(30-armSwing*.3,23+breathe,10,27,coatHi);
+ px(-27+armSwing*.35,48,15,8,coat);
+ px(29-armSwing*.35,48,15,8,coat);
+ px(-10,0+breathe,30,28,skin);
+ px(-16,-10+breathe,42,13,hair);
+ px(-13,-18+breathe,35,8,hairHi);
  if(who==='Yumi'){
-  px(-19,-2+breathe+hairWave,9,29,hair2);px(23,-1+breathe-hairWave,11,30,hair2);px(-10,-19+breathe,32,7,hair);px(17,-13+breathe,12,8,hair2);px(28,-5+breathe-hairWave,9,20,hair2);px(-24,7+breathe,8,16,hair2);
+  px(-22,-3+breathe,10,34,hairHi);
+  px(23,-3+breathe,12,35,hairHi);
+  px(-18,7+breathe,9,24,hair);
+  px(27,8+breathe,8,25,hair);
+  px(-7,-21+breathe,28,7,hair);
+  px(11,-16+breathe,13,9,hairHi);
+  px(-4,-11+breathe,23,4,hairHi);
  }
  if(who==='May'){
-  px(-20,-3+breathe,9,28,hair2);px(23,-4+breathe,10,25,hair2);px(29,5+breathe,7,18,hair2);px(-24,6+breathe,7,17,hair2);
+  px(-21,-3+breathe,9,30,hairHi);
+  px(23,-4+breathe,11,27,hairHi);
+  px(28,6+breathe,8,20,hairHi);
+  px(-25,7+breathe,7,18,hairHi);
  }
  if(who==='Julia'){
-  px(16,-8+breathe,13,22,hair2);px(25,0+breathe,9,23,hair2);px(-21,2+breathe,7,18,hair2);
+  px(16,-8+breathe,14,23,hairHi);
+  px(25,1+breathe,9,24,hairHi);
+  px(-22,2+breathe,8,19,hairHi);
  }
- px(-2,8+breathe,4,4,'#111516');px(15,8+breathe,4,4,'#111516');px(3,16+breathe,15,3,'#9b655c');
- px(-8,31,8,14,coatHi);px(13,31,8,14,coatHi);px(-9,25,6,7,gold);px(-7,26,3,3,'#fff1a5');
- px(-4,43+breathe,22,5,coat);px(-9,52,6,7,scarf);px(19,52,7,7,scarf);
- if(role==='Nurse'){px(-8,30,31,6,'#7d8b84');px(2,31,5,18,'#f1ece3');px(0,37,11,5,'#f1ece3');}
- if(role==='Soldier'){px(-17,-6,39,8,'#3f4d43');px(-6,-11,24,5,'#2c352e');}
- if(role==='Mechanic'){px(-11,19,35,6,'#654c3e');px(27,33,8,16,'#98775c');}
+ px(-2,7+breathe,4,4,'#141719');
+ px(14,7+breathe,4,4,'#141719');
+ px(3,16+breathe,14,3,'#a1635a');
+ px(-8,31+breathe,8,14,coatHi);
+ px(13,31+breathe,8,14,coatHi);
+ px(-10,25,7,8,gold);
+ px(-8,26,3,3,'#fff2a8');
+ px(-4,44+breathe,22,5,coat);
+ px(-10,52,7,7,scarf);
+ px(19,52,8,7,scarf);
+ px(-19+armSwing*.18,37,5,12,skin);
+ px(27-armSwing*.18,37,5,12,skin);
+ if(jump){
+  px(-22,43+legLift,9,5,coatHi);
+  px(26,43+legLift,9,5,coatHi);
+ }
+ if(role==='Nurse'){
+  px(-8,30,31,6,'#7e8d86');px(2,31,5,18,'#f4efe5');px(0,37,11,5,'#f4efe5');
+ }
+ if(role==='Soldier'){
+  px(-18,-6,41,8,'#414e45');px(-7,-11,24,5,'#2b352f');
+ }
+ if(role==='Mechanic'){
+  px(-12,20,36,7,'#664b3c');px(27,34,8,15,'#96725a');
+ }
  ctx.restore();
 }
 const aotdOldCharacterFinal=drawCharacterSprite;
@@ -4221,7 +4026,7 @@ const aotdOldEnhancedPlayerFinal=drawEnhancedPlayer;
 drawEnhancedPlayer=function(){aotdOldEnhancedPlayerFinal();if(mode==='play'){const x=player.x-camera;const y=player.y;const moving=Math.abs(player.vx)>65;if(moving&&player.onGround){ctx.save();ctx.globalAlpha=.18;for(let i=0;i<3;i++){const ghost=x-player.facing*(i+1)*9;drawCharacterSprite(ghost+8,y,selectedCharacter,player.facing,player.anim-(i+1)*.32,'ghost');}ctx.restore();}}};
 function aotdDetailMap(){aotdMapArt();aotdMapForeground();}
 const aotdMapDrawBase=draw;
-draw=function(){aotdMapDrawBase();aotdDetailMap();if(mode==='play'&&interior){ctx.save();ctx.globalAlpha=.18;for(let i=0;i<16;i++){const xx=20+i*83;const yy=90+(i%6)*64;px(xx,yy,36,3,'#4e5451');if(i%2===0)px(xx+10,yy+4,14,18,'#181d1d');}ctx.restore();}};
+draw=function(){aotdMapDrawBase();if(mode==='play'&&interior){ctx.save();ctx.globalAlpha=.12;for(let i=0;i<16;i++){const xx=20+i*83;const yy=90+(i%6)*64;px(xx,yy,36,3,'#4e5451');if(i%2===0)px(xx+10,yy+4,14,18,'#181d1d');}ctx.restore();}};
 function aotdWorldLabel(){const el=document.getElementById('aotdWorldLabel');if(!el)return;if(mode!=='play'){el.textContent='';return;}if(interior)el.textContent=interior.building.name+'  //  '+(floor===1?'GROUND FLOOR':'UPPER FLOOR');else if(chapter==='ALCATRAZ')el.textContent='ALCATRAZ ISLAND  //  CELL BLOCK A → MEDICAL WING → DOCKS';else el.textContent='SAN FRANCISCO  //  FIND THE SURVIVORS';}
 const aotdLabelUpdateBase=update;
 update=function(dt){aotdLabelUpdateBase(dt);aotdWorldLabel();};
@@ -4416,7 +4221,7 @@ aotdMapForeground=aotdSafeMapForeground;
 
 function aotdFixDrawPipeline(){
  const base=draw;
- draw=function(){base();if(mode==='play'&&!interior){aotdSafeMapLayer();aotdSafeMapForeground();}if(mode==='play'){aotdReadableCharacterNames();}};
+ draw=function(){base();if(mode==='play'){aotdReadableCharacterNames();}};
 }
 aotdFixDrawPipeline();
 
