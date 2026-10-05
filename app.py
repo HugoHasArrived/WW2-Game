@@ -7,7 +7,7 @@ GAME_HTML = r'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Ashes of the Dead</title>
+<title>ESCAPE ALCATRAZ — NIGHTFALL</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020304;color:#eee7d7;font-family:Consolas,monospace}
@@ -113,6 +113,11 @@ h1{margin:0;text-align:center;letter-spacing:6px;font-size:40px;color:#efe9db;te
 #message{font-size:12px;letter-spacing:.4px}
 #warningText:before{content:"// NIGHTWATCH //";display:block;font-size:9px;letter-spacing:3px;color:#8f8f84;margin-bottom:8px}
 
+#mapStrip{position:absolute;left:50%;top:58px;transform:translateX(-50%);width:min(560px,42vw);height:24px;background:rgba(4,7,7,.78);border:1px solid #3c4542;z-index:15;overflow:hidden}
+#mapStrip .mapLine{position:absolute;left:10px;right:10px;top:11px;height:2px;background:#59625d}
+#mapStrip .mapPlayer{position:absolute;top:6px;width:9px;height:12px;background:#eee5cf;box-shadow:0 0 8px rgba(238,229,207,.5)}
+#mapStrip .mapPoint{position:absolute;top:8px;width:5px;height:8px;background:#81785e}
+#mapStrip .mapDanger{position:absolute;top:7px;width:6px;height:10px;background:#9d4e4e}
 </style>
 </head>
 <body>
@@ -120,12 +125,12 @@ h1{margin:0;text-align:center;letter-spacing:6px;font-size:40px;color:#efe9db;te
 <canvas id="world" width="1400" height="788"></canvas>
 <div id="mainMenu" class="layer menu">
 <div class="menuBackdrop"><div class="menuMoon"></div><div class="menuOcean"></div><div class="menuIsland"></div><div class="menuPrison"></div><div class="menuTower"></div><div class="menuFog"></div><div class="menuFog two"></div><div class="menuRain"></div><div class="menuVignette"></div><div class="menuNoise"></div></div>
-<div class="menuContent"><div class="menuKicker">NIGHTWATCH // INCIDENT 01</div><div class="menuLogo">ASHES OF THE DEAD</div><div class="menuTag">SCREAM JAM 2026 • ALCATRAZ ISLAND</div><div class="menuLore">You wake inside Cell A-17. The prison is quiet. Rain covers the sound of the island breathing. Find the docks. Escape the island. Then find two survivors in a city that should have been louder.</div><div class="menuButtons"><button id="playButton" class="menuPlay">PLAY</button><button id="creditsButton">CREDITS</button><button id="controlsButton">CONTROL MODE</button></div><div class="menuThreat">HEADPHONES RECOMMENDED • SOME SOUNDS AREN'T AMBIENCE</div><div class="menuFooter">JULIA • MAY • YUMI • FEMALE DETECTIVES • LARGE 2D ALCATRAZ RECONSTRUCTION • PSYCHOLOGICAL HORROR</div><div class="menuSignal">SIGNAL // <b>UNSTABLE</b></div></div>
+<div class="menuContent"><div class="menuKicker">NIGHTWATCH // ALCATRAZ ESCAPE PROTOCOL</div><div class="menuLogo">ESCAPE ALCATRAZ</div><div class="menuTag">NIGHTFALL • ALCATRAZ ISLAND • ESCAPE PROTOCOL</div><div class="menuLore">You wake inside Cell A-17 after the last emergency broadcast dies. The prison is dark, the sea is violent, and something is moving through the cell blocks. Reach the dock before dawn — but first restore power, find the ferry pass, and survive the island.</div><div class="menuButtons"><button id="playButton" class="menuPlay">PLAY</button><button id="creditsButton">CREDITS</button><button id="controlsButton">CONTROL MODE</button></div><div class="menuThreat">HEADPHONES RECOMMENDED • SOME SOUNDS AREN'T AMBIENCE</div><div class="menuFooter">JULIA • MAY • YUMI • LARGE 2D ALCATRAZ RECONSTRUCTION • SURVIVAL HORROR</div><div class="menuSignal">SIGNAL // <b>UNSTABLE</b></div></div>
 </div>
 <div id="characterMenu" class="layer screen hidden"><div class="charSelectBox"><div class="charSelectTitle">CHOOSE YOUR DETECTIVE</div><div class="charSelectSub">No portraits. Choose by profile. Your detective changes visual styling and small gameplay bonuses.</div><div class="charCards"><button class="charCard" data-character="Julia"><span class="name">JULIA</span><span class="meta">FIELD DETECTIVE<br>Balanced health and stamina<br>Calm under pressure</span><span class="skill">BALANCED</span></button><button class="charCard" data-character="May"><span class="name">MAY</span><span class="meta">CRIME SCENE DETECTIVE<br>Faster movement and searching<br>Quick investigation</span><span class="skill">AGILITY</span></button><button class="charCard" data-character="Yumi"><span class="name">YUMI</span><span class="meta">INTELLIGENCE DETECTIVE<br>Steady aim and stronger sanity<br>Technical problem solver</span><span class="skill">TECHNICAL</span></button></div><div class="center" style="margin-top:18px"><button id="characterBack">BACK</button><button id="characterControls">CONTROL MODE</button></div></div></div>
 <div id="credits" class="layer screen hidden"><div class="creditsBox"><h1>CREDITS</h1><p class="creditsName">Mayumi Alingarog (Yumi, Mimi, Yumimi)</p><p class="creditsQuote">“A wonderful classmate and developer who is very helpful, kind, respectful, creative, and encouraging.”</p><p>Thank you, Mayumi, for inspiring me to join Scream Jam 2026 and for showing me that making a game can be scary, stressful, funny, and genuinely fun.</p><p>This game is inspired by the spirit of small side-scrolling horror jam games, including the feeling of getting trapped somewhere and slowly learning how to escape.</p><button id="creditsBack">BACK</button></div></div>
 <div id="controlsOverlay" class="layer screen hidden"><div class="controlBox"><div class="charSelectTitle">CONTROL MODE</div><div class="charSelectSub">Pick one. The selected mode stays active during gameplay.</div><div class="controlGrid"><button data-control="laptop" id="laptopMode">LAPTOP / DESKTOP<small>A / D or arrows move • W / SPACE jump • E interact • mouse aim/fire • F flashlight • R reload • Q melee</small></button><button data-control="mobile" id="mobileMode">MOBILE / TOUCH<small>Virtual movement and action buttons • touch aim • FIRE / USE / JUMP / LIGHT / BAG</small></button></div><div class="center"><button id="autoMode">AUTO DETECT</button> <button id="controlsBack">BACK</button><div id="controlStatus" class="subtitle"></div></div></div></div>
-<div id="hud" class="layer hidden"><div class="topHud"><div class="hudGroup"><div class="hudLabel">HEALTH <span id="healthValue"></span></div><div class="bar"><div id="healthFill" class="fill hp"></div></div><div class="hudLabel">STAMINA <span id="staminaValue"></span></div><div class="bar"><div id="staminaFill" class="fill st"></div></div><div class="hudLabel">SANITY <span id="sanityValue"></span></div><div class="bar"><div id="sanityFill" class="fill san"></div></div></div><div class="hudGroup right"><div class="hudLabel">LOCATION</div><div id="locationText" class="hudVal">ALCATRAZ ISLAND</div><div id="threatText" class="hudVal">THE PRISON IS QUIET</div><div id="ammoText" class="hudVal">AMMO 12 / 12</div></div></div><button id="objectiveTab">OBJECTIVES +</button><div id="objectivePanel"><div class="objectiveHead"><div><div class="objectiveTitle">OBJECTIVES</div><div id="objectiveHint" class="step active">CURRENT GOAL</div></div><button id="objectiveClose" class="objectiveClose">×</button></div><div id="objectiveList"></div></div><button id="soundButton" style="position:absolute;right:18px;top:58px;z-index:16;padding:9px 12px;font-size:10px">SOUND: ON</button><div id="message" class="hidden"></div><div id="prompt"></div></div>
+<div id="hud" class="layer hidden"><div id="mapStrip"><div class="mapLine"></div><div id="mapPlayer" class="mapPlayer"></div><div id="mapPoints"></div></div><div class="topHud"><div class="hudGroup"><div class="hudLabel">HEALTH <span id="healthValue"></span></div><div class="bar"><div id="healthFill" class="fill hp"></div></div><div class="hudLabel">STAMINA <span id="staminaValue"></span></div><div class="bar"><div id="staminaFill" class="fill st"></div></div><div class="hudLabel">SANITY <span id="sanityValue"></span></div><div class="bar"><div id="sanityFill" class="fill san"></div></div></div><div class="hudGroup right"><div class="hudLabel">LOCATION</div><div id="locationText" class="hudVal">ALCATRAZ ISLAND</div><div id="threatText" class="hudVal">THE PRISON IS QUIET</div><div id="ammoText" class="hudVal">AMMO 12 / 12</div></div></div><button id="objectiveTab">OBJECTIVES +</button><div id="objectivePanel"><div class="objectiveHead"><div><div class="objectiveTitle">OBJECTIVES</div><div id="objectiveHint" class="step active">CURRENT GOAL</div></div><button id="objectiveClose" class="objectiveClose">×</button></div><div id="objectiveList"></div></div><button id="soundButton" style="position:absolute;right:18px;top:58px;z-index:16;padding:9px 12px;font-size:10px">SOUND: ON</button><div id="message" class="hidden"></div><div id="prompt"></div></div>
 <div id="cutscene" class="layer hidden"><div class="cutWrap"><div class="cutKicker">CASE FILE 07 // ALCATRAZ ISLAND</div><div id="cutMain" class="cutMain"></div><div class="cutHint">ENTER / SPACE / RIGHT ARROW TO CONTINUE</div></div></div>
 <div id="pause" class="layer screen hidden"><div class="panel"><h1>PAUSED</h1><p class="subtitle">The island is still there when you stop looking.</p><div class="center"><button id="resumeButton">RESUME</button> <button id="restartButton">RESTART</button> <button id="pauseMenuButton">MAIN MENU</button></div></div></div>
 <div id="ending" class="layer screen hidden"><div class="panel"><h1>ESCAPE</h1><p id="endingText" class="subtitle"></p><div class="center"><button id="endingMenuButton">MAIN MENU</button></div></div></div>
@@ -134,20 +139,20 @@ h1{margin:0;text-align:center;letter-spacing:6px;font-size:40px;color:#efe9db;te
 <div id="deviceOverlay" class="layer screen hidden"><div class="panel"><h1 style="font-size:26px">NIGHTWATCH DEVICE RECORD</h1><div id="deviceGrid" class="deviceGrid" style="margin-top:18px"></div><div class="center" style="margin-top:18px"><button id="infoClose">CLOSE</button></div></div></div>
 <div id="fade"></div><div id="warningText"></div><div id="scare"><div class="scareFace"><div class="scareMouth"></div></div></div><div class="pixelOverlay"></div>
 <div id="mobileControls" class="hidden"><div class="mobileCluster left"><button data-touch="left">◀</button><button data-touch="right">▶</button><button class="wide" data-touch="run">RUN</button></div><div class="mobileCluster right"><button data-touch="jump">JUMP</button><button data-touch="interact">USE</button><button data-touch="melee">MELEE</button><button data-touch="light">LIGHT</button><button data-touch="inventory">BAG</button><button data-touch="reload">RELOAD</button><button class="wide" data-touch="fire">FIRE</button></div></div>
-<div id="privacyGate"><div class="privacyBox"><div class="privacyTitle">NIGHTWATCH SECURITY TERMINAL</div><div class="privacySub">ASHES OF THE DEAD • DEVICE & PRIVACY NOTICE</div><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform information, screen size, language, timezone, online state, network hints, CPU thread count, touch support, battery data when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>Passwords, personal files, photos, contacts, saved documents, account contents, and arbitrary private files are not read by this game.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone require separate browser permission. This game does not silently grant those permissions.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV warnings, The Smiler, tracking messages, fourth-wall events, and horror-terminal events are fictional game elements unless the interface specifically labels information as browser or server information.</div></div><div class="privacyNote">The server only sees the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This game is entertainment, not a security diagnostic.</div><div class="privacyActions"><button id="privacyEnter">ENTER ASHES OF THE DEAD</button><button id="privacyDevice">VIEW DEVICE RECORD</button></div></div></div>
+<div id="privacyGate"><div class="privacyBox"><div class="privacyTitle">NIGHTWATCH SECURITY TERMINAL</div><div class="privacySub">ESCAPE ALCATRAZ • DEVICE & PRIVACY NOTICE</div><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform information, screen size, language, timezone, online state, network hints, CPU thread count, touch support, battery data when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>Passwords, personal files, photos, contacts, saved documents, account contents, and arbitrary private files are not read by this game.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone require separate browser permission. This game does not silently grant those permissions.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV warnings, The Smiler, tracking messages, fourth-wall events, and horror-terminal events are fictional game elements unless the interface specifically labels information as browser or server information.</div></div><div class="privacyNote">The server only sees the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This game is entertainment, not a security diagnostic.</div><div class="privacyActions"><button id="privacyEnter">ENTER ESCAPE ALCATRAZ</button><button id="privacyDevice">VIEW DEVICE RECORD</button></div></div></div>
 </div>
 <script>
 const canvas=document.getElementById('world');
 const ctx=canvas.getContext('2d');
 ctx.imageSmoothingEnabled=false;
 const W=1400,H=788,GROUND=612;
-const WORLD={ALCATRAZ:16200,SF:11000};
+const WORLD={ALCATRAZ:22000,SF:11000};
 const keys=new Set();
 const touch={left:false,right:false,run:false,jump:false};
 const mouse={x:W/2,y:H/2,down:false};
 const inputState={left:false,right:false,run:false,jump:false};
 const player={x:0,y:0,w:38,h:76,vx:0,vy:0,facing:1,onGround:true,coyote:0,jumpBuffer:0,jumps:2,anim:0,stepTimer:0,landTimer:0,recoil:0,flashStep:0,lean:0,air:0};
-const state={health:100,maxHealth:100,stamina:100,maxStamina:100,sanity:100,ammo:12,reserveAmmo:36,grenades:2,light:true,battery:100,startKey:false,startEscaped:false,dockPass:false,beacon:false,boatEscaped:false,survivors:0,inventory:{bandage:2,food:2,scrap:2,ammo_9mm:36,key:0,dockPass:0}};
+const state={health:100,maxHealth:100,stamina:100,maxStamina:100,sanity:100,ammo:12,reserveAmmo:48,grenades:3,light:true,battery:100,startKey:false,startEscaped:false,dockPass:false,powerRestored:false,radioSignal:false,beacon:false,boatEscaped:false,survivors:0,alarm:false,finalChase:false,inventory:{bandage:2,food:2,scrap:3,ammo_9mm:48,key:0,dockPass:0,fuse:0,radioPart:0}};
 let scene='menu';
 let chapter='ALCATRAZ';
 let selectedCharacter='Julia';
@@ -196,25 +201,29 @@ const introLines=[
 'Your first goal is simple: find the docks. Escape the island.'
 ];
 const objectives=[
-{title:'FIND THE DOCKS',steps:['Search Cell A-17 for the brass key.','Unlock the cell and enter the Cell Block A corridor.','Follow the signs downhill to the Medical Wing.','Search the Medical Wing supply desk for the Dock Pass.','Continue to the ferry dock.']},
-{title:'ESCAPE THE ISLAND',steps:['Bring the Dock Pass to the ferry dock.','Use the beacon beside the ferry.','Wait for the boarding prompt.','Board the ferry and leave Alcatraz.']},
-{title:'FIND 2 SURVIVORS',steps:['Explore San Francisco.','Talk to one survivor with E.','Talk to a second survivor with E.','Reach the Emergency Shelter.']}
+{title:'SURVIVE CELL BLOCK A',steps:['Search Cell A-17 for the brass key.','Unlock the cell and enter the corridor.','Cross the Recreation Yard without getting cornered.','Reach the Hospital Wing.']},
+{title:'RESTORE THE ESCAPE ROUTE',steps:['Find the Dock Pass inside the Hospital Wing.','Reach the Power Plant and restore emergency power.','Find the radio room and transmit the evacuation signal.','Reach the Emergency Pier.','Light the ferry beacon and survive the wait.','Board the ferry.']},
+{title:'ESCAPE ALCATRAZ',steps:['Reach the emergency pier.','Use the ferry beacon.','Survive the final attack.','Escape Alcatraz.']}
 ];
 const landmarkData=[
-{name:'CELLHOUSE',x:900,w:1060,h:310,type:'cellhouse'},
-{name:'RECREATION YARD',x:2450,w:860,h:150,type:'yard'},
-{name:'DINING HALL',x:3700,w:460,h:210,type:'dining'},
-{name:'GUARDHOUSE / SALLY PORT',x:4680,w:390,h:235,type:'guard'},
-{name:'HOSPITAL WING',x:5900,w:640,h:245,type:'medical'},
-{name:'MODEL INDUSTRIES',x:7600,w:590,h:235,type:'industry'},
-{name:'NEW INDUSTRIES',x:9250,w:600,h:245,type:'industry'},
-{name:'POWER PLANT',x:10700,w:540,h:280,type:'power'},
-{name:'STOREHOUSE',x:12030,w:470,h:190,type:'store'},
-{name:'POST EXCHANGE / OFFICERS CLUB',x:13120,w:520,h:225,type:'club'},
-{name:'WATER TOWER',x:13900,w:260,h:330,type:'tower'},
-{name:"WARDEN'S HOUSE",x:14700,w:570,h:245,type:'warden'},
-{name:'LIGHTHOUSE',x:15580,w:240,h:355,type:'lighthouse'},
-{name:'MAIN DOCK',x:16040,w:240,h:150,type:'dock'}
+{name:'CELLHOUSE',x:950,w:1180,h:320,type:'cellhouse'},
+{name:'RECREATION YARD',x:2450,w:980,h:155,type:'yard'},
+{name:'DINING HALL',x:3800,w:540,h:225,type:'dining'},
+{name:'GUARDHOUSE / SALLY PORT',x:4930,w:430,h:250,type:'guard'},
+{name:'HOSPITAL WING',x:6200,w:720,h:270,type:'medical'},
+{name:'CHAPEL / MORGUE',x:7440,w:520,h:230,type:'chapel'},
+{name:'MODEL INDUSTRIES',x:8550,w:680,h:250,type:'industry'},
+{name:'NEW INDUSTRIES',x:10020,w:700,h:260,type:'industry'},
+{name:'POWER PLANT',x:11550,w:620,h:295,type:'power'},
+{name:'UNDERGROUND ACCESS',x:12700,w:500,h:180,type:'tunnel'},
+{name:'STOREHOUSE',x:13700,w:520,h:205,type:'store'},
+{name:'POST EXCHANGE / OFFICERS CLUB',x:14850,w:600,h:240,type:'club'},
+{name:'WATER TOWER',x:16000,w:290,h:350,type:'tower'},
+{name:"WARDEN'S HOUSE",x:17150,w:620,h:260,type:'warden'},
+{name:'CITADEL / WEST GATE',x:18300,w:760,h:280,type:'citadel'},
+{name:'ROCKY SHORE',x:19450,w:520,h:170,type:'shore'},
+{name:'LIGHTHOUSE',x:20700,w:260,h:380,type:'lighthouse'},
+{name:'EMERGENCY PIER',x:21700,w:340,h:165,type:'dock'}
 ];
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function lerp(a,b,t){return a+(b-a)*t;}
@@ -230,18 +239,19 @@ function showOnly(id){['mainMenu','characterMenu','credits','controlsOverlay','h
 function setMessage(t,d=2){const e=document.getElementById('message');if(!e)return;e.textContent=t;e.classList.remove('hidden');messageTimer=d;}
 function showWarning(t,d=2.3){const e=document.getElementById('warningText');if(!e)return;e.textContent=t;e.style.opacity='1';horror.warning=d;}
 function resetWorld(){
- state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=12;state.reserveAmmo=36;state.grenades=2;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.inventory={bandage:2,food:2,scrap:2,ammo_9mm:36,key:0,dockPass:0};chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=210;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
+ state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=12;state.reserveAmmo=48;state.grenades=3;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.powerRestored=false;state.radioSignal=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.alarm=false;state.finalChase=false;state.inventory={bandage:2,food:2,scrap:3,ammo_9mm:48,key:0,dockPass:0,fuse:0,radioPart:0};chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=210;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
 }
 function buildAlcatrazPopulation(){
  zombies=[];
- for(let i=0;i<34;i++){
-  const x=1200+i*440+(i%4)*80;
-  zombies.push({x,type:i%9===0?'brute':i%5===0?'runner':'walker',hp:i%9===0?190:i%5===0?95:70,dead:false,phase:i*.61,attack:0,hit:0});
+ for(let i=0;i<52;i++){
+  const x=1250+i*392+(i%5)*73;
+  const type=i%13===0?'brute':i%7===0?'stalker':i%4===0?'runner':'walker';
+  zombies.push({x,type,hp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,dead:false,phase:i*.61,attack:0,hit:0,alert:0});
  }
  chestData=[
   {id:'cellKey',world:'ALCATRAZ',inside:true,building:'CELLHOUSE',x:350,y:0,items:[{id:'key',name:'BRASS KEY',count:1}],opened:false},
-  {id:'medicalPass',world:'ALCATRAZ',inside:true,building:'HOSPITAL WING',x:800,y:0,items:[{id:'dockPass',name:'DOCK PASS',count:1},{id:'bandage',name:'BANDAGE',count:1},{id:'ammo_9mm',name:'9MM AMMO',count:8}],opened:false},
-  {id:'workshop',world:'ALCATRAZ',inside:true,building:'MODEL INDUSTRIES',x:330,y:0,items:[{id:'scrap',name:'SCRAP',count:3},{id:'ammo_9mm',name:'9MM AMMO',count:10}],opened:false},
+  {id:'medicalPass',world:'ALCATRAZ',inside:true,building:'HOSPITAL WING',x:800,y:0,items:[{id:'dockPass',name:'DOCK PASS',count:1},{id:'fuse',name:'FUSE',count:1},{id:'bandage',name:'BANDAGE',count:2},{id:'ammo_9mm',name:'9MM AMMO',count:12}],opened:false},
+  {id:'workshop',world:'ALCATRAZ',inside:true,building:'MODEL INDUSTRIES',x:330,y:0,items:[{id:'scrap',name:'SCRAP',count:4},{id:'radioPart',name:'RADIO PART',count:1},{id:'ammo_9mm',name:'9MM AMMO',count:10}],opened:false},
   {id:'dockCrate',world:'ALCATRAZ',inside:false,building:'MAIN DOCK',x:15780,y:0,items:[{id:'food',name:'CANNED FOOD',count:1}],opened:false}
  ];
 }
@@ -258,7 +268,7 @@ function beginGame(name){selectedCharacter=name;resetWorld();startSoundscape();i
 function positionInsideCell(){interior={id:'cellA17',name:'CELL A-17',type:'cell',building:{name:'CELLHOUSE',w:1060,x:370,floors:3}};interiorPhase=0;player.x=330;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;}
 function updateIntroText(){const e=document.getElementById('cutMain');if(e)e.textContent=introLines[introIndex]||'';}
 function advanceIntro(){if(scene!=='intro')return;introIndex++;introTimer=0;if(introIndex>=introLines.length){scene='play';show('hud');hide('cutscene');setObjective();setMessage('CELL A-17 • SEARCH THE MATTRESS FOR THE KEY.',2.5);}else updateIntroText();}
-function getObjectiveStep(){if(chapter==='ALCATRAZ'){if(!state.startKey)return 0;if(!state.startEscaped)return 1;if(!state.dockPass)return 2;if(!state.beacon)return 4;return 4;}return state.survivors>=2?3:1;}
+function getObjectiveStep(){if(chapter==='ALCATRAZ'){if(!state.startKey)return 0;if(!state.startEscaped)return 1;if(!state.dockPass)return 2;if(!state.powerRestored)return 1;if(!state.radioSignal)return 2;if(!state.beacon)return 4;return 5;}return state.survivors>=2?3:1;}
 function setObjective(){const idx=chapter==='ALCATRAZ'?Math.min(objectiveIndex,1):2;const o=objectives[idx];const step=chapter==='ALCATRAZ'?getObjectiveStep():getObjectiveStep();const s=o.steps[Math.min(step,o.steps.length-1)];const e=document.getElementById('objective');if(e)e.textContent=`${o.title}\n${s}`;renderObjectives();}
 function renderObjectives(){const list=document.getElementById('objectiveList');if(!list)return;list.innerHTML='';objectives.forEach((o,i)=>{const item=document.createElement('div');item.className='objectiveItem '+(i<objectiveIndex?'done ':'')+(i===objectiveIndex?'current':'');const status=i<objectiveIndex?'✓ COMPLETE':i===objectiveIndex?'› CURRENT':'○ FUTURE';const activeStep=i===0&&chapter==='ALCATRAZ'?getObjectiveStep():i===2&&chapter==='SAN FRANCISCO'?getObjectiveStep():0;item.innerHTML=`<b>${status}</b><div style="margin-top:6px;letter-spacing:1px">${o.title}</div>`;o.steps.forEach((s,k)=>{const sp=document.createElement('span');sp.className='step'+(k===activeStep&&i===objectiveIndex?' active':'');sp.textContent=`${k+1}. ${s}`;item.appendChild(sp);});list.appendChild(item);});}
 function transitionTo(kind,fn){if(fadeBusy)return;fadeBusy=true;transitionKind=kind;const f=document.getElementById('fade');f.style.opacity='1';setTimeout(()=>{fn();setTimeout(()=>{f.style.opacity='0';setTimeout(()=>fadeBusy=false,520);},60)},440);}
@@ -275,17 +285,60 @@ function sortChest(){if(!currentChest)return;currentChest.items.sort((a,b)=>a.na
 function closeChest(){hide('inventoryUi');scene='play';currentChest=null;}
 function nearestChest(){if(interior){let best=null,d=9999;for(const c of chestData){if(!c.inside||c.building!==interior.building.name||c.opened&&c.items.length===0)continue;const dd=Math.abs(player.x-c.x);if(dd<d){d=dd;best=c;}}return d<110?best:null;}let best=null,d=9999;for(const c of chestData){if(c.inside||c.opened&&c.items.length===0||c.world!==chapter)continue;const dd=Math.abs(player.x-c.x);if(dd<d){d=dd;best=c;}}return d<110?best:null;}
 function talkSurvivor(){if(chapter!=='SAN FRANCISCO')return;let best=null,d=130;for(const s of survivors){if(s.found)continue;const dd=Math.abs(player.x-s.x);if(dd<d){d=dd;best=s;}}if(!best)return;best.found=true;best.talked=true;state.survivors++;soundPickup();setMessage(`${best.name}: I thought nobody else was alive.`,2.2);if(state.survivors===1)showWarning('ONE SURVIVOR FOUND');if(state.survivors>=2){objectiveIndex=2;setObjective();setMessage('TWO SURVIVORS FOUND. REACH THE EMERGENCY SHELTER.',2.3);}}
-function useInteract(){if(scene!=='play'||fadeBusy)return;if(currentChest){openChest(currentChest);return;}if(interior){if(interior.id==='cellA17'){if(!state.startKey&&Math.abs(player.x-330)<110){searchStartingCell();return;}if(Math.abs(player.x-650)<120){unlockCell();return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}
+function useInteract(){if(scene!=='play'||fadeBusy)return;if(currentChest){openChest(currentChest);return;}if(interactAlcatrazSpecial())return;if(interior){if(interior.id==='cellA17'){if(!state.startKey&&Math.abs(player.x-330)<110){searchStartingCell();return;}if(Math.abs(player.x-650)<120){unlockCell();return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}
  if(chapter==='ALCATRAZ'){
   if(!state.startEscaped&&player.x<1050){setMessage('The cell is still locked. Search the mattress.',1.5);return;}
   if(!state.dockPass){const med=landmarkData.find(l=>l.name==='HOSPITAL WING');if(Math.abs(player.x-med.x)<360){setMessage('ENTER THE MEDICAL WING. THE DOCK PASS IS INSIDE.',1.7);return;}}
   const b=nearestBuilding();if(b){enterStructure(b);return;}
-  if(Math.abs(player.x-16040)<280){if(!state.dockPass){setMessage('DOCK PASS REQUIRED. Find it inside the Medical Wing.',2);return;}if(!state.beacon){state.beacon=true;advanceObjective(1);setMessage('BEACON LIT. Stay by the dock.',2);tone(250,.5,'sine',.13,90);return;}if(!state.boatEscaped){state.boatEscaped=true;transitionTo('ferry',()=>{chapter='SAN FRANCISCO';player.x=200;player.y=GROUND-player.h;interior=null;camera=0;buildSFPopulation();objectiveIndex=2;scene='play';setObjective();setMessage('SAN FRANCISCO. FIND TWO SURVIVORS.',2.4);soundDoor();});return;}}
+  if(Math.abs(player.x-21700)<330){
+ if(!state.dockPass){setMessage('THE PIER GATE IS LOCKED. YOU NEED THE DOCK PASS.',2);return;}
+ if(!state.powerRestored){setMessage('NO POWER. Restore the emergency generator first.',2);return;}
+ if(!state.radioSignal){setMessage('THE FERRY WILL NOT ANSWER. Transmit the emergency signal.',2);return;}
+ if(!state.beacon){state.beacon=true;advanceObjective(1);setMessage('BEACON LIT. THE FERRY IS COMING. RUN.',2);tone(250,.5,'sine',.13,90);state.finalChase=true;return;}
+ if(!state.boatEscaped){state.boatEscaped=true;transitionTo('ferry',()=>{endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='The ferry reaches the pier through the storm. Behind you, the cellhouse lights turn on one by one. The last camera feed shows a figure standing in your empty cell.';soundScare();});return;}
+}
  }
  else{if(talkSurvivorState())return;const b=nearestBuilding();if(b){enterStructure(b);return;}if(state.survivors>=2&&Math.abs(player.x-3200)<420){endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='Two survivors reached the shelter. Behind the rain, the island lights were still visible. On the final CCTV frame, a tall figure smiled at the empty dock.';soundScare();}}
 }
 function talkSurvivorState(){if(chapter!=='SAN FRANCISCO')return false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){talkSurvivor();return true;}}return false;}
 function advanceObjective(i){if(i>objectiveIndex)objectiveIndex=Math.min(i,2);setObjective();}
+function updateAlcatrazProgression(){
+ if(chapter!=='ALCATRAZ'||interior)return;
+ if(state.dockPass && !state.powerRestored && player.x>10800 && player.x<12350){
+  setMessage('THE POWER PLANT IS DEAD. THE FUSE BOX MAY STILL WORK.',1.8);
+ }
+ if(state.powerRestored && !state.radioSignal && player.x>14500 && player.x<15500){
+  setMessage('THE RADIO ROOM IS NEARBY. SOMETHING IS FOLLOWING YOU.',1.8);
+ }
+ if(state.radioSignal && !state.finalChase && player.x>18500){
+  state.finalChase=true;state.alarm=true;horror.glitch=1;horror.shake=12;
+  showWarning('THE ISLAND LOCKDOWN HAS BEGUN',2.4);soundScare();
+  for(let i=0;i<7;i++){
+   zombies.push({x:player.x+650+i*125,type:i%3===0?'runner':'stalker',hp:i%3===0?95:110,dead:false,phase:i*.7,attack:0,hit:0,alert:1});
+  }
+ }
+ if(state.finalChase && player.x>21500){
+  state.beacon=true;
+  if(!state.boatEscaped)setMessage('THE FERRY IS HERE. KEEP RUNNING.',1.6);
+ }
+}
+function interactAlcatrazSpecial(){
+ if(chapter!=='ALCATRAZ'||interior)return false;
+ if(state.dockPass && !state.powerRestored && Math.abs(player.x-11550)<330){
+   state.powerRestored=true;state.inventory.fuse=Math.max(0,state.inventory.fuse-1);
+   if(state.inventory.fuse<0)state.inventory.fuse=0;
+   state.alarm=false;advanceObjective(1);soundDoor();horror.flash=.35;
+   setMessage('EMERGENCY POWER RESTORED. THE PRISON JUST WOKE UP.',2.5);
+   return true;
+ }
+ if(state.powerRestored && !state.radioSignal && Math.abs(player.x-15100)<260){
+   state.radioSignal=true;advanceObjective(1);state.sanity=Math.max(0,state.sanity-12);
+   showWarning('SIGNAL TRANSMITTED — SOMETHING ANSWERED',2.5);soundWhisper();
+   return true;
+ }
+ return false;
+}
+
 function nearestBuilding(){let best=null,d=9999;for(const b of landmarkData){if(b.name==='CELLHOUSE'||b.name==='RECREATION YARD'||b.name==='MAIN DOCK')continue;const dd=Math.abs(player.x-b.x);if(dd<d&&dd<180){d=dd;best=b;}}return best;}
 function updateInput(){inputState.left=keys.has('a')||keys.has('A')||keys.has('ArrowLeft')||touch.left;inputState.right=keys.has('d')||keys.has('D')||keys.has('ArrowRight')||touch.right;inputState.run=keys.has('Shift')||touch.run;inputState.jump=keys.has('w')||keys.has('W')||keys.has(' ')||keys.has('ArrowUp')||touch.jump;if(inputState.jump){if(player.jumpBuffer<=0)player.jumpBuffer=.14;}else player.jumpBuffer=0;}
 function tryJump(){if(scene!=='play')return;if(player.onGround||player.coyote>0){player.vy=-640;player.onGround=false;player.coyote=0;player.jumps=1;player.air=0;soundJump();spawnDust();return;}if(player.jumps>0){player.vy=-580;player.jumps=0;player.air=0;soundJump();spawnDust();}}
@@ -310,8 +363,29 @@ function movementStep(dt){
  footstepsTimer-=dt;if(player.onGround&&Math.abs(player.vx)>45&&footstepsTimer<=0){footstepsTimer=inputState.run?.25:.37;soundStep();footprints.push({x:player.x,f:totalTime});if(footprints.length>80)footprints.shift();}
 }
 function damagePlayer(a){state.health-=a;horror.shake=8;state.sanity=Math.max(0,state.sanity-2);if(state.health<=0){state.health=0;scene='death';show('death');document.getElementById('deathText').textContent='The island kept you. This was not the last attempt.';soundScare();}}
-function updateZombies(dt){for(const z of zombies){if(z.dead)continue;z.attack=Math.max(0,z.attack-dt);z.hit=Math.max(0,z.hit-dt);const dx=player.x-z.x;const d=Math.abs(dx);if(d<920){if(dx)z.facing=dx>0?1:-1;if(d>62){const sp=z.type==='runner'?105:z.type==='brute'?42:68;z.x+=Math.sign(dx)*sp*dt;}else if(z.attack<=0){damagePlayer(z.type==='brute'?14:8);z.attack=z.type==='runner'?.85:1.25;}}
-z.x=clamp(z.x,20,WORLD[chapter]-40);}}
+function updateZombies(dt){
+ for(const z of zombies){
+  if(z.dead)continue;
+  z.attack=Math.max(0,z.attack-dt);z.hit=Math.max(0,z.hit-dt);
+  const dx=player.x-z.x,d=Math.abs(dx);
+  const vision=state.light?1050:720;
+  if(d<vision){
+   if(dx)z.facing=dx>0?1:-1;
+   if(d<430 && Math.abs(player.vx)>120)z.alert=Math.min(1,z.alert+dt*.9);
+   else z.alert=Math.max(0,z.alert-dt*.25);
+   if(d>62){
+    let sp=z.type==='runner'?128:z.type==='brute'?44:z.type==='stalker'?92:68;
+    if(z.alert>.65)sp*=1.18;
+    z.x+=Math.sign(dx)*sp*dt;
+   }else if(z.attack<=0){
+    damagePlayer(z.type==='brute'?18:z.type==='stalker'?11:8);
+    z.attack=z.type==='runner'?.72:z.type==='stalker'?.95:1.25;
+    if(z.type==='stalker')horror.glitch=.55;
+   }
+  }
+  z.x=clamp(z.x,20,WORLD[chapter]-40);
+ }
+}
 function shoot(){if(scene!=='play')return;if(state.ammo<=0){soundReload();setMessage('EMPTY MAGAZINE. R TO RELOAD.',1.1);return;}state.ammo--;player.recoil=.2;soundShot();horror.shake=3;const target=mouse.x+camera;let hit=null;let best=Infinity;for(const z of zombies){if(z.dead)continue;const dd=Math.abs(z.x-target);if(dd<80&&Math.abs(z.x-player.x)<760&&dd<best){best=dd;hit=z;}}if(hit){hit.hp-=selectedCharacter==='Yumi'?46:38;hit.hit=.15;spawnBlood(hit.x,GROUND-55);if(hit.hp<=0){hit.dead=true;state.sanity=Math.min(100,state.sanity+2);}}
 }
 function melee(){if(scene!=='play')return;for(const z of zombies){if(z.dead)continue;if(Math.abs(z.x-player.x)<88){z.hp-=selectedCharacter==='May'?62:54;z.x+=player.facing*35;spawnBlood(z.x,GROUND-54);if(z.hp<=0)z.dead=true;}}
@@ -321,7 +395,7 @@ function reload(){if(state.reserveAmmo<=0||state.ammo>=12)return;const take=Math
 function updateWorld(dt){
  totalTime+=dt;
  if(scene==='play'){
-  movementStep(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateParticles(dt);if(chapter==='ALCATRAZ'&&!interior&&player.x>12000&&state.sanity<75)state.sanity=Math.max(0,state.sanity-dt*.3);
+  movementStep(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateParticles(dt);updateAlcatrazProgression();if(chapter==='ALCATRAZ'&&!interior&&player.x>7000&&state.sanity<80)state.sanity=Math.max(0,state.sanity-dt*.22);if(state.finalChase&&chapter==='ALCATRAZ')state.sanity=Math.max(0,state.sanity-dt*.18);
  }
  updateMessage(dt);updateIntro(dt);updateFade(dt);renderHUD();
 }
@@ -377,7 +451,7 @@ function drawLandmarks(){if(chapter!=='ALCATRAZ')return;for(const l of landmarkD
 function drawBuildings(){if(chapter!=='SAN FRANCISCO')return;const bs=[{x:850,w:580,h:250,n:'OLD POLICE STATION',t:'police'},{x:2700,w:520,h:280,n:'HOSPITAL',t:'hospital'},{x:4700,w:510,h:240,n:'FUNERAL HOME',t:'funeral'},{x:6500,w:620,h:330,n:'OLD HOTEL',t:'hotel'},{x:8600,w:580,h:260,n:'EMERGENCY SHELTER',t:'shelter'},{x:9900,w:620,h:310,n:'RESEARCH ANNEX',t:'research'}];for(const b of bs){const x=b.x-camera;if(x<-b.w||x>W+b.w)continue;const col={police:'#596b70',hospital:'#65797a',funeral:'#635b63',hotel:'#6b726f',shelter:'#5d716b',research:'#5e6f79'}[b.t];px(x-b.w/2,GROUND-b.h,b.w,b.h,col);px(x-b.w/2,GROUND-b.h,b.w,10,'#8b948f');for(let f=0;f<Math.max(2,Math.round(b.h/96));f++){const yy=GROUND-58-f*96;const count=Math.floor((b.w-60)/50);for(let j=0;j<count;j++){const wx=x-b.w/2+30+j*50;const lit=(j+f)%6===0;px(wx,yy-32,34,32,lit?'#857656':'#283638');px(wx+4,yy-28,26,24,lit?'#b69b60':'#3f4d4e');}}const door=x-34;px(door,GROUND-82,68,82,'#1b2425');px(door+6,GROUND-76,56,70,'#465251');px(door+45,GROUND-43,5,5,'#d9c27e');text(b.n,x,GROUND-b.h-16,11,'#efe5cf','center');}}
 function drawStreetProps(){const lamps=chapter==='ALCATRAZ'?[1200,3300,4750,5900,7600,9300,10700,12100,13900,15350,16000]:[700,2100,3600,5200,6800,8400,9800];for(const wx of lamps){const x=wx-camera;if(x<-100||x>W+100)continue;px(x,GROUND-170,7,170,'#1b2324');px(x-12,GROUND-178,31,9,'#4b5452');const unstable=chapter==='ALCATRAZ'&&Math.abs(player.x-wx)<300&&state.sanity<65;const flick=unstable?Math.random():.9+.1*Math.sin(totalTime*2.2+wx);px(x-8,GROUND-190,22,12,'#252e2f');px(x-4,GROUND-191,14,5,flick>.52?'#ddc77f':'#675a44');if(flick>.28)glow(x+2,GROUND-182,86,'rgba(224,198,124,.08)','rgba(0,0,0,0)');}}
 function drawSigns(){if(chapter==='ALCATRAZ'){const s=[{x:3400,t:'DINING HALL →'},{x:5450,t:'HOSPITAL WING →'},{x:7250,t:'MODEL INDUSTRIES →'},{x:8950,t:'NEW INDUSTRIES →'},{x:15440,t:'LIGHTHOUSE / DOCK →'}];for(const a of s){const x=a.x-camera;if(x<-160||x>W+160)continue;px(x-95,GROUND-250,190,48,'#303a3b');px(x-89,GROUND-244,178,34,'#727c77');text(a.t,x,GROUND-219,10,'#f2e8cf','center');}}else{const s=[{x:2300,t:'HOSPITAL →'},{x:4400,t:'FUNERAL HOME →'},{x:6400,t:'OLD HOTEL →'},{x:8500,t:'SHELTER →'}];for(const a of s){const x=a.x-camera;if(x<-160||x>W+160)continue;px(x-85,GROUND-235,170,42,'#303a3b');px(x-79,GROUND-229,158,30,'#717a75');text(a.t,x,GROUND-209,10,'#f2e8cf','center');}}}
-function drawDock(){if(chapter!=='ALCATRAZ')return;const x=16040-camera;px(x-170,GROUND-31,340,31,'#4f5b58');for(let i=0;i<7;i++)px(x-148+i*48,GROUND-37,32,7,'#7a7f76');px(x-33,GROUND-158,66,126,'#252d2f');px(x-43,GROUND-171,86,13,'#707771');const bc=state.beacon?'#f3d27e':'#5d513a';px(x-20,GROUND-196,40,22,bc);glow(x,GROUND-188,125,state.beacon?'rgba(239,204,121,.2)':'rgba(150,130,82,.05)','rgba(0,0,0,0)');px(x-123,GROUND-69,246,7,'#1d2324');px(x-117,GROUND-90,234,24,'#455252');px(x-94,GROUND-116,188,22,'#5a6666');px(x-54,GROUND-139,108,20,'#657171');text('FERRY',x,GROUND-153,13,'#eee4c6','center');text(state.beacon?'BOARD':'BEACON',x,GROUND-214,10,'#d8ca9e','center');}
+function drawDock(){if(chapter!=='ALCATRAZ')return;const x=21700-camera;px(x-170,GROUND-31,340,31,'#4f5b58');for(let i=0;i<7;i++)px(x-148+i*48,GROUND-37,32,7,'#7a7f76');px(x-33,GROUND-158,66,126,'#252d2f');px(x-43,GROUND-171,86,13,'#707771');const bc=state.beacon?'#f3d27e':'#5d513a';px(x-20,GROUND-196,40,22,bc);glow(x,GROUND-188,125,state.beacon?'rgba(239,204,121,.2)':'rgba(150,130,82,.05)','rgba(0,0,0,0)');px(x-123,GROUND-69,246,7,'#1d2324');px(x-117,GROUND-90,234,24,'#455252');px(x-94,GROUND-116,188,22,'#5a6666');px(x-54,GROUND-139,108,20,'#657171');text('FERRY',x,GROUND-153,13,'#eee4c6','center');text(state.beacon?'BOARD':state.radioSignal?'SIGNAL READY':'BEACON',x,GROUND-214,10,'#d8ca9e','center');}
 function drawInterior(){if(!interior)return;const b=interior.building;const type=interior.type;const wall={cell:'#464d4c',cellcorridor:'#353e40',medical:'#536567',industry:'#4e514c',dining:'#5f5b50',guard:'#4c5657',power:'#4a5353',dock:'#565d59',police:'#4c5d61',hospital:'#607375',funeral:'#5d555f',hotel:'#686e69',shelter:'#5e706a',research:'#5c6b74'}[type]||'#4d5858';px(0,0,W,GROUND-40,wall);px(0,GROUND-40,W,40,'#2b3030');for(let y=80;y<GROUND-55;y+=36){for(let x=0;x<W;x+=60){px(x+(y%90),y,34,3,'rgba(255,255,255,.08)');if((x+y)%180===0)px(x+16,y+8,3,3,'#919187');}}
  px(22,420,150,115,'#222b2b');px(36,434,122,83,'#101817');text('EXIT',97,485,13,'#efe5cf','center');px(W-172,420,150,115,'#222b2b');px(W-158,434,122,83,'#101817');text('EXIT',W-97,485,13,'#efe5cf','center');
  if(type==='cell'){drawCellInterior();}
@@ -401,6 +475,23 @@ function drawSmiler(){if(!smiler.active||interior)return;const x=smiler.x-camera
 function drawFootprints(){if(interior)return;for(const f of footprints){const x=f.x-camera;if(x>-20&&x<W+20){ctx.globalAlpha=clamp(1-(totalTime-f.f)*.035,.05,.45);px(x,GROUND-7,10,3,'#a7adaa');px(x+14,GROUND-8,8,2,'#8e9892');}}ctx.globalAlpha=1;}
 function drawParticles(){for(const p of particles){const x=p.x-camera;if(x<-20||x>W+20)continue;ctx.globalAlpha=clamp(p.life/.5,0,1);px(x,p.y,p.s,p.s,p.c);}ctx.globalAlpha=1;}
 function drawRain(){if(interior)return;ctx.save();ctx.globalAlpha=.46;for(let i=0;i<230;i++){const x=(i*83+totalTime*420)%W;const y=(i*47+totalTime*660)%H;line(x,y,x-6,y+18,'#9cb7bf',1);}ctx.restore();}
+
+function drawFlashlightCone(){
+ if(scene!=='play'||interior||!state.light)return;
+ const pxw=player.x-camera+19, py=player.y+36;
+ const dir=player.facing;
+ ctx.save();
+ ctx.globalCompositeOperation='screen';
+ const g=ctx.createLinearGradient(pxw,py,pxw+dir*520,py);
+ g.addColorStop(0,'rgba(225,218,187,.11)');
+ g.addColorStop(.45,'rgba(225,218,187,.045)');
+ g.addColorStop(1,'rgba(225,218,187,0)');
+ ctx.fillStyle=g;
+ ctx.beginPath();
+ ctx.moveTo(pxw,py-25);ctx.lineTo(pxw+dir*520,py-105);ctx.lineTo(pxw+dir*520,py+105);ctx.lineTo(pxw,py+25);ctx.closePath();ctx.fill();
+ ctx.restore();
+}
+
 function drawLighting(){if(scene!=='play')return;ctx.save();if(interior){if(state.light){const flick=.86+.14*Math.sin(totalTime*7);glow(700,105,450,`rgba(240,226,192,${.08*flick})`,'rgba(0,0,0,0)');}}else{ctx.fillStyle='rgba(0,0,0,.09)';ctx.fillRect(0,0,W,H);}ctx.restore();}
 function drawHorror(){if(scene!=='play')return;ctx.save();if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);if(horror.flash>0){ctx.globalAlpha=Math.min(.28,horror.flash*.35);ctx.fillStyle='#fff4dc';ctx.fillRect(0,0,W,H);}if(horror.glitch>0){ctx.globalAlpha=.12;for(let i=0;i<13;i++)px(0,Math.random()*H,W,2,i%2?'#c1ceca':'#293834');}if(state.sanity<42){ctx.globalAlpha=.07;ctx.fillStyle='#cfc7b2';ctx.fillRect(0,0,W,H);}ctx.restore();}
 
@@ -575,10 +666,59 @@ function enhanceHorrorAtmosphere(){
  ctx.restore();
 }
 
-function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawPlayerShadowInterior();drawPlayer();}drawParticles();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawHorror();drawHudWorld();ctx.restore();}
+
+function drawAlcatrazInfrastructure(){
+ if(chapter!=='ALCATRAZ'||interior)return;
+ const pipes=[5200,6800,9100,11200,13400,15600,17700,19900];
+ for(const wx of pipes){
+  const x=wx-camera;if(x<-200||x>W+200)continue;
+  line(x,GROUND-175,x+180,GROUND-175,'#596562',6);
+  line(x+180,GROUND-175,x+180,GROUND-90,'#596562',6);
+  for(let k=0;k<4;k++)px(x+k*58,GROUND-183,18,8,'#303b3a');
+ }
+ const flood=[2600,5100,8000,11600,14600,18200,20500];
+ for(const wx of flood){
+  const x=wx-camera;if(x<-100||x>W+100)continue;
+  px(x-3,GROUND-260,6,160,'#202929');
+  px(x-14,GROUND-270,28,14,'#77786b');
+  const hot=state.alarm||Math.sin(totalTime*3+wx)>-.15;
+  glow(x,GROUND-260,105,hot?'rgba(224,192,116,.10)':'rgba(224,192,116,.045)','rgba(0,0,0,0)');
+ }
+ for(let i=0;i<26;i++){
+  const x=((i*401-camera*.92)%W+W)%W;
+  const y=520+(i%5)*15;
+  px(x,y,28,5,'#1d2525');
+  px(x+5,y-8,18,8,i%6===0?'#6c5747':'#394543');
+ }
+ if(state.alarm){
+  const sweep=((totalTime*190)%W);
+  ctx.globalAlpha=.055;
+  ctx.fillStyle='#a83d3d';
+  ctx.beginPath();ctx.moveTo(sweep,GROUND-320);ctx.lineTo(sweep+220,GROUND);ctx.lineTo(sweep+340,GROUND);ctx.lineTo(sweep+120,GROUND-320);ctx.closePath();ctx.fill();
+  ctx.globalAlpha=1;
+ }
+}
+
+function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawPlayerShadowInterior();drawPlayer();}drawParticles();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
 function drawPlayerInterior(){const x=player.x-camera,y=player.y;if(x<0||x>W)return;drawPlayer();}
 function drawHudWorld(){if(chapter==='ALCATRAZ'&&scene==='play'&&!interior){const near=landmarkData.reduce((a,b)=>Math.abs(b.x-player.x)<Math.abs(a.x-player.x)?b:a,landmarkData[0]);const d=Math.max(10,Math.round(Math.abs(near.x-player.x)/10)*10);const dir=near.x>=player.x?'→':'←';px(460,744,480,26,'rgba(4,7,7,.72)');text(`${dir} ${near.name} • ${d} m`,700,763,10,'#e8dfc9','center');}}
-function renderHUD(){const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?interior.name:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.sanity<45?'YOU FEEL WATCHED':state.sanity<70?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
+
+function renderMapStrip(){
+ const strip=document.getElementById('mapStrip'),p=document.getElementById('mapPlayer'),pts=document.getElementById('mapPoints');
+ if(!strip||!p||!pts)return;
+ if(chapter!=='ALCATRAZ'){strip.style.display='none';return;}
+ strip.style.display='block';
+ const max=WORLD.ALCATRAZ-80;
+ p.style.left=`calc(10px + ${clamp(player.x/max,0,1)*100}% - 4px)`;
+ pts.innerHTML='';
+ const marks=[900,3800,6200,8550,10020,11550,14850,17150,18300,20700,21700];
+ marks.forEach((x,i)=>{
+  const d=document.createElement('i');d.className=(state.finalChase&&x>player.x?'mapDanger':'mapPoint');
+  d.style.position='absolute';d.style.left=`calc(10px + ${x/max*100}% - 2px)`;d.title=String(i+1);pts.appendChild(d);
+ });
+}
+
+function renderHUD(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?interior.name:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.sanity<45?'YOU FEEL WATCHED':state.sanity<70?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
 function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(interior.id==='cellA17'){if(!state.startKey&&Math.abs(player.x-330)<115)t='E  /  USE  — SEARCH MATTRESS';else if(state.startKey&&Math.abs(player.x-650)<125)t='E  /  USE  — UNLOCK CELL';else if(player.x<170||player.x>1010)t=state.startEscaped?'E  /  USE  — ENTER CELL BLOCK A CORRIDOR':'THE CELL DOOR IS LOCKED';}else if(interior.id==='cellCorridor'){if(player.x<170||player.x>1010)t='E  /  USE  — EXIT CELL BLOCK A';else {const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';}}else if(player.x<170||player.x>1010)t='E  /  USE  — EXIT TO STREET';else{const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';if(interior.type==='medical'&&!state.dockPass&&Math.abs(player.x-800)<140)t='E  /  USE  — OPEN DOCK PASS CHEST';}}
  else if(chapter==='ALCATRAZ'){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(Math.abs(player.x-16040)<260)t=state.dockPass?(state.beacon?'E  /  USE  — BOARD FERRY':'E  /  USE  — LIGHT FERRY BEACON'):'DOCK PASS REQUIRED';}
  else{let got=false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){t=`E  /  USE  — TALK TO ${s.name}`;got=true;break;}}if(!got){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(state.survivors>=2&&Math.abs(player.x-3200)<420)t='E  /  USE  — ENTER EMERGENCY SHELTER';}}
