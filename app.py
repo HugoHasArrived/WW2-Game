@@ -102,7 +102,14 @@ h1{margin:0;text-align:center;letter-spacing:6px;font-size:40px;color:#efe9db;te
 #deviceOverlay{z-index:75}.deviceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.deviceCard{border:1px solid #303735;background:#0c1010;padding:12px}.deviceCard b{display:block;color:#8d9892;font-size:10px;letter-spacing:1px}.deviceCard span{display:block;margin-top:6px;color:#e4e7e2;word-break:break-word;font-size:13px}
 #cutscene{z-index:65;background:#020303;display:grid;place-items:center;padding:45px;text-align:center}.cutWrap{max-width:900px}.cutKicker{font-size:11px;color:#7d8782;letter-spacing:3px}.cutMain{font-size:clamp(22px,3vw,38px);line-height:1.55;color:#eae3d5;margin:22px 0}.cutHint{font-size:10px;color:#747e78;letter-spacing:1px}
 #hud{z-index:20;pointer-events:none}#hud button,#hud .objectivePanel{pointer-events:auto}
-.pixelOverlay{position:absolute;inset:0;pointer-events:none;z-index:19;background:repeating-linear-gradient(0deg,rgba(255,255,255,.014) 0 1px,transparent 1px 4px);mix-blend-mode:screen;opacity:.65}
+.pixelOverlay{position:absolute;inset:0;pointer-events:none;z-index:19;background:repeating-linear-gradient(0deg,rgba(255,255,255,.014) 0 1px,transparent 1px 4px);mix-blend-mode:screen;opacity:.78;mix-blend-mode:overlay}
+
+#scare.show{animation:screenPanic .08s steps(2,end) infinite;background:rgba(120,0,0,.28)}
+#scare[data-variant="1"] .scareFace{filter:contrast(1.8) invert(.05);transform:translate(-50%,-50%) scale(1.18)}
+#scare[data-variant="2"] .scareFace{width:430px;height:470px;filter:contrast(1.6)}
+#scare[data-variant="3"] .scareFace{width:520px;height:520px;filter:blur(.3px) contrast(2)}
+@keyframes screenPanic{0%{filter:none}50%{filter:contrast(1.5) brightness(.65)}100%{filter:none}}
+
 @media(max-width:760px){#app{width:100vw;aspect-ratio:auto;height:100%}.charCards,.privacyGrid,.deviceGrid,.controlGrid{grid-template-columns:1fr}.menuContent{margin:0 7%;}.menuLogo{font-size:41px;letter-spacing:4px}.menuButtons button{width:100%}.panel{padding:20px}.privacyBox{padding:22px}.menuLore{font-size:12px}.hudGroup{min-width:0}.bar{width:130px}.mobileCluster{bottom:13px}.mobileCluster.left{left:10px}.mobileCluster.right{right:10px}.mobileCluster button{width:52px;height:52px}}
 
 .menuContent:before{content:"";position:absolute;left:-28px;top:-18px;width:4px;height:230px;background:#b8aa7f;box-shadow:0 0 22px rgba(218,199,145,.2)}
@@ -162,6 +169,8 @@ let totalTime=0;
 let camera=0;
 let interior=null;
 let interiorPhase=0;
+let floorTransitionLock=0;
+let jumpscareVariant=0;
 let fadeBusy=false;
 let messageTimer=0;
 let introIndex=0;
@@ -246,7 +255,7 @@ function buildAlcatrazPopulation(){
  for(let i=0;i<52;i++){
   const x=1250+i*392+(i%5)*73;
   const type=i%13===0?'brute':i%7===0?'stalker':i%4===0?'runner':'walker';
-  zombies.push({x,type,hp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,dead:false,phase:i*.61,attack:0,hit:0,alert:0});
+  zombies.push({x,type,hp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,maxHp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,dead:false,deathTimer:0,phase:i*.61,attack:0,hit:0,alert:0,flash:0,limb:Math.random()*6.28});
  }
  chestData=[
   {id:'cellKey',world:'ALCATRAZ',inside:true,building:'CELLHOUSE',x:350,y:0,items:[{id:'key',name:'BRASS KEY',count:1}],opened:false},
@@ -262,18 +271,18 @@ function buildSFPopulation(){
   {id:'noah',name:'NOAH',x:8600,found:false,talked:false,building:'HARBOR WAREHOUSE'}
  ];
  zombies=[];
- for(let i=0;i<28;i++)zombies.push({x:600+i*370+(i%5)*42,type:i%8===0?'brute':i%4===0?'runner':'walker',hp:i%8===0?180:i%4===0?90:65,dead:false,phase:i*.51,attack:0,hit:0});
+ for(let i=0;i<28;i++)zombies.push({x:600+i*370+(i%5)*42,type:i%8===0?'brute':i%4===0?'runner':'walker',hp:i%8===0?180:i%4===0?90:65,maxHp:i%8===0?180:i%4===0?90:65,dead:false,deathTimer:0,phase:i*.51,attack:0,hit:0,flash:0,limb:Math.random()*6.28});
 }
 function beginGame(name){selectedCharacter=name;resetWorld();startSoundscape();introIndex=0;introTimer=0;scene='intro';show('cutscene');hide('characterMenu');hide('mainMenu');updateIntroText();}
-function positionInsideCell(){interior={id:'cellA17',name:'CELL A-17',type:'cell',building:{name:'CELLHOUSE',w:1060,x:370,floors:3}};interiorPhase=0;player.x=330;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;}
+function positionInsideCell(){interior={id:'cellA17',name:'CELL A-17',type:'cell',building:{name:'CELLHOUSE',w:1060,x:370,floors:3},floor:1,floors:3,stairCooldown:0};interiorPhase=0;player.x=330;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;}
 function updateIntroText(){const e=document.getElementById('cutMain');if(e)e.textContent=introLines[introIndex]||'';}
 function advanceIntro(){if(scene!=='intro')return;introIndex++;introTimer=0;if(introIndex>=introLines.length){scene='play';show('hud');hide('cutscene');setObjective();setMessage('CELL A-17 • SEARCH THE MATTRESS FOR THE KEY.',2.5);}else updateIntroText();}
 function getObjectiveStep(){if(chapter==='ALCATRAZ'){if(!state.startKey)return 0;if(!state.startEscaped)return 1;if(!state.dockPass)return 2;if(!state.powerRestored)return 1;if(!state.radioSignal)return 2;if(!state.beacon)return 4;return 5;}return state.survivors>=2?3:1;}
 function setObjective(){const idx=chapter==='ALCATRAZ'?Math.min(objectiveIndex,1):2;const o=objectives[idx];const step=chapter==='ALCATRAZ'?getObjectiveStep():getObjectiveStep();const s=o.steps[Math.min(step,o.steps.length-1)];const e=document.getElementById('objective');if(e)e.textContent=`${o.title}\n${s}`;renderObjectives();}
 function renderObjectives(){const list=document.getElementById('objectiveList');if(!list)return;list.innerHTML='';objectives.forEach((o,i)=>{const item=document.createElement('div');item.className='objectiveItem '+(i<objectiveIndex?'done ':'')+(i===objectiveIndex?'current':'');const status=i<objectiveIndex?'✓ COMPLETE':i===objectiveIndex?'› CURRENT':'○ FUTURE';const activeStep=i===0&&chapter==='ALCATRAZ'?getObjectiveStep():i===2&&chapter==='SAN FRANCISCO'?getObjectiveStep():0;item.innerHTML=`<b>${status}</b><div style="margin-top:6px;letter-spacing:1px">${o.title}</div>`;o.steps.forEach((s,k)=>{const sp=document.createElement('span');sp.className='step'+(k===activeStep&&i===objectiveIndex?' active':'');sp.textContent=`${k+1}. ${s}`;item.appendChild(sp);});list.appendChild(item);});}
 function transitionTo(kind,fn){if(fadeBusy)return;fadeBusy=true;transitionKind=kind;const f=document.getElementById('fade');f.style.opacity='1';setTimeout(()=>{fn();setTimeout(()=>{f.style.opacity='0';setTimeout(()=>fadeBusy=false,520);},60)},440);}
-function enterStructure(b){if(fadeBusy)return;transitionTo('enter',()=>{interior={id:b.type+'_'+b.x,name:b.name,type:b.type,building:b,roomWidth:1180};interiorPhase=0;player.x=590;player.y=GROUND-104;player.vx=0;player.vy=0;player.onGround=true;soundDoor();setMessage(`ENTERED ${b.name}.`,1.4);});}
-function enterCellCorridor(){if(fadeBusy)return;transitionTo('cellcorridor',()=>{interior={id:'cellCorridor',name:'CELL BLOCK A',type:'cellcorridor',building:{name:'CELLHOUSE',x:370,w:1060,floors:3},roomWidth:1180};interiorPhase=1;player.x=590;player.y=GROUND-104;player.vx=0;player.vy=0;player.onGround=true;soundDoor();setMessage('CELL BLOCK A CORRIDOR. FOLLOW THE SIGNS DOWNHILL.',2);setObjective();});}
+function enterStructure(b){if(fadeBusy)return;transitionTo('enter',()=>{interior={id:b.type+'_'+b.x,name:b.name,type:b.type,building:b,roomWidth:1180,floor:1,floors:Math.max(1,b.floors||3),stairCooldown:0};interiorPhase=0;player.x=590;player.y=GROUND-104;player.vx=0;player.vy=0;player.onGround=true;soundDoor();setMessage(`ENTERED ${b.name}.`,1.4);});}
+function enterCellCorridor(){if(fadeBusy)return;transitionTo('cellcorridor',()=>{interior={id:'cellCorridor',name:'CELL BLOCK A',type:'cellcorridor',building:{name:'CELLHOUSE',x:370,w:1060,floors:3},roomWidth:1180,floor:1,floors:3,stairCooldown:0};interiorPhase=1;player.x=590;player.y=GROUND-104;player.vx=0;player.vy=0;player.onGround=true;soundDoor();setMessage('CELL BLOCK A CORRIDOR. FOLLOW THE SIGNS DOWNHILL.',2);setObjective();});}
 function exitStructure(){if(!interior||fadeBusy)return;const b=interior.building;const side=player.x<200?-1:player.x>980?1:0;if(interior.id==='cellA17'&&!state.startEscaped){setMessage('The cell door is closed. Search the mattress and unlock it.',1.7);return;}if(interior.id==='cellA17'&&side!==0){enterCellCorridor();return;}if(side===0){setMessage('Move closer to the EXIT door.',1.2);return;}transitionTo('exit',()=>{const outside=side<0?b.x-80:b.x+b.w+80;player.x=clamp(outside,80,WORLD[chapter]-80);player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;interior=null;camera=clamp(player.x-W*.4,0,WORLD[chapter]-W);soundDoor();setMessage(`BACK OUTSIDE — ${b.name}.`,1.3);});}
 function searchStartingCell(){if(state.startKey){setMessage('The mattress is empty.',1);return;}state.startKey=true;state.inventory.key=1;const c=chestData.find(x=>x.id==='cellKey');if(c)c.opened=true;soundChest();setMessage('BRASS KEY FOUND. The lock is within reach.',2);setObjective();}
 function unlockCell(){if(!state.startKey){setMessage('Search under the mattress first.',1.5);return;}if(state.startEscaped){enterCellCorridor();return;}state.startEscaped=true;objectiveIndex=0;soundDoor();soundScare();horror.flash=.28;setObjective();enterCellCorridor();}
@@ -285,7 +294,22 @@ function sortChest(){if(!currentChest)return;currentChest.items.sort((a,b)=>a.na
 function closeChest(){hide('inventoryUi');scene='play';currentChest=null;}
 function nearestChest(){if(interior){let best=null,d=9999;for(const c of chestData){if(!c.inside||c.building!==interior.building.name||c.opened&&c.items.length===0)continue;const dd=Math.abs(player.x-c.x);if(dd<d){d=dd;best=c;}}return d<110?best:null;}let best=null,d=9999;for(const c of chestData){if(c.inside||c.opened&&c.items.length===0||c.world!==chapter)continue;const dd=Math.abs(player.x-c.x);if(dd<d){d=dd;best=c;}}return d<110?best:null;}
 function talkSurvivor(){if(chapter!=='SAN FRANCISCO')return;let best=null,d=130;for(const s of survivors){if(s.found)continue;const dd=Math.abs(player.x-s.x);if(dd<d){d=dd;best=s;}}if(!best)return;best.found=true;best.talked=true;state.survivors++;soundPickup();setMessage(`${best.name}: I thought nobody else was alive.`,2.2);if(state.survivors===1)showWarning('ONE SURVIVOR FOUND');if(state.survivors>=2){objectiveIndex=2;setObjective();setMessage('TWO SURVIVORS FOUND. REACH THE EMERGENCY SHELTER.',2.3);}}
-function useInteract(){if(scene!=='play'||fadeBusy)return;if(currentChest){openChest(currentChest);return;}if(interactAlcatrazSpecial())return;if(interior){if(interior.id==='cellA17'){if(!state.startKey&&Math.abs(player.x-330)<110){searchStartingCell();return;}if(Math.abs(player.x-650)<120){unlockCell();return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}
+function tryUseStairs(){
+ if(!interior||interior.floors<=1)return false;
+ const nearLeft=Math.abs(player.x-245)<105;
+ const nearRight=Math.abs(player.x-935)<105;
+ if(!nearLeft&&!nearRight)return false;
+ if(interior.stairCooldown>0)return true;
+ const dir=nearLeft?1:-1;
+ const next=clamp(interior.floor+dir,1,interior.floors);
+ if(next===interior.floor){setMessage(next===interior.floors?'NO HIGHER FLOOR.':'NO LOWER FLOOR.',1);return true;}
+ interior.floor=next;interior.stairCooldown=.55;player.x=nearLeft?300:880;player.vx=0;player.vy=0;player.onGround=true;
+ horror.flash=.18;horror.shake=5;state.sanity=Math.max(0,state.sanity-3);soundDoor();
+ setMessage(`STAIRWELL — FLOOR ${interior.floor} / ${interior.floors}`,1.4);
+ if(interior.floor===3&&Math.random()<.65){setTimeout(()=>{if(scene==='play'&&interior){triggerJumpscare('stair');}},500);}
+ return true;
+}
+function useInteract(){if(scene!=='play'||fadeBusy)return;if(currentChest){openChest(currentChest);return;}if(interior&&interior.floors>1&&tryUseStairs())return;if(interactAlcatrazSpecial())return;if(interior){if(interior.id==='cellA17'){if(!state.startKey&&Math.abs(player.x-330)<110){searchStartingCell();return;}if(Math.abs(player.x-650)<120){unlockCell();return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}
  if(chapter==='ALCATRAZ'){
   if(!state.startEscaped&&player.x<1050){setMessage('The cell is still locked. Search the mattress.',1.5);return;}
   if(!state.dockPass){const med=landmarkData.find(l=>l.name==='HOSPITAL WING');if(Math.abs(player.x-med.x)<360){setMessage('ENTER THE MEDICAL WING. THE DOCK PASS IS INSIDE.',1.7);return;}}
@@ -344,6 +368,7 @@ function updateInput(){inputState.left=keys.has('a')||keys.has('A')||keys.has('A
 function tryJump(){if(scene!=='play')return;if(player.onGround||player.coyote>0){player.vy=-640;player.onGround=false;player.coyote=0;player.jumps=1;player.air=0;soundJump();spawnDust();return;}if(player.jumps>0){player.vy=-580;player.jumps=0;player.air=0;soundJump();spawnDust();}}
 function movementStep(dt){
  if(scene!=='play'||fadeBusy)return;
+ if(interior&&interior.stairCooldown>0)interior.stairCooldown=Math.max(0,interior.stairCooldown-dt);
  const dir=(inputState.right?1:0)-(inputState.left?1:0);
  const base=selectedCharacter==='May'?290:selectedCharacter==='Yumi'?270:255;
  const target=dir*base*(inputState.run&&state.stamina>10?1.5:1);
@@ -365,8 +390,8 @@ function movementStep(dt){
 function damagePlayer(a){state.health-=a;horror.shake=8;state.sanity=Math.max(0,state.sanity-2);if(state.health<=0){state.health=0;scene='death';show('death');document.getElementById('deathText').textContent='The island kept you. This was not the last attempt.';soundScare();}}
 function updateZombies(dt){
  for(const z of zombies){
-  if(z.dead)continue;
-  z.attack=Math.max(0,z.attack-dt);z.hit=Math.max(0,z.hit-dt);
+  if(z.dead){z.deathTimer=Math.max(0,z.deathTimer-dt);continue;}
+  z.attack=Math.max(0,z.attack-dt);z.hit=Math.max(0,z.hit-dt);z.flash=Math.max(0,z.flash-dt);
   const dx=player.x-z.x,d=Math.abs(dx);
   const vision=state.light?1050:720;
   if(d<vision){
@@ -374,22 +399,63 @@ function updateZombies(dt){
    if(d<430 && Math.abs(player.vx)>120)z.alert=Math.min(1,z.alert+dt*.9);
    else z.alert=Math.max(0,z.alert-dt*.25);
    if(d>62){
-    let sp=z.type==='runner'?128:z.type==='brute'?44:z.type==='stalker'?92:68;
-    if(z.alert>.65)sp*=1.18;
+    let sp=z.type==='runner'?145:z.type==='brute'?48:z.type==='stalker'?105:76;
+    if(z.alert>.65)sp*=1.22;
     z.x+=Math.sign(dx)*sp*dt;
    }else if(z.attack<=0){
-    damagePlayer(z.type==='brute'?18:z.type==='stalker'?11:8);
-    z.attack=z.type==='runner'?.72:z.type==='stalker'?.95:1.25;
-    if(z.type==='stalker')horror.glitch=.55;
+    damagePlayer(z.type==='brute'?18:z.type==='stalker'?12:z.type==='runner'?10:8);
+    z.attack=z.type==='runner'?.62:z.type==='stalker'?.82:1.08;
+    if(z.type==='stalker'){horror.glitch=.55;showWarning('THE STALKER IS TOO CLOSE',.45);}
    }
   }
   z.x=clamp(z.x,20,WORLD[chapter]-40);
  }
 }
-function shoot(){if(scene!=='play')return;if(state.ammo<=0){soundReload();setMessage('EMPTY MAGAZINE. R TO RELOAD.',1.1);return;}state.ammo--;player.recoil=.2;soundShot();horror.shake=3;const target=mouse.x+camera;let hit=null;let best=Infinity;for(const z of zombies){if(z.dead)continue;const dd=Math.abs(z.x-target);if(dd<80&&Math.abs(z.x-player.x)<760&&dd<best){best=dd;hit=z;}}if(hit){hit.hp-=selectedCharacter==='Yumi'?46:38;hit.hit=.15;spawnBlood(hit.x,GROUND-55);if(hit.hp<=0){hit.dead=true;state.sanity=Math.min(100,state.sanity+2);}}
+function killZombie(z,force=false){
+ if(!z||z.dead)return;
+ z.hp=0;z.dead=true;z.deathTimer=1.8;z.flash=.3;z.vx=0;z.alert=0;
+ spawnBlood(z.x,GROUND-58);spawnBlood(z.x+(Math.random()-.5)*22,GROUND-45);horror.shake=Math.max(horror.shake,4);
+ state.sanity=Math.min(100,state.sanity+2);
+ tone(force?95:70,.12,'sawtooth',.16,-35);noiseBurst(.09,.09);
 }
-function melee(){if(scene!=='play')return;for(const z of zombies){if(z.dead)continue;if(Math.abs(z.x-player.x)<88){z.hp-=selectedCharacter==='May'?62:54;z.x+=player.facing*35;spawnBlood(z.x,GROUND-54);if(z.hp<=0)z.dead=true;}}
-horror.shake=4;tone(85,.08,'square',.12,-30);
+function shoot(){
+ if(scene!=='play')return;
+ if(state.ammo<=0){soundReload();setMessage('EMPTY MAGAZINE. R TO RELOAD.',1.1);return;}
+ state.ammo--;player.recoil=.2;soundShot();horror.shake=3;
+ const playerScreen=player.x-camera+19;
+ let aimDir=(mouse.x-playerScreen)>=0?1:-1;
+ if(Math.abs(mouse.x-playerScreen)<18)aimDir=player.facing||1;
+ player.facing=aimDir;
+ const maxRange=920;
+ let hit=null,best=Infinity;
+ for(const z of zombies){
+  if(z.dead)continue;
+  const dx=(z.x-player.x)*aimDir;
+  if(dx<35||dx>maxRange)continue;
+  const vertical=Math.abs((GROUND-55)-(GROUND-55));
+  if(vertical>95)continue;
+  if(dx<best){best=dx;hit=z;}
+ }
+ if(hit){
+  const damage=selectedCharacter==='Yumi'?58:selectedCharacter==='May'?48:50;
+  hit.hp-=damage;hit.hit=.18;hit.flash=.14;hit.alert=1;spawnBlood(hit.x,GROUND-55);horror.shake=5;
+  setMessage(hit.hp>0?`HIT — ${Math.max(0,Math.ceil(hit.hp))} HP REMAINING`:'INFECTED DOWN',.45);
+  if(hit.hp<=0)killZombie(hit);
+ }else{spawnSpark(player.x+aimDir*420,GROUND-54);}
+}
+function melee(){
+ if(scene!=='play')return;
+ let struck=false;
+ for(const z of zombies){
+  if(z.dead)continue;
+  const dx=(z.x-player.x)*player.facing;
+  if(dx>=-15&&dx<105){
+   const damage=selectedCharacter==='May'?78:selectedCharacter==='Yumi'?62:68;
+   z.hp-=damage;z.hit=.22;z.flash=.18;z.alert=1;z.x+=player.facing*48;spawnBlood(z.x,GROUND-54);struck=true;
+   if(z.hp<=0)killZombie(z,true);
+  }
+ }
+ horror.shake=struck?7:3;tone(struck?110:85,.08,'square',.12,-30);
 }
 function reload(){if(state.reserveAmmo<=0||state.ammo>=12)return;const take=Math.min(12-state.ammo,state.reserveAmmo);state.reserveAmmo-=take;state.ammo+=take;soundReload();}
 function updateWorld(dt){
@@ -402,13 +468,19 @@ function updateWorld(dt){
 function updateIntro(dt){if(scene!=='intro')return;introTimer+=dt;if(introTimer>7.2)advanceIntro();}
 function updateMessage(dt){if(messageTimer<=0)return;messageTimer-=dt;if(messageTimer<=0)hide('message');}
 function updateFade(){if(!fadeBusy)return;}
-function updateHorror(dt){horror.shake=Math.max(0,horror.shake-dt*9);horror.flash=Math.max(0,horror.flash-dt*2.7);horror.glitch=Math.max(0,horror.glitch-dt*2.5);horror.warning=Math.max(0,horror.warning-dt);const w=document.getElementById('warningText');if(w&&horror.warning<=0)w.style.opacity='0';if(scene!=='play')return;scareTimer-=dt;const danger=1-state.sanity/100;if(scareTimer<=0){scareTimer=11+Math.random()*25;if(Math.random()<.22+danger*.18){triggerJumpscare();}else if(Math.random()<.55){showWarning(Math.random()<.5?'DID YOU HEAR THAT?':'LOOK AT THE WINDOW.');soundWhisper();}}
+function updateHorror(dt){horror.shake=Math.max(0,horror.shake-dt*9);horror.flash=Math.max(0,horror.flash-dt*2.7);horror.glitch=Math.max(0,horror.glitch-dt*2.5);horror.warning=Math.max(0,horror.warning-dt);const w=document.getElementById('warningText');if(w&&horror.warning<=0)w.style.opacity='0';if(scene!=='play')return;scareTimer-=dt;const danger=1-state.sanity/100;if(scareTimer<=0){scareTimer=6+Math.random()*16;if(Math.random()<.36+danger*.28){triggerJumpscare();}else if(Math.random()<.55){showWarning(Math.random()<.5?'DID YOU HEAR THAT?':'LOOK AT THE WINDOW.');soundWhisper();}}
  if(state.sanity<50&&Math.random()<dt*.012){showWarning(Math.random()<.5?'SOMEONE IS BEHIND YOU':'THE DOOR MOVED');horror.glitch=.5;soundWhisper();}
  if(cursorMoved&&totalTime-lastCursorMove>9&&Math.random()<dt*.02){showWarning('YOU MOVED THE CURSOR. I SAW IT.');cursorMoved=false;}
  if(tabAway&&Math.random()<dt*.03){showWarning('YOU LEFT THE ISLAND. SHE DID NOT.');soundWhisper();tabAway=false;}
  if(interior&&Math.random()<dt*.035){horror.blackout=.35;soundFlicker();setTimeout(()=>horror.blackout=0,220);}
 }
-function triggerJumpscare(){horror.flash=.9;horror.shake=22;horror.glitch=.8;showWarning('RUN',1);soundScare();const e=document.getElementById('scare');if(e){e.classList.add('show');setTimeout(()=>e.classList.remove('show'),650);}}
+function triggerJumpscare(kind='random'){
+ jumpscareVariant=kind==='stair'?3:Math.floor(Math.random()*4);
+ horror.flash=1.15;horror.shake=28;horror.glitch=1.25;state.sanity=Math.max(0,state.sanity-7);showWarning(jumpscareVariant===0?'DON’T TURN AROUND':jumpscareVariant===1?'HE IS IN THE CELL':jumpscareVariant===2?'RUN. RUN. RUN.':'THE STAIRS ARE NOT EMPTY',1.2);soundScare();
+ const e=document.getElementById('scare');
+ if(e){e.dataset.variant=String(jumpscareVariant);e.classList.add('show');setTimeout(()=>e.classList.remove('show'),850);}
+ setTimeout(()=>{if(scene==='play'&&Math.random()<.45){horror.blackout=.45;soundFlicker();}},300);
+}
 function updateSmiler(dt){if(scene!=='play'||interior)return;smiler.cooldown-=dt;if(smiler.active){smiler.timer-=dt;smiler.intensity=Math.min(1,smiler.intensity+dt*1.4);state.sanity=Math.max(0,state.sanity-dt*.2);if(smiler.timer<=0){smiler.active=false;smiler.intensity=0;smiler.cooldown=20+Math.random()*35;}}else if(smiler.cooldown<=0){const chance=.0025+(1-state.sanity/100)*.0035;if(Math.random()<dt*chance){smiler.active=true;smiler.timer=2.7+Math.random()*3.2;smiler.x=clamp(player.x+(Math.random()<.5?-1:1)*(430+Math.random()*520),100,WORLD[chapter]-100);soundScare();showWarning('THE SMILER IS WATCHING');}}}
 function updateParticles(dt){for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=p.g*dt;p.life-=dt;}particles=particles.filter(p=>p.life>0);}
 function spawnDust(x=player.x,y=GROUND){for(let i=0;i<8;i++)particles.push({x:x+(Math.random()-.5)*22,y:y-3,vx:(Math.random()-.5)*60,vy:-30-Math.random()*60,g:120,life:.25+Math.random()*.2,c:'#aaa89c',s:2+Math.random()*3});}
@@ -452,7 +524,7 @@ function drawBuildings(){if(chapter!=='SAN FRANCISCO')return;const bs=[{x:850,w:
 function drawStreetProps(){const lamps=chapter==='ALCATRAZ'?[1200,3300,4750,5900,7600,9300,10700,12100,13900,15350,16000]:[700,2100,3600,5200,6800,8400,9800];for(const wx of lamps){const x=wx-camera;if(x<-100||x>W+100)continue;px(x,GROUND-170,7,170,'#1b2324');px(x-12,GROUND-178,31,9,'#4b5452');const unstable=chapter==='ALCATRAZ'&&Math.abs(player.x-wx)<300&&state.sanity<65;const flick=unstable?Math.random():.9+.1*Math.sin(totalTime*2.2+wx);px(x-8,GROUND-190,22,12,'#252e2f');px(x-4,GROUND-191,14,5,flick>.52?'#ddc77f':'#675a44');if(flick>.28)glow(x+2,GROUND-182,86,'rgba(224,198,124,.08)','rgba(0,0,0,0)');}}
 function drawSigns(){if(chapter==='ALCATRAZ'){const s=[{x:3400,t:'DINING HALL →'},{x:5450,t:'HOSPITAL WING →'},{x:7250,t:'MODEL INDUSTRIES →'},{x:8950,t:'NEW INDUSTRIES →'},{x:15440,t:'LIGHTHOUSE / DOCK →'}];for(const a of s){const x=a.x-camera;if(x<-160||x>W+160)continue;px(x-95,GROUND-250,190,48,'#303a3b');px(x-89,GROUND-244,178,34,'#727c77');text(a.t,x,GROUND-219,10,'#f2e8cf','center');}}else{const s=[{x:2300,t:'HOSPITAL →'},{x:4400,t:'FUNERAL HOME →'},{x:6400,t:'OLD HOTEL →'},{x:8500,t:'SHELTER →'}];for(const a of s){const x=a.x-camera;if(x<-160||x>W+160)continue;px(x-85,GROUND-235,170,42,'#303a3b');px(x-79,GROUND-229,158,30,'#717a75');text(a.t,x,GROUND-209,10,'#f2e8cf','center');}}}
 function drawDock(){if(chapter!=='ALCATRAZ')return;const x=21700-camera;px(x-170,GROUND-31,340,31,'#4f5b58');for(let i=0;i<7;i++)px(x-148+i*48,GROUND-37,32,7,'#7a7f76');px(x-33,GROUND-158,66,126,'#252d2f');px(x-43,GROUND-171,86,13,'#707771');const bc=state.beacon?'#f3d27e':'#5d513a';px(x-20,GROUND-196,40,22,bc);glow(x,GROUND-188,125,state.beacon?'rgba(239,204,121,.2)':'rgba(150,130,82,.05)','rgba(0,0,0,0)');px(x-123,GROUND-69,246,7,'#1d2324');px(x-117,GROUND-90,234,24,'#455252');px(x-94,GROUND-116,188,22,'#5a6666');px(x-54,GROUND-139,108,20,'#657171');text('FERRY',x,GROUND-153,13,'#eee4c6','center');text(state.beacon?'BOARD':state.radioSignal?'SIGNAL READY':'BEACON',x,GROUND-214,10,'#d8ca9e','center');}
-function drawInterior(){if(!interior)return;const b=interior.building;const type=interior.type;const wall={cell:'#464d4c',cellcorridor:'#353e40',medical:'#536567',industry:'#4e514c',dining:'#5f5b50',guard:'#4c5657',power:'#4a5353',dock:'#565d59',police:'#4c5d61',hospital:'#607375',funeral:'#5d555f',hotel:'#686e69',shelter:'#5e706a',research:'#5c6b74'}[type]||'#4d5858';px(0,0,W,GROUND-40,wall);px(0,GROUND-40,W,40,'#2b3030');for(let y=80;y<GROUND-55;y+=36){for(let x=0;x<W;x+=60){px(x+(y%90),y,34,3,'rgba(255,255,255,.08)');if((x+y)%180===0)px(x+16,y+8,3,3,'#919187');}}
+function drawInterior(){if(!interior)return;const b=interior.building;const type=interior.type;const baseWall={cell:'#464d4c',cellcorridor:'#353e40',medical:'#536567',industry:'#4e514c',dining:'#5f5b50',guard:'#4c5657',power:'#4a5353',dock:'#565d59',police:'#4c5d61',hospital:'#607375',funeral:'#5d555f',hotel:'#686e69',shelter:'#5e706a',research:'#5c6b74'}[type]||'#4d5858';const floorShade=['','#000000','#061010','#020607'][interior.floor||1];const wall=interior.floor===1?baseWall:(interior.floor===2?'#354143':'#242d2f');px(0,0,W,GROUND-40,wall);px(0,GROUND-40,W,40,'#2b3030');for(let y=80;y<GROUND-55;y+=36){for(let x=0;x<W;x+=60){px(x+(y%90),y,34,3,'rgba(255,255,255,.08)');if((x+y)%180===0)px(x+16,y+8,3,3,'#919187');}}
  px(22,420,150,115,'#222b2b');px(36,434,122,83,'#101817');text('EXIT',97,485,13,'#efe5cf','center');px(W-172,420,150,115,'#222b2b');px(W-158,434,122,83,'#101817');text('EXIT',W-97,485,13,'#efe5cf','center');
  if(type==='cell'){drawCellInterior();}
  else if(type==='cellcorridor'){drawCellCorridor();}
@@ -470,7 +542,40 @@ function drawPlayer(){const x=player.x-camera,y=player.y;const moving=player.onG
  const gun=player.facing>0?28:-48;px(gun,-1,22,6,'#202a2c');px(player.facing>0?44:-44,2,8,3,'#68746f');if(player.recoil>0)px(player.facing>0?48:-60,-3,11,5,'#ffe08b');if(jumpPose){px(-20,42,13,5,'#6b736e');px(7,40,13,5,'#6b736e');}
  ctx.restore();}
 function drawSurvivors(){if(chapter!=='SAN FRANCISCO')return;for(const s of survivors){if(s.found)continue;const x=s.x-camera;if(x<-100||x>W+100)continue;const phase=totalTime*3+s.x*.01;const sw=Math.sin(phase)*5;px(x-13,GROUND-30,10,30,'#252b2b');px(x+4,GROUND-30,10,30,'#252b2b');px(x-18,GROUND-59,37,31,s.name==='MARA'?'#76594c':s.name==='ELI'?'#536f7c':'#6a6b60');px(x-11,GROUND-80,24,25,'#cda890');px(x-15,GROUND-91,31,13,s.name==='NOAH'?'#403b35':'#2d2826');px(x-23-sw,GROUND-50,8,24,'#5d675f');px(x+17+sw,GROUND-50,8,24,'#5d675f');text(s.name,x,GROUND-105,11,'#f5e4c3','center');if(Math.abs(player.x-s.x)<125)text('E • TALK',x,GROUND-122,10,'#f0d59e','center');}}
-function drawZombies(){for(const z of zombies){if(z.dead)continue;const x=z.x-camera;if(x<-130||x>W+130)continue;const phase=totalTime*(z.type==='runner'?7:z.type==='brute'?2.5:3.7)+z.phase;const a=Math.sin(phase),b=Math.sin(phase+1.5);const bob=Math.sin(phase*.8)*2;const body=z.type==='brute'?'#60474d':z.type==='runner'?'#76524d':'#53615f';const skin='#7b635a';ctx.save();ctx.translate(0,bob);const sc=z.type==='brute'?1.15:1;ctx.scale(sc,1);px(x-16+a*2,GROUND-67,32,50,body);px(x-13,GROUND-94,26,29,skin);px(x-10,GROUND-89,20,20,body);px(x-28-b*5,GROUND-55,9,30,body);px(x+19+a*5,GROUND-55,9,30,body);px(x-15-b*3,GROUND-17,11,17,'#1b1f20');px(x+5+a*3,GROUND-17,11,17,'#1b1f20');px(x-8,GROUND-84,4,4,'#e96a59');px(x+5,GROUND-84,4,4,'#e96a59');px(x-5,GROUND-72,12,3,'#251b1b');if(z.type==='brute'){px(x-24,GROUND-103,48,7,'#394340');px(x-33,GROUND-50,9,14,'#715052');px(x+24,GROUND-50,9,14,'#715052');}ctx.restore();if(Math.abs(player.x-z.x)<95&&Math.abs(player.x-z.x)>45)showWarning('THE INFECTED HEARD YOU',.55);}}
+function drawZombies(){
+ for(const z of zombies){
+  const x=z.x-camera;
+  if(x<-150||x>W+150)continue;
+  const phase=totalTime*(z.type==='runner'?9:z.type==='brute'?2.3:z.type==='stalker'?4.8:4.2)+z.phase;
+  const a=Math.sin(phase),b=Math.sin(phase+1.7),step=Math.sin(phase*1.7);
+  if(z.dead){
+   ctx.save();ctx.globalAlpha=.92*clamp(z.deathTimer/1.8,.35,1);ctx.translate(x,GROUND-6);ctx.rotate(-.12+Math.sin(z.phase)*.03);
+   px(-35,0,72,12,'#22282a');px(-19,-11,38,13,'#53615f');px(-48,-2,18,7,'#53615f');px(31,-2,18,7,'#53615f');px(-10,-17,8,6,'#8a6c61');px(9,-17,8,6,'#8a6c61');
+   ctx.restore();continue;
+  }
+  const body=z.type==='brute'?'#60474d':z.type==='runner'?'#76524d':z.type==='stalker'?'#454e58':'#53615f';
+  const skin=z.type==='stalker'?'#a28a82':'#7b635a';
+  const bob=Math.sin(phase*.8)*2;
+  ctx.save();ctx.translate(0,bob);if(z.flash>0)ctx.globalAlpha=.82;const sc=z.type==='brute'?1.18:1;ctx.scale(sc,1);
+  // legs with walking cycle
+  px(x-15+step*4,GROUND-18,11,18,'#1b1f20');px(x+4-step*4,GROUND-18,11,18,'#1b1f20');
+  px(x-18+step*4,GROUND-2,18,6,'#111516');px(x+1-step*4,GROUND-2,18,6,'#111516');
+  // torso, torn highlights, rib pixels
+  px(x-17,GROUND-68,34,51,body);px(x-12,GROUND-61,6,27,'#69746e');px(x+5,GROUND-57,5,20,'#313a3b');
+  if(z.type==='brute'){px(x-24,GROUND-60,9,34,'#715052');px(x+16,GROUND-60,11,34,'#715052');px(x-29,GROUND-27,12,9,'#815b5c');px(x+19,GROUND-27,13,9,'#815b5c');}
+  // head / jaw / eyes
+  px(x-14,GROUND-96,28,29,skin);px(x-17,GROUND-99,34,8,'#252a2b');px(x-11,GROUND-81,22,9,'#4a3435');px(x-8,GROUND-83,5,4,'#e96a59');px(x+5,GROUND-83,5,4,'#e96a59');px(x-5,GROUND-72,14,3,'#171819');
+  // arms swing
+  px(x-29-b*5,GROUND-57,9,31,body);px(x+20+a*5,GROUND-57,9,31,body);px(x-31-b*5,GROUND-28,10,8,skin);px(x+20+a*5,GROUND-28,10,8,skin);
+  if(z.type==='stalker'){px(x-24,GROUND-106,48,5,'#1e2529');px(x-20,GROUND-101,7,8,'#d2c5ad');px(x+13,GROUND-101,7,8,'#d2c5ad');}
+  if(z.type==='runner'){px(x+10,GROUND-112,4,15,'#9a4d4d');px(x+14,GROUND-105,3,8,'#c05b55');}
+  if(z.hit>0){ctx.globalAlpha=.3;px(x-27,GROUND-104,54,108,'#f2e6c9');}
+  ctx.restore();
+  // health bar makes damage readable
+  if(z.hp<z.maxHp){const pct=clamp(z.hp/z.maxHp,0,1);px(x-25,GROUND-124,50,4,'#151919');px(x-24,GROUND-123,48*pct,2,pct>.45?'#9c7c59':'#a54848');}
+  if(Math.abs(player.x-z.x)<105&&Math.abs(player.x-z.x)>45)showWarning(z.type==='stalker'?'THE STALKER IS WATCHING YOU':'THE INFECTED HEARD YOU',.45);
+ }
+}
 function drawSmiler(){if(!smiler.active||interior)return;const x=smiler.x-camera;if(x<-250||x>W+250)return;const alpha=clamp(smiler.intensity,0,1);const h=338+Math.sin(totalTime)*8;ctx.save();ctx.globalAlpha=.98*alpha;px(x-30,GROUND-h,60,h,'#020303');px(x-45,GROUND-h-55,90,66,'#010202');px(x-22,GROUND-h-33,12,8,'#f2ead9');px(x+10,GROUND-h-33,12,8,'#f2ead9');px(x-13,GROUND-h-9,26,4,'#f3e8da');for(let i=0;i<8;i++)px(x-16+i*4,GROUND-h+1,3,4,'#cfc6b7');px(x-49,GROUND-h+34,12,160,'#010202');px(x+37,GROUND-h+34,12,160,'#010202');ctx.restore();}
 function drawFootprints(){if(interior)return;for(const f of footprints){const x=f.x-camera;if(x>-20&&x<W+20){ctx.globalAlpha=clamp(1-(totalTime-f.f)*.035,.05,.45);px(x,GROUND-7,10,3,'#a7adaa');px(x+14,GROUND-8,8,2,'#8e9892');}}ctx.globalAlpha=1;}
 function drawParticles(){for(const p of particles){const x=p.x-camera;if(x<-20||x>W+20)continue;ctx.globalAlpha=clamp(p.life/.5,0,1);px(x,p.y,p.s,p.s,p.c);}ctx.globalAlpha=1;}
@@ -587,8 +692,25 @@ function drawPlayerShadowInterior(){
  const x=player.x+19;
  ctx.save();ctx.globalAlpha=.22;ctx.fillStyle='#090b0b';ctx.beginPath();ctx.ellipse(x,GROUND+1,27,7,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
+function drawStairwell(){
+ const leftX=235,rightX=925;
+ const floor=interior.floor||1;
+ // heavy concrete stair structures on both sides
+ px(leftX-55,260,150,260,'#252e2e');px(leftX-40,275,120,245,'#46514f');
+ for(let i=0;i<9;i++){px(leftX-28+i*14,490-i*20,62,8,'#78807a');px(leftX-28+i*14,498-i*20,62,4,'#303736');}
+ px(rightX-55,260,150,260,'#252e2e');px(rightX-40,275,120,245,'#46514f');
+ for(let i=0;i<9;i++){px(rightX-34-i*14,490-i*20,62,8,'#78807a');px(rightX-34-i*14,498-i*20,62,4,'#303736');}
+ text(`STAIRS • FLOOR ${floor}/${interior.floors}`,700,128,12,'#d9d0b8','center');
+ text(floor<interior.floors?'E  •  CLIMB UP':'E  •  DESCEND',leftX+20,532,10,'#eee2c5','center');
+ if(floor>1)text('E  •  DESCEND',rightX+10,532,10,'#eee2c5','center');
+ // flickering stairwell lights
+ const flick=.6+.4*Math.sin(totalTime*8.2+floor);
+ glow(leftX+20,245,70,`rgba(226,205,157,${.055*flick})`,'rgba(0,0,0,0)');
+ glow(rightX+20,245,70,`rgba(226,205,157,${.045*flick})`,'rgba(0,0,0,0)');
+}
 function drawInteriorDecor(){
  if(!interior)return;
+ if(interior.floors>1){drawStairwell();}
  for(let i=0;i<14;i++){
   const x=32+i*101;
   const y=362+(i%3)*30;
@@ -699,7 +821,7 @@ function drawAlcatrazInfrastructure(){
  }
 }
 
-function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawPlayerShadowInterior();drawPlayer();}drawParticles();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
+function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawPlayerShadowInterior();drawPlayer();}drawParticles();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
 function drawPlayerInterior(){const x=player.x-camera,y=player.y;if(x<0||x>W)return;drawPlayer();}
 function drawHudWorld(){if(chapter==='ALCATRAZ'&&scene==='play'&&!interior){const near=landmarkData.reduce((a,b)=>Math.abs(b.x-player.x)<Math.abs(a.x-player.x)?b:a,landmarkData[0]);const d=Math.max(10,Math.round(Math.abs(near.x-player.x)/10)*10);const dir=near.x>=player.x?'→':'←';px(460,744,480,26,'rgba(4,7,7,.72)');text(`${dir} ${near.name} • ${d} m`,700,763,10,'#e8dfc9','center');}}
 
@@ -718,8 +840,8 @@ function renderMapStrip(){
  });
 }
 
-function renderHUD(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?interior.name:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.sanity<45?'YOU FEEL WATCHED':state.sanity<70?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
-function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(interior.id==='cellA17'){if(!state.startKey&&Math.abs(player.x-330)<115)t='E  /  USE  — SEARCH MATTRESS';else if(state.startKey&&Math.abs(player.x-650)<125)t='E  /  USE  — UNLOCK CELL';else if(player.x<170||player.x>1010)t=state.startEscaped?'E  /  USE  — ENTER CELL BLOCK A CORRIDOR':'THE CELL DOOR IS LOCKED';}else if(interior.id==='cellCorridor'){if(player.x<170||player.x>1010)t='E  /  USE  — EXIT CELL BLOCK A';else {const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';}}else if(player.x<170||player.x>1010)t='E  /  USE  — EXIT TO STREET';else{const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';if(interior.type==='medical'&&!state.dockPass&&Math.abs(player.x-800)<140)t='E  /  USE  — OPEN DOCK PASS CHEST';}}
+function renderHUD(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?`${interior.name} • FLOOR ${interior.floor||1}/${interior.floors||1}`:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.sanity<45?'YOU FEEL WATCHED':state.sanity<70?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
+function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(interior.floors>1&&((Math.abs(player.x-245)<105)||(Math.abs(player.x-935)<105))){t=`E  /  USE  — ${player.x<590?'STAIRWELL':'STAIRWELL'} • FLOOR ${interior.floor}/${interior.floors}`;} else if(interior.id==='cellA17'){if(!state.startKey&&Math.abs(player.x-330)<115)t='E  /  USE  — SEARCH MATTRESS';else if(state.startKey&&Math.abs(player.x-650)<125)t='E  /  USE  — UNLOCK CELL';else if(player.x<170||player.x>1010)t=state.startEscaped?'E  /  USE  — ENTER CELL BLOCK A CORRIDOR':'THE CELL DOOR IS LOCKED';}else if(interior.id==='cellCorridor'){if(player.x<170||player.x>1010)t='E  /  USE  — EXIT CELL BLOCK A';else {const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';}}else if(player.x<170||player.x>1010)t='E  /  USE  — EXIT TO STREET';else{const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';if(interior.type==='medical'&&!state.dockPass&&Math.abs(player.x-800)<140)t='E  /  USE  — OPEN DOCK PASS CHEST';}}
  else if(chapter==='ALCATRAZ'){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(Math.abs(player.x-16040)<260)t=state.dockPass?(state.beacon?'E  /  USE  — BOARD FERRY':'E  /  USE  — LIGHT FERRY BEACON'):'DOCK PASS REQUIRED';}
  else{let got=false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){t=`E  /  USE  — TALK TO ${s.name}`;got=true;break;}}if(!got){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(state.survivors>=2&&Math.abs(player.x-3200)<420)t='E  /  USE  — ENTER EMERGENCY SHELTER';}}
 e.textContent=t;}
