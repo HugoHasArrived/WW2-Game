@@ -179,7 +179,7 @@ h1{margin:0;text-align:center;letter-spacing:6px;font-size:40px;color:#efe9db;te
 <canvas id="world" width="1400" height="788"></canvas>
 <div id="mainMenu" class="layer menu">
 <div class="menuBackdrop"><div class="menuMoon"></div><div class="menuOcean"></div><div class="menuIsland"></div><div class="menuPrison"></div><div class="menuTower"></div><div class="menuFog"></div><div class="menuFog two"></div><div class="menuRain"></div><div class="menuVignette"></div><div class="menuNoise"></div></div>
-<div class="menuContent"><div class="menuKicker">NIGHTWATCH // ALCATRAZ ESCAPE PROTOCOL</div><div class="menuLogo">ESCAPE ALCATRAZ</div><div class="menuTag">NIGHTFALL • ALCATRAZ ISLAND • ESCAPE PROTOCOL</div><div class="menuLore">You wake inside Cell A-17 after the last emergency broadcast dies. The prison is dark, the sea is violent, and something is moving through the cell blocks. Reach the dock before dawn — but first restore power, find the ferry pass, and survive the island.</div><div class="menuButtons"><button id="playButton" class="menuPlay">PLAY</button><button id="creditsButton">CREDITS</button><button id="controlsButton">CONTROL MODE</button></div><div class="menuThreat">HEADPHONES RECOMMENDED • SOME SOUNDS AREN'T AMBIENCE • NIGHT MODE ACTIVE</div><div class="menuFooter">JULIA • MAY • YUMI • LARGE 2D ALCATRAZ RECONSTRUCTION • SURVIVAL HORROR</div><div class="menuSignal">SIGNAL // <b>UNSTABLE</b></div></div>
+<div class="menuContent"><div class="menuKicker">NIGHTWATCH // ALCATRAZ ESCAPE PROTOCOL</div><div class="menuLogo">ESCAPE ALCATRAZ</div><div class="menuTag">NIGHTFALL • ALCATRAZ ISLAND • ESCAPE PROTOCOL</div><div class="menuLore">You wake inside Cell A-17 after the last emergency broadcast dies. The prison is dark, the sea is violent, and something is moving through the cell blocks. Reach the dock before dawn — but first restore power, find the ferry pass, and survive the island.</div><div class="menuButtons"><button id="playButton" class="menuPlay">PLAY</button><button id="creditsButton">CREDITS</button><button id="controlsButton">CONTROL MODE</button></div><div class="menuThreat">HEADPHONES RECOMMENDED • SOME SOUNDS AREN'T AMBIENCE • NIGHT MODE ACTIVE</div><div class="menuThreat" style="color:#b9a77b">DYNAMIC THREAT DIRECTOR • LIMITED LIGHT • NO SAFE ROOM • 3 FLOORS OF HELL</div><div class="menuFooter">JULIA • MAY • YUMI • LARGE 2D ALCATRAZ RECONSTRUCTION • SURVIVAL HORROR</div><div class="menuSignal">SIGNAL // <b>UNSTABLE</b></div></div>
 </div>
 <div id="characterMenu" class="layer screen hidden"><div class="charSelectBox"><div class="charSelectTitle">CHOOSE YOUR DETECTIVE</div><div class="charSelectSub">No portraits. Choose by profile. Your detective changes visual styling and small gameplay bonuses.</div><div class="charCards"><button class="charCard" data-character="Julia"><span class="name">JULIA</span><span class="meta">FIELD DETECTIVE<br>Balanced health and stamina<br>Calm under pressure</span><span class="skill">BALANCED</span></button><button class="charCard" data-character="May"><span class="name">MAY</span><span class="meta">CRIME SCENE DETECTIVE<br>Faster movement and searching<br>Quick investigation</span><span class="skill">AGILITY</span></button><button class="charCard" data-character="Yumi"><span class="name">YUMI</span><span class="meta">INTELLIGENCE DETECTIVE<br>Steady aim and stronger sanity<br>Technical problem solver</span><span class="skill">TECHNICAL</span></button></div><div class="center" style="margin-top:18px"><button id="characterBack">BACK</button><button id="characterControls">CONTROL MODE</button></div></div></div>
 <div id="credits" class="layer screen hidden"><div class="creditsBox"><h1>CREDITS</h1><p class="creditsName">Mayumi Alingarog (Yumi, Mimi, Yumimi)</p><p class="creditsQuote">“A wonderful classmate and developer who is very helpful, kind, respectful, creative, and encouraging.”</p><p>Thank you, Mayumi, for inspiring me to join Scream Jam 2026 and for showing me that making a game can be scary, stressful, funny, and genuinely fun.</p><p>This game is inspired by the spirit of small side-scrolling horror jam games, including the feeling of getting trapped somewhere and slowly learning how to escape.</p><button id="creditsBack">BACK</button></div></div>
@@ -206,7 +206,7 @@ const touch={left:false,right:false,run:false,jump:false};
 const mouse={x:W/2,y:H/2,down:false};
 const inputState={left:false,right:false,run:false,jump:false};
 const player={x:0,y:0,w:38,h:76,vx:0,vy:0,facing:1,onGround:true,coyote:0,jumpBuffer:0,jumps:2,anim:0,stepTimer:0,landTimer:0,recoil:0,flashStep:0,lean:0,air:0};
-const state={health:100,maxHealth:100,stamina:100,maxStamina:100,sanity:100,ammo:12,reserveAmmo:48,grenades:3,light:true,battery:100,startKey:false,startEscaped:false,dockPass:false,powerRestored:false,radioSignal:false,beacon:false,boatEscaped:false,survivors:0,alarm:false,finalChase:false,inventory:{bandage:2,food:2,scrap:3,ammo_9mm:48,key:0,dockPass:0,fuse:0,radioPart:0}};
+const state={health:100,maxHealth:100,stamina:100,maxStamina:100,sanity:100,ammo:10,reserveAmmo:36,grenades:2,light:true,battery:100,startKey:false,startEscaped:false,dockPass:false,powerRestored:false,radioSignal:false,beacon:false,boatEscaped:false,survivors:0,alarm:false,finalChase:false,inventory:{bandage:2,food:2,scrap:3,ammo_9mm:48,key:0,dockPass:0,fuse:0,radioPart:0}};
 let scene='menu';
 let chapter='ALCATRAZ';
 let selectedCharacter='Julia';
@@ -229,6 +229,7 @@ let chestData=[];
 let survivors=[];
 let zombies=[];
 let interiorZombies=[];
+let difficulty=1;let threatLevel=0;let encounterTimer=18;let totalKills=0;let lastDamageTime=0;let lowHealthWarned=false;
 let particles=[];
 let footprints=[];
 let rainDrops=[];
@@ -296,11 +297,11 @@ function showOnly(id){['mainMenu','characterMenu','credits','controlsOverlay','h
 function setMessage(t,d=2){const e=document.getElementById('message');if(!e)return;e.textContent=t;e.classList.remove('hidden');messageTimer=d;}
 function showWarning(t,d=2.3){const e=document.getElementById('warningText');if(!e)return;e.textContent=t;e.style.opacity='1';horror.warning=d;}
 function resetWorld(){
- state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=12;state.reserveAmmo=48;state.grenades=3;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.powerRestored=false;state.radioSignal=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.alarm=false;state.finalChase=false;state.inventory={bandage:2,food:2,scrap:3,ammo_9mm:48,key:0,dockPass:0,fuse:0,radioPart:0};chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=210;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
+ state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=10;state.reserveAmmo=36;state.grenades=2;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.powerRestored=false;state.radioSignal=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.alarm=false;state.finalChase=false;state.inventory={bandage:1,food:1,scrap:2,ammo_9mm:36,key:0,dockPass:0,fuse:0,radioPart:0};chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;difficulty=1;threatLevel=0;encounterTimer=14;totalKills=0;lastDamageTime=0;lowHealthWarned=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=210;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
 }
 function buildAlcatrazPopulation(){
  zombies=[];
- for(let i=0;i<52;i++){
+ for(let i=0;i<68;i++){
   const x=1250+i*392+(i%5)*73;
   const type=i%13===0?'brute':i%7===0?'stalker':i%4===0?'runner':'walker';
   zombies.push({x,type,hp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,maxHp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,dead:false,deathTimer:0,phase:i*.61,attack:0,hit:0,alert:0,flash:0,limb:Math.random()*6.28});
@@ -319,7 +320,7 @@ function buildSFPopulation(){
   {id:'noah',name:'NOAH',x:8600,found:false,talked:false,building:'HARBOR WAREHOUSE'}
  ];
  zombies=[];
- for(let i=0;i<28;i++)zombies.push({x:600+i*370+(i%5)*42,type:i%8===0?'brute':i%4===0?'runner':'walker',hp:i%8===0?180:i%4===0?90:65,maxHp:i%8===0?180:i%4===0?90:65,dead:false,deathTimer:0,phase:i*.51,attack:0,hit:0,flash:0,limb:Math.random()*6.28});
+ for(let i=0;i<38;i++)zombies.push({x:600+i*370+(i%5)*42,type:i%8===0?'brute':i%4===0?'runner':'walker',hp:i%8===0?180:i%4===0?90:65,maxHp:i%8===0?180:i%4===0?90:65,dead:false,deathTimer:0,phase:i*.51,attack:0,hit:0,flash:0,limb:Math.random()*6.28});
 }
 function beginGame(name){selectedCharacter=name;resetWorld();startSoundscape();introIndex=0;introTimer=0;scene='intro';show('cutscene');hide('characterMenu');hide('mainMenu');updateIntroText();}
 function positionInsideCell(){interior={id:'cellA17',name:'CELL A-17',type:'cell',building:{name:'CELLHOUSE',w:1060,x:370,floors:3},floor:1,floors:3,stairCooldown:0,topDown:true};interiorPhase=0;player.x=310;player.y=400;player.vx=0;player.vy=0;player.onGround=true;interiorZombies=[];}
@@ -401,7 +402,7 @@ function interactAlcatrazSpecial(){
 function nearestBuilding(){let best=null,d=9999;for(const b of landmarkData){if(b.name==='CELLHOUSE'||b.name==='RECREATION YARD'||b.name==='MAIN DOCK')continue;const dd=Math.abs(player.x-b.x);if(dd<d&&dd<180){d=dd;best=b;}}return best;}
 function spawnInteriorThreats(){
  interiorZombies=[];
- const count=interior.type==='cellcorridor'?8:6;
+ const count=interior.type==='cellcorridor'?11:9;
  for(let i=0;i<count;i++){
   interiorZombies.push({x:170+(i*173)%1080,y:155+(i*97)%430,hp:i%4===0?120:65,type:i%5===0?'stalker':i%3===0?'runner':'walker',attack:0,phase:i*.8,dead:false,deathTimer:0});
  }
@@ -410,7 +411,7 @@ function updateInteriorZombies(dt){
  if(!interior)return;
  for(const z of interiorZombies){if(z.dead){z.deathTimer=Math.max(0,z.deathTimer-dt);continue;}z.attack=Math.max(0,z.attack-dt);
   const dx=player.x-z.x,dy=player.y-z.y,d=Math.hypot(dx,dy);
-  if(d<650){const sp=z.type==='runner'?118:z.type==='stalker'?92:64; if(d>32){z.x+=dx/Math.max(d,1)*sp*dt;z.y+=dy/Math.max(d,1)*sp*dt;}else if(z.attack<=0){damagePlayer(z.type==='stalker'?15:z.type==='runner'?13:10);z.attack=z.type==='runner'?.55:.9;horror.shake=10;}}
+  if(d<650){const sp=z.type==='runner'?142:z.type==='stalker'?108:76; if(d>32){z.x+=dx/Math.max(d,1)*sp*dt;z.y+=dy/Math.max(d,1)*sp*dt;}else if(z.attack<=0){damagePlayer(z.type==='stalker'?15:z.type==='runner'?13:10);z.attack=z.type==='runner'?.55:.9;horror.shake=10;}}
   z.x=clamp(z.x,60,1340);z.y=clamp(z.y,105,650);
  }
 }
@@ -432,7 +433,7 @@ function movementStep(dt){
   player.vx=lerp(player.vx,(dx/mag)*base,1-Math.exp(-14*dt)); player.vy=lerp(player.vy,(dy/mag)*base,1-Math.exp(-14*dt));
   player.x=clamp(player.x+player.vx*dt,45,1355); player.y=clamp(player.y+player.vy*dt,92,680);
   if(dx||dy)player.facing=dx<0?-1:dx>0?1:player.facing;
-  if(inputState.run&&(dx||dy))state.stamina=Math.max(0,state.stamina-dt*24);else state.stamina=Math.min(100,state.stamina+dt*15);
+  if(inputState.run&&(dx||dy))state.stamina=Math.max(0,state.stamina-dt*31);else state.stamina=Math.min(100,state.stamina+dt*13);
   player.anim+=dt*(Math.hypot(player.vx,player.vy)/70+.4); player.recoil=Math.max(0,player.recoil-dt*8);
   if(Math.hypot(player.vx,player.vy)>55){footstepsTimer-=dt;if(footstepsTimer<=0){footstepsTimer=inputState.run?.22:.34;soundStep();}}
   updateInteriorZombies(dt); return;
@@ -456,7 +457,7 @@ function movementStep(dt){
  player.anim+=dt*(Math.abs(player.vx)/80+.2);player.lean=lerp(player.lean,dir*.035,1-Math.exp(-8*dt));player.recoil=Math.max(0,player.recoil-dt*8);player.landTimer=Math.max(0,player.landTimer-dt);player.air+=dt;
  footstepsTimer-=dt;if(player.onGround&&Math.abs(player.vx)>45&&footstepsTimer<=0){footstepsTimer=inputState.run?.25:.37;soundStep();footprints.push({x:player.x,f:totalTime});if(footprints.length>80)footprints.shift();}
 }
-function damagePlayer(a){state.health-=a;horror.shake=8;state.sanity=Math.max(0,state.sanity-2);if(state.health<=0){state.health=0;scene='death';show('death');document.getElementById('deathText').textContent='The island kept you. This was not the last attempt.';soundScare();}}
+function damagePlayer(a){if(totalTime-lastDamageTime<0.38)return;lastDamageTime=totalTime;state.health-=a;horror.shake=10;horror.flash=.18;state.sanity=Math.max(0,state.sanity-3.5);if(state.health<=0){state.health=0;scene='death';show('death');document.getElementById('deathText').textContent='The island kept you. This was not the last attempt.';soundScare();}}
 function updateZombies(dt){
  for(const z of zombies){
   if(z.dead){z.deathTimer=Math.max(0,z.deathTimer-dt);continue;}
@@ -472,8 +473,8 @@ function updateZombies(dt){
     if(z.alert>.65)sp*=1.22;
     z.x+=Math.sign(dx)*sp*dt;
    }else if(z.attack<=0){
-    damagePlayer(z.type==='brute'?18:z.type==='stalker'?12:z.type==='runner'?10:8);
-    z.attack=z.type==='runner'?.62:z.type==='stalker'?.82:1.08;
+    damagePlayer(z.type==='brute'?24:z.type==='stalker'?17:z.type==='runner'?14:11);
+    z.attack=z.type==='runner'?.52:z.type==='stalker'?.72:.92;
     if(z.type==='stalker'){horror.glitch=.55;showWarning('THE STALKER IS TOO CLOSE',.45);}
    }
   }
@@ -484,7 +485,7 @@ function killZombie(z,force=false){
  if(!z||z.dead)return;
  z.hp=0;z.dead=true;z.deathTimer=1.8;z.flash=.3;z.vx=0;z.alert=0;
  spawnBlood(z.x,GROUND-58);spawnBlood(z.x+(Math.random()-.5)*22,GROUND-45);horror.shake=Math.max(horror.shake,4);
- state.sanity=Math.min(100,state.sanity+2);
+ state.sanity=Math.min(100,state.sanity+1.5);totalKills++;
  tone(force?95:70,.12,'sawtooth',.16,-35);noiseBurst(.09,.09);
 }
 function shoot(){
@@ -528,10 +529,36 @@ function melee(){
  horror.shake=struck?7:3;tone(struck?110:85,.08,'square',.12,-30);
 }
 function reload(){if(state.reserveAmmo<=0||state.ammo>=12)return;const take=Math.min(12-state.ammo,state.reserveAmmo);state.reserveAmmo-=take;state.ammo+=take;soundReload();}
+function updateDifficultyDirector(dt){
+ if(scene!=='play')return;
+ const progress=chapter==='ALCATRAZ'?clamp(player.x/WORLD.ALCATRAZ,0,1):clamp(player.x/WORLD.SF,0,1);
+ const survivalPressure=(100-state.health)/100;
+ difficulty=1+progress*.9+(state.alarm?0.45:0)+(state.finalChase?0.85:0)+survivalPressure*.35;
+ threatLevel=clamp((difficulty-1)*100,0,100);
+ encounterTimer-=dt;
+ if(state.light&&state.battery>0){state.battery=Math.max(0,state.battery-dt*(interior?0.8:0.34));}
+ if(state.battery<=0&&state.light){state.light=false;showWarning('FLASHLIGHT BATTERY DEAD',2);soundFlicker();}
+ if(state.health<28&&!lowHealthWarned){lowHealthWarned=true;showWarning('CRITICAL CONDITION — FIND COVER',2.2);}
+ if(state.health>45)lowHealthWarned=false;
+ if(encounterTimer<=0&&!interior&&!state.boatEscaped){
+   encounterTimer=Math.max(6,17-difficulty*4)+Math.random()*8;
+   const active=zombies.filter(z=>!z.dead).length;
+   if(active<70){
+    const side=player.x>WORLD[chapter]/2?-1:1;
+    const spawnX=clamp(player.x+side*(520+Math.random()*500),140,WORLD[chapter]-140);
+    const roll=Math.random();
+    const type=roll<.10?'brute':roll<.28?'stalker':roll<.52?'runner':'walker';
+    const hp=type==='brute'?230:type==='stalker'?110:type==='runner'?95:70;
+    zombies.push({x:spawnX,type,hp,maxHp:hp,dead:false,deathTimer:0,phase:Math.random()*6.28,attack:0,hit:0,alert:1,flash:0,limb:Math.random()*6.28});
+    showWarning(type==='stalker'?'A SHADOW MOVED BEHIND YOU':type==='runner'?'FOOTSTEPS — FAST':'MORE INFECTED ARE COMING',1.2);
+   }
+ }
+ if(state.sanity<35 && Math.random()<dt*.025){triggerJumpscare('whisper');}
+}
 function updateWorld(dt){
  totalTime+=dt;
  if(scene==='play'){
-  movementStep(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateParticles(dt);updateAlcatrazProgression();if(chapter==='ALCATRAZ'&&!interior&&player.x>7000&&state.sanity<80)state.sanity=Math.max(0,state.sanity-dt*.42);if(state.finalChase&&chapter==='ALCATRAZ')state.sanity=Math.max(0,state.sanity-dt*.32);if(interior&&interior.topDown&&scene==='play'&&Math.random()<dt*.025&&state.sanity<60)triggerJumpscare('room');
+  movementStep(dt);updateDifficultyDirector(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateParticles(dt);updateAlcatrazProgression();if(chapter==='ALCATRAZ'&&!interior&&player.x>7000&&state.sanity<80)state.sanity=Math.max(0,state.sanity-dt*.42);if(state.finalChase&&chapter==='ALCATRAZ')state.sanity=Math.max(0,state.sanity-dt*.32);if(interior&&interior.topDown&&scene==='play'&&Math.random()<dt*.025&&state.sanity<60)triggerJumpscare('room');
  }
  updateMessage(dt);updateIntro(dt);updateFade(dt);renderHUD();
 }
@@ -605,6 +632,9 @@ function drawInterior(){
  // perimeter walls and doors
  px(0,0,W,78,'#171d1e');px(0,0,28,H,'#14191a');px(W-28,0,28,H,'#14191a');px(0,H-55,W,55,'#14191a');
  px(42,86,1316,5,'#66706c');px(42,682,1316,5,'#5a625f');
+ // deep perspective bands and floor stains
+ for(let y=170;y<680;y+=86){ctx.globalAlpha=.16;px(30,y,1340,2,'#0b1010');ctx.globalAlpha=1;}
+ for(let i=0;i<32;i++){const sx=50+(i*173)%1280, sy=110+(i*97)%540;px(sx,sy,3+(i%4),1+(i%3),i%5===0?'#714f48':'#303b39');}
  // ceiling lamps, flicker
  for(let x=120;x<1320;x+=220){px(x,54,72,9,'#56605b');const f=.55+.45*Math.sin(totalTime*7+x);glow(x+36,75,100,`rgba(224,210,166,${.045*f})`,'rgba(0,0,0,0)');}
  // room dividers, pipes, grime
@@ -760,7 +790,149 @@ function drawPixelDetailPass(){
  if(!interior){for(let i=0;i<18;i++){const xx=((i*181-camera*.7)%W+W)%W;const yy=560+(i%5)*23;line(xx,yy,xx+16+(i%4)*5,yy,'#566966',1);}}
  ctx.restore();
 }
-function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorZombies();drawPlayerInterior();}drawParticles();drawPixelDetailPass();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
+function drawDistantTerrain(){
+ const par=camera*.12;
+ if(chapter==='ALCATRAZ'){
+  for(let i=0;i<9;i++){
+   const x=i*220-par%220;
+   const h=38+(i%4)*16;
+   poly([[x-90,438],[x-28,438-h],[x+28,438-h-16],[x+90,438]],'#1b2b2e');
+  }
+ }else{
+  for(let i=0;i<12;i++){
+   const x=i*190-par%190;
+   const h=50+(i%5)*19;
+   px(x,430-h,140,h,'#15272d');
+   px(x+18,430-h+18,22,26,i%3?'#2e454a':'#776b4f');
+   px(x+72,430-h+46,25,32,i%2?'#30464a':'#75694e');
+  }
+ }
+}
+function drawTerrainTexture(){
+ const bands=[{y:462,c:'#56615d'},{y:492,c:'#4f5b58'},{y:528,c:'#3f4a48'}];
+ for(const b of bands){
+  for(let i=0;i<55;i++){
+   const x=((i*149-camera*(.65+(b.y%3)*.05))%W+W)%W;
+   px(x,b.y+(i%4)*3,20+(i%5)*5,2,b.c);
+  }
+ }
+ for(let i=0;i<24;i++){
+  const x=((i*251-camera*.82)%W+W)%W;
+  const y=548+(i%7)*8;
+  px(x,y,8+(i%4)*4,2,'#71807a');
+  px(x+7,y+5,3,2,'#252e2d');
+ }
+}
+function drawAlcatrazDetails(){
+ const fenceXs=[420,1810,2920,5050,6850,8450,10150,11350,12800,14380,15280,15820];
+ for(const wx of fenceXs){
+  const x=wx-camera;if(x<-100||x>W+100)continue;
+  for(let i=0;i<7;i++){
+   const xx=x+i*34;
+   px(xx,GROUND-92,4,92,'#1c2728');
+   px(xx+1,GROUND-87,2,86,'#717b76');
+  }
+  line(x,GROUND-92,x+204,GROUND-92,'#56625f',2);
+  line(x,GROUND-72,x+204,GROUND-72,'#3d4847',1);
+ }
+ const guardLights=[1050,4700,10820,13900,15580];
+ for(const wx of guardLights){const x=wx-camera;if(x>-100&&x<W+100){glow(x,GROUND-245,72,'rgba(229,203,133,.08)','rgba(0,0,0,0)');px(x-3,GROUND-250,6,16,'#a79566');}}
+ for(let i=0;i<16;i++){
+  const x=((i*317-camera*.48)%W+W)%W;
+  const y=500+(i%4)*16;
+  px(x,y,18,4,i%3?'#35413f':'#81765e');
+ }
+}
+function drawCityRoads(){
+ for(let i=0;i<8;i++){
+  const x=((i*610-camera*.8)%W+W)%W;
+  px(x,GROUND-6,260,6,'#454d4d');
+  px(x+20,GROUND+12,78,4,'#565d58');
+  px(x+125,GROUND+12,78,4,'#565d58');
+ }
+ for(let i=0;i<18;i++){
+  const x=((i*319-camera*.56)%W+W)%W;
+  px(x,GROUND+26,58,4,'#5c6260');
+ }
+}
+function drawCityDetails(){
+ for(let i=0;i<17;i++){
+  const x=((i*405-camera*.36)%W+W)%W;
+  const y=545+(i%5)*10;
+  px(x,y,28,3,i%4?'#4e5855':'#8d7c5a');
+  if(i%3===0)px(x+20,y-8,3,11,'#252e2d');
+ }
+ for(let i=0;i<7;i++){
+  const x=((i*950-camera*.42)%W+W)%W;
+  line(x,340,x+165,320,'#39484d',1);
+  line(x+30,334,x+196,345,'#39484d',1);
+ }
+}
+function drawFootprints(){if(interior)return;for(const f of footprints){const x=f.x-camera;if(x>-20&&x<W+20){ctx.globalAlpha=clamp(1-(totalTime-f.f)*.035,.05,.45);px(x,GROUND-7,10,3,'#a7adaa');px(x+14,GROUND-8,8,2,'#8e9892');}}ctx.globalAlpha=1;}
+function drawSurvivorShadows(){
+ if(chapter!=='SAN FRANCISCO')return;
+ for(const s of survivors){if(s.found)continue;const x=s.x-camera;if(x>-120&&x<W+120){ctx.globalAlpha=.18;ctx.beginPath();ctx.ellipse(x,GROUND-3,23,6,0,0,Math.PI*2);ctx.fillStyle='#050707';ctx.fill();ctx.globalAlpha=1;}}
+}
+function drawSurvivors(){if(chapter!=='SAN FRANCISCO')return;for(const s of survivors){if(s.found)continue;const x=s.x-camera;if(x<-100||x>W+100)continue;const phase=totalTime*3+s.x*.01;const sw=Math.sin(phase)*5;px(x-13,GROUND-30,10,30,'#252b2b');px(x+4,GROUND-30,10,30,'#252b2b');px(x-18,GROUND-59,37,31,s.name==='MARA'?'#76594c':s.name==='ELI'?'#536f7c':'#6a6b60');px(x-11,GROUND-80,24,25,'#cda890');px(x-15,GROUND-91,31,13,s.name==='NOAH'?'#403b35':'#2d2826');px(x-23-sw,GROUND-50,8,24,'#5d675f');px(x+17+sw,GROUND-50,8,24,'#5d675f');text(s.name,x,GROUND-105,11,'#f5e4c3','center');if(Math.abs(player.x-s.x)<125)text('E • TALK',x,GROUND-122,10,'#f0d59e','center');}}
+function drawZombies(){for(const z of zombies){if(z.dead)continue;const x=z.x-camera;if(x<-130||x>W+130)continue;const phase=totalTime*(z.type==='runner'?7:z.type==='brute'?2.5:3.7)+z.phase;const a=Math.sin(phase),b=Math.sin(phase+1.5);const bob=Math.sin(phase*.8)*2;const body=z.type==='brute'?'#60474d':z.type==='runner'?'#76524d':'#53615f';const skin='#7b635a';ctx.save();ctx.translate(0,bob);const sc=z.type==='brute'?1.15:1;ctx.scale(sc,1);px(x-16+a*2,GROUND-67,32,50,body);px(x-13,GROUND-94,26,29,skin);px(x-10,GROUND-89,20,20,body);px(x-28-b*5,GROUND-55,9,30,body);px(x+19+a*5,GROUND-55,9,30,body);px(x-15-b*3,GROUND-17,11,17,'#1b1f20');px(x+5+a*3,GROUND-17,11,17,'#1b1f20');px(x-8,GROUND-84,4,4,'#e96a59');px(x+5,GROUND-84,4,4,'#e96a59');px(x-5,GROUND-72,12,3,'#251b1b');if(z.type==='brute'){px(x-24,GROUND-103,48,7,'#394340');px(x-33,GROUND-50,9,14,'#715052');px(x+24,GROUND-50,9,14,'#715052');}ctx.restore();if(Math.abs(player.x-z.x)<95&&Math.abs(player.x-z.x)>45)showWarning('THE INFECTED HEARD YOU',.55);}}
+function drawSmiler(){if(!smiler.active||interior)return;const x=smiler.x-camera;if(x<-250||x>W+250)return;const alpha=clamp(smiler.intensity,0,1);const h=338+Math.sin(totalTime)*8;ctx.save();ctx.globalAlpha=.98*alpha;px(x-30,GROUND-h,60,h,'#020303');px(x-45,GROUND-h-55,90,66,'#010202');px(x-22,GROUND-h-33,12,8,'#f2ead9');px(x+10,GROUND-h-33,12,8,'#f2ead9');px(x-13,GROUND-h-9,26,4,'#f3e8da');for(let i=0;i<8;i++)px(x-16+i*4,GROUND-h+1,3,4,'#cfc6b7');px(x-49,GROUND-h+34,12,160,'#010202');px(x+37,GROUND-h+34,12,160,'#010202');ctx.restore();}
+function drawPlayerShadow(){
+ if(interior)return;
+ const x=player.x-camera+19;
+ const y=GROUND+1;
+ ctx.save();ctx.globalAlpha=.28;ctx.fillStyle='#050708';ctx.beginPath();ctx.ellipse(x,y,28+Math.min(10,Math.abs(player.vx)*.03),7,0,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+function drawRain(){if(interior)return;ctx.save();ctx.globalAlpha=.46;for(let i=0;i<230;i++){const x=(i*83+totalTime*420)%W;const y=(i*47+totalTime*660)%H;line(x,y,x-6,y+18,'#9cb7bf',1);}ctx.restore();}
+function drawParticles(){for(const p of particles){const x=p.x-camera;if(x<-20||x>W+20)continue;ctx.globalAlpha=clamp(p.life/.5,0,1);px(x,p.y,p.s,p.s,p.c);}ctx.globalAlpha=1;}
+function drawLighting(){if(scene!=='play')return;ctx.save();if(interior){if(state.light){const flick=.86+.14*Math.sin(totalTime*7);glow(700,105,450,`rgba(240,226,192,${.08*flick})`,'rgba(0,0,0,0)');}}else{ctx.fillStyle='rgba(0,0,0,.09)';ctx.fillRect(0,0,W,H);}ctx.restore();}
+function drawHorror(){if(scene!=='play')return;ctx.save();if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);if(horror.flash>0){ctx.globalAlpha=Math.min(.28,horror.flash*.35);ctx.fillStyle='#fff4dc';ctx.fillRect(0,0,W,H);}if(horror.glitch>0){ctx.globalAlpha=.12;for(let i=0;i<13;i++)px(0,Math.random()*H,W,2,i%2?'#c1ceca':'#293834');}if(state.sanity<42){ctx.globalAlpha=.07;ctx.fillStyle='#cfc7b2';ctx.fillRect(0,0,W,H);}ctx.restore();}
+function drawPlayer(){const x=player.x-camera,y=player.y;const moving=player.onGround&&Math.abs(player.vx)>15;const run=inputState.run&&moving;const step=Math.sin(player.anim*(run?1.45:1.08));const bob=player.onGround?(moving?Math.abs(step)*2:Math.sin(totalTime*2)*.7):0;const colors={Julia:{coat:'#536f77',trim:'#8eaaa9',hair:'#3a292b',hi:'#76565a',scarf:'#e8e0cf'},May:{coat:'#606b84',trim:'#9aa5b9',hair:'#5a3c30',hi:'#95604c',scarf:'#e6dfd2'},Yumi:{coat:'#3a7a69',trim:'#79ad97',hair:'#1a1d21',hi:'#66767d',scarf:'#ece4d0'}};const q=colors[selectedCharacter]||colors.Julia;ctx.save();ctx.translate(x+19,y+43+bob);ctx.rotate(player.lean);const swing=moving?step*10:Math.sin(totalTime*2.1)*1.2;const jumpPose=!player.onGround;
+ px(-14+swing,8,10,30,'#292f32');px(4-swing,8,10,30,'#292f32');px(-20+swing,35,21,7,'#171c1d');px(-1-swing,35,21,7,'#171c1d');
+ px(-24,-8,48,40,q.coat);px(-30,-2,7,31,q.trim);px(23,-2,7,31,q.trim);px(-10,-17,20,8,q.scarf);px(-12,-41,25,29,'#d9ae94');px(-9,-35,19,20,'#f0c7a9');
+ if(selectedCharacter==='Yumi'){px(-20,-51,40,12,q.hair);px(-23,-45,9,46,q.hair);px(19,-45,10,48,q.hair);px(-16,-57,29,7,q.hi);px(-25,-24,10,24,q.hair);px(19,-24,10,24,q.hair);px(-12,-44,4,3,q.hi);px(5,-44,4,3,q.hi);}else{px(-19,-50,38,12,q.hair);px(-22,-44,9,39,q.hair);px(18,-44,9,36,q.hair);px(-15,-56,28,6,q.hi);}
+ px(-8,-29,3,3,'#201b18');px(6,-29,3,3,'#201b18');px(-2,-18,9,2,'#9d7466');
+ const arm= moving?step*7:Math.sin(totalTime*2.1)*1.3;px(-29-arm,-4,9,28,q.coat);px(21+arm,-4,9,28,q.coat);px(-34-arm,18,9,9,'#d6aa91');px(27+arm,18,9,9,'#d6aa91');px(-6,-7,13,5,'#d7bb70');px(-2,-5,5,2,'#fff0a4');
+ const gun=player.facing>0?28:-48;px(gun,-1,22,6,'#202a2c');px(player.facing>0?44:-44,2,8,3,'#68746f');if(player.recoil>0)px(player.facing>0?48:-60,-3,11,5,'#ffe08b');if(jumpPose){px(-20,42,13,5,'#6b736e');px(7,40,13,5,'#6b736e');}
+ ctx.restore();}
+function drawStairwell(){
+ if(!interior||interior.floors<=1)return;
+ const left=145,right=1245;
+ for(const sx of [left,right]){
+  const active=(Math.abs(player.x-sx)<120 && player.y>220 && player.y<550);
+  px(sx-58,230,116,280,'#121819');
+  px(sx-48,240,96,258,active?'#46504d':'#343d3b');
+  for(let i=0;i<10;i++){
+   const yy=465-i*21;
+   px(sx-38+i*7,yy,76,8,'#7b8178');
+   px(sx-38+i*7,yy+8,76,4,'#202625');
+  }
+  px(sx-48,490,96,5,'#111716');
+  text('STAIRS',sx,520,9,active?'#e5d9bd':'#8f968e','center');
+ }
+}
+function drawFlashlightCone(){
+ if(scene!=='play'||!state.light)return;
+ ctx.save();
+ if(interior){
+  const x=player.x,y=player.y-18;
+  const dir=player.facing||1;
+  const g=ctx.createRadialGradient(x+dir*40,y,8,x+dir*150,y,230);
+  g.addColorStop(0,'rgba(238,231,201,.14)');
+  g.addColorStop(.35,'rgba(218,214,190,.055)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.moveTo(x,y);ctx.lineTo(x+dir*270,y-120);ctx.lineTo(x+dir*270,y+120);ctx.closePath();ctx.fill();
+ }else{
+  const x=player.x-camera+18,y=player.y-38,dir=player.facing||1;
+  const g=ctx.createLinearGradient(x,y,x+dir*260,y);
+  g.addColorStop(0,'rgba(235,228,198,.08)');g.addColorStop(1,'rgba(235,228,198,0)');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dir*250,y-70);ctx.lineTo(x+dir*250,y+70);ctx.closePath();ctx.fill();
+ }
+ ctx.restore();
+}
+function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawInteriorZombies();drawPlayerInterior();}drawParticles();drawPixelDetailPass();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
 function drawPlayerInterior(){
  const x=player.x,y=player.y;ctx.save();ctx.translate(x,y);const bob=Math.sin(player.anim*7)*1.5;ctx.translate(0,bob);
  px(-17,14,34,9,'#090b0b');px(-13,-16,26,31,'#293b3b');px(-10,-27,20,14,'#b5a58d');px(-9,-38,18,12,'#252b2a');px(-17,-5,7,20,'#354a49');px(10,-5,7,20,'#354a49');px(-13,25,10,7,'#121817');px(4,25,10,7,'#121817');
@@ -785,7 +957,7 @@ function renderMapStrip(){
  });
 }
 
-function renderHUD(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?`${interior.name} • FLOOR ${interior.floor||1}/${interior.floors||1}`:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.sanity<45?'YOU FEEL WATCHED':state.sanity<70?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
+function renderHUD(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}  •  KILLS ${totalKills}  •  BAT ${Math.ceil(state.battery)}%`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?`${interior.name} • FLOOR ${interior.floor||1}/${interior.floors||1}`:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.health<28?'CRITICAL — BLEEDING':state.sanity<35?'YOU ARE LOSING YOUR MIND':threatLevel>72?'THE HORDE IS AWAKE':state.sanity<55?'YOU FEEL WATCHED':state.sanity<75?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
 function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(interior.topDown){if(interior.id==='cellA17'){if(!state.startKey&&Math.hypot(player.x-310,player.y-390)<100)t='E  /  USE  — SEARCH MATTRESS';else if(state.startKey&&Math.hypot(player.x-1240,player.y-390)<115)t='E  /  USE  — UNLOCK CELL DOOR';}if((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)t=`E  /  USE  — STAIRWELL • FLOOR ${interior.floor}/${interior.floors}`;if(player.x<70||player.x>1330)t='E  /  USE  — EXIT STRUCTURE';const c=nearestChest();if(c)t=`E  /  USE  — SEARCH ${c.building}`;}else if(player.x<170||player.x>1010)t='E  /  USE  — EXIT TO STREET';else{const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';}}else if(chapter==='ALCATRAZ'){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(Math.abs(player.x-16040)<260)t=state.dockPass?(state.beacon?'E  /  USE  — BOARD FERRY':'E  /  USE  — LIGHT FERRY BEACON'):'DOCK PASS REQUIRED';}else{let got=false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){t=`E  /  USE  — TALK TO ${s.name}`;got=true;break;}}if(!got){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(state.survivors>=2&&Math.abs(player.x-3200)<420)t='E  /  USE  — ENTER EMERGENCY SHELTER';}}e.textContent=t;}
 
 function updateCamera(){const target=interior?0:clamp(player.x-W*.42,0,WORLD[chapter]-W);camera=lerp(camera,target,1-Math.exp(-7*.016));}
