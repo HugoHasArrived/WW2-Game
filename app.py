@@ -231,6 +231,8 @@ let zombies=[];
 let interiorZombies=[];
 let difficulty=1;let threatLevel=0;let encounterTimer=11;let totalKills=0;let lastDamageTime=0;let lowHealthWarned=false;
 let dread={eventTimer:5,phantomTimer:0,phantomX:0,phantomY:0,phantomAlpha:0,heartbeat:0,ambushCooldown:0,roomEnteredAt:0};
+let horrorDirector={timer:7,phase:'quiet',intensity:0,noise:0,lockdown:0,stalker:null,eventId:0,warningTimer:0,doorSlam:0,hunt:0,huntMessage:0};
+let hiding=false;let wardenSpawned=false;
 let particles=[];
 let footprints=[];
 let rainDrops=[];
@@ -299,7 +301,8 @@ function setMessage(t,d=2){const e=document.getElementById('message');if(!e)retu
 function showWarning(t,d=2.3){const e=document.getElementById('warningText');if(!e)return;e.textContent=t;e.style.opacity='1';horror.warning=d;}
 function resetWorld(){
  dread={eventTimer:4,phantomTimer:0,phantomX:0,phantomY:0,phantomAlpha:0,heartbeat:0,ambushCooldown:0,roomEnteredAt:0};
- state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=10;state.reserveAmmo=36;state.grenades=2;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.powerRestored=false;state.radioSignal=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.alarm=false;state.finalChase=false;state.inventory={bandage:1,food:1,scrap:2,ammo_9mm:36,key:0,dockPass:0,fuse:0,radioPart:0};chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;difficulty=1;threatLevel=0;encounterTimer=14;totalKills=0;lastDamageTime=0;lowHealthWarned=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=210;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
+ horrorDirector={timer:5+Math.random()*5,phase:'quiet',intensity:0,noise:0,lockdown:0,stalker:null,eventId:0,warningTimer:0,doorSlam:0};
+ state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=10;state.reserveAmmo=36;state.grenades=2;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.powerRestored=false;state.radioSignal=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.alarm=false;state.finalChase=false;hiding=false;wardenSpawned=false;state.inventory={bandage:1,food:1,scrap:2,ammo_9mm:36,key:0,dockPass:0,fuse:0,radioPart:0};chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;difficulty=1;threatLevel=0;encounterTimer=14;totalKills=0;lastDamageTime=0;lowHealthWarned=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=210;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
 }
 function buildAlcatrazPopulation(){
  zombies=[];
@@ -360,7 +363,7 @@ function tryUseStairs(){
  if(interior.floor===3&&Math.random()<.65){setTimeout(()=>{if(scene==='play'&&interior){triggerJumpscare('stair');}},500);}
  return true;
 }
-function useInteract(){if(scene!=='play'||fadeBusy)return;if(currentChest){openChest(currentChest);return;}if(interior&&interior.topDown){if(interior.floors>1&&((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)){const nearLeft=player.x<700;const dir=nearLeft?1:-1;const next=clamp(interior.floor+dir,1,interior.floors);if(next===interior.floor){setMessage('NO MORE FLOORS.',1);return;}interior.floor=next;player.x=nearLeft?220:1180;player.y=390;state.sanity=Math.max(0,state.sanity-5);horror.shake=8;setMessage(`STAIRS — FLOOR ${interior.floor}/${interior.floors}`,1.4);if(interior.floor===3&&Math.random()<.8)triggerJumpscare('stair');return;}if(interior.id==='cellA17'&&!state.startKey&&Math.hypot(player.x-310,player.y-390)<110){searchStartingCell();return;}if(interior.id==='cellA17'&&state.startKey&&Math.hypot(player.x-1240,player.y-390)<125){unlockCell();return;}const c=nearestChest();if(c){openChest(c);return;}if(player.x<70||player.x>1330){exitStructure();return;}return;}if(interior&&interior.floors>1&&tryUseStairs())return;if(interactAlcatrazSpecial())return;if(interior){if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(chapter==='ALCATRAZ'){if(!state.startEscaped&&player.x<1050){setMessage('The cell is still locked. Search the mattress.',1.5);return;}const b=nearestBuilding();if(b){enterStructure(b);return;}if(Math.abs(player.x-21700)<330){if(!state.dockPass){setMessage('THE PIER GATE IS LOCKED. YOU NEED THE DOCK PASS.',2);return;}if(!state.powerRestored){setMessage('NO POWER. Restore the emergency generator first.',2);return;}if(!state.radioSignal){setMessage('THE FERRY WILL NOT ANSWER. Transmit the emergency signal.',2);return;}if(!state.beacon){state.beacon=true;advanceObjective(1);setMessage('BEACON LIT. THE FERRY IS COMING. RUN.',2);tone(250,.5,'sine',.13,90);state.finalChase=true;return;}if(!state.boatEscaped){state.boatEscaped=true;transitionTo('ferry',()=>{endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='The ferry reaches the pier through the storm. Behind you, the cellhouse lights turn on one by one. The last camera feed shows a figure standing in your empty cell.';soundScare();});return;}}}else{if(talkSurvivorState())return;const b=nearestBuilding();if(b){enterStructure(b);return;}if(state.survivors>=2&&Math.abs(player.x-3200)<420){endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='Two survivors reached the shelter. Behind the rain, the island lights were still visible. On the final CCTV frame, a tall figure smiled at the empty dock.';soundScare();}}}
+function useInteract(){if(scene!=='play'||fadeBusy)return;if(interior&&interior.topDown&&nearestHideSpot()){toggleHide();return;}if(currentChest){openChest(currentChest);return;}if(interior&&interior.topDown){if(interior.floors>1&&((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)){const nearLeft=player.x<700;const dir=nearLeft?1:-1;const next=clamp(interior.floor+dir,1,interior.floors);if(next===interior.floor){setMessage('NO MORE FLOORS.',1);return;}interior.floor=next;player.x=nearLeft?220:1180;player.y=390;state.sanity=Math.max(0,state.sanity-5);horror.shake=8;setMessage(`STAIRS — FLOOR ${interior.floor}/${interior.floors}`,1.4);if(interior.floor===3&&Math.random()<.8)triggerJumpscare('stair');return;}if(interior.id==='cellA17'&&!state.startKey&&Math.hypot(player.x-310,player.y-390)<110){searchStartingCell();return;}if(interior.id==='cellA17'&&state.startKey&&Math.hypot(player.x-1240,player.y-390)<125){unlockCell();return;}const c=nearestChest();if(c){openChest(c);return;}if(player.x<70||player.x>1330){exitStructure();return;}return;}if(interior&&interior.floors>1&&tryUseStairs())return;if(interactAlcatrazSpecial())return;if(interior){if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(chapter==='ALCATRAZ'){if(!state.startEscaped&&player.x<1050){setMessage('The cell is still locked. Search the mattress.',1.5);return;}const b=nearestBuilding();if(b){enterStructure(b);return;}if(Math.abs(player.x-21700)<330){if(!state.dockPass){setMessage('THE PIER GATE IS LOCKED. YOU NEED THE DOCK PASS.',2);return;}if(!state.powerRestored){setMessage('NO POWER. Restore the emergency generator first.',2);return;}if(!state.radioSignal){setMessage('THE FERRY WILL NOT ANSWER. Transmit the emergency signal.',2);return;}if(!state.beacon){state.beacon=true;advanceObjective(1);setMessage('BEACON LIT. THE FERRY IS COMING. RUN.',2);tone(250,.5,'sine',.13,90);state.finalChase=true;return;}if(!state.boatEscaped){state.boatEscaped=true;transitionTo('ferry',()=>{endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='The ferry reaches the pier through the storm. Behind you, the cellhouse lights turn on one by one. The last camera feed shows a figure standing in your empty cell.';soundScare();});return;}}}else{if(talkSurvivorState())return;const b=nearestBuilding();if(b){enterStructure(b);return;}if(state.survivors>=2&&Math.abs(player.x-3200)<420){endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='Two survivors reached the shelter. Behind the rain, the island lights were still visible. On the final CCTV frame, a tall figure smiled at the empty dock.';soundScare();}}}
 
 function talkSurvivorState(){if(chapter!=='SAN FRANCISCO')return false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){talkSurvivor();return true;}}return false;}
 function advanceObjective(i){if(i>objectiveIndex)objectiveIndex=Math.min(i,2);setObjective();}
@@ -402,6 +405,19 @@ function interactAlcatrazSpecial(){
 }
 
 function nearestBuilding(){let best=null,d=9999;for(const b of landmarkData){if(b.name==='CELLHOUSE'||b.name==='RECREATION YARD'||b.name==='MAIN DOCK')continue;const dd=Math.abs(player.x-b.x);if(dd<d&&dd<180){d=dd;best=b;}}return best;}
+function nearestHideSpot(){
+ if(!interior)return null;
+ const spots=[{x:105,y:170},{x:1290,y:180},{x:260,y:570},{x:720,y:610},{x:1160,y:520}];
+ let best=null,bd=999;for(const h of spots){const d=Math.hypot(player.x-h.x,player.y-h.y);if(d<bd){bd=d;best=h;}}
+ return bd<105?best:null;
+}
+function toggleHide(){
+ if(!interior||scene!=='play')return;
+ const h=nearestHideSpot();
+ if(h){hiding=!hiding;player.x=h.x;player.y=h.y;player.vx=0;player.vy=0;showWarning(hiding?'HIDDEN — HOLD STILL':'YOU LEFT COVER',1.1);if(hiding)soundWhisper();return;}
+ setMessage('Find a locker, cabinet, or dark corner to hide in.',1.2);
+}
+
 function spawnInteriorThreats(){
  interiorZombies=[];dread.roomEnteredAt=totalTime;dread.eventTimer=3+Math.random()*5;dread.ambushCooldown=9;
  const count=interior.type==='cellcorridor'?15:12;
@@ -413,6 +429,7 @@ function updateInteriorZombies(dt){
  if(!interior)return;
  for(const z of interiorZombies){if(z.dead){z.deathTimer=Math.max(0,z.deathTimer-dt);continue;}z.attack=Math.max(0,z.attack-dt);
   const dx=player.x-z.x,dy=player.y-z.y,d=Math.hypot(dx,dy);
+  if(hiding){ if(d<95){z.alert=1; z.x+=(Math.sign(dx)||1)*22*dt; z.y+=(Math.sign(dy)||1)*16*dt; if(d<48&&z.attack<=0){hiding=false;damagePlayer(z.type==='stalker'?32:22);showWarning('IT FOUND YOUR HIDING PLACE',1.2);}} continue; }
   const alertRadius=state.light?920:520;
   if(d<alertRadius || (z.alert||0)>0){z.alert=Math.max(0,(z.alert||0)-dt*.08);const sp=(z.type==='runner'?176:z.type==='stalker'?142:92)*(1+Math.min(.28,(difficulty-1)*.09));if(d>34){const flank=z.type==='stalker'?Math.sin(totalTime*1.8+z.phase)*.34:0;z.x+=(dx/Math.max(d,1)+flank)*sp*dt;z.y+=dy/Math.max(d,1)*sp*dt;}else if(z.attack<=0){damagePlayer(z.type==='stalker'?21:z.type==='runner'?18:14);z.attack=z.type==='runner'?.42:z.type==='stalker'?.58:.78;horror.shake=12;showWarning(z.type==='stalker'?'IT GOT THROUGH THE DARK':'THEY ARE ON YOU',.8);}}
   z.x=clamp(z.x,60,1340);z.y=clamp(z.y,105,650);
@@ -429,6 +446,7 @@ function tryJump(){if(scene!=='play')return;if(player.onGround||player.coyote>0)
 function movementStep(dt){
  if(scene!=='play'||fadeBusy)return;
  if(interior&&interior.topDown){
+  if(hiding){player.vx=0;player.vy=0;state.stamina=Math.min(100,state.stamina+dt*18);updateInteriorZombies(dt);return;}
   if(interior.stairCooldown>0)interior.stairCooldown=Math.max(0,interior.stairCooldown-dt);
   const dx=(inputState.right?1:0)-(inputState.left?1:0);
   const dy=(keys.has('s')||keys.has('S')||keys.has('ArrowDown')?1:0)-(keys.has('w')||keys.has('W')||keys.has('ArrowUp')?1:0);
@@ -438,7 +456,7 @@ function movementStep(dt){
   if(dx||dy)player.facing=dx<0?-1:dx>0?1:player.facing;
   if(inputState.run&&(dx||dy))state.stamina=Math.max(0,state.stamina-dt*31);else state.stamina=Math.min(100,state.stamina+dt*13);
   player.anim+=dt*(Math.hypot(player.vx,player.vy)/70+.4); player.recoil=Math.max(0,player.recoil-dt*8);
-  if(Math.hypot(player.vx,player.vy)>55){footstepsTimer-=dt;if(footstepsTimer<=0){footstepsTimer=inputState.run?.22:.34;soundStep();}}
+  if(Math.hypot(player.vx,player.vy)>55){footstepsTimer-=dt;if(footstepsTimer<=0){footstepsTimer=inputState.run?.22:.34;soundStep();horrorDirector.noise=Math.min(100,horrorDirector.noise+(inputState.run?13:5));}}
   updateInteriorZombies(dt); return;
  }
  if(interior&&interior.stairCooldown>0)interior.stairCooldown=Math.max(0,interior.stairCooldown-dt);
@@ -448,6 +466,7 @@ function movementStep(dt){
  const accel=dir?12:16;
  player.vx=lerp(player.vx,target,1-Math.exp(-accel*dt));
  if(inputState.run&&dir&&Math.abs(player.vx)>220)state.stamina=Math.max(0,state.stamina-dt*18);else state.stamina=Math.min(100,state.stamina+dt*12);
+ horrorDirector.noise=Math.max(0,horrorDirector.noise-dt*7); if(inputState.run&&dir&&Math.abs(player.vx)>220)horrorDirector.noise=Math.min(100,horrorDirector.noise+dt*22);
  if(dir)player.facing=dir;
  if(inputState.jump&&player.jumpBuffer>0){if(player.onGround||player.coyote>0||player.jumps>0){tryJump();player.jumpBuffer=0;}}
  player.vy+=1750*dt;
@@ -461,6 +480,66 @@ function movementStep(dt){
  footstepsTimer-=dt;if(player.onGround&&Math.abs(player.vx)>45&&footstepsTimer<=0){footstepsTimer=inputState.run?.25:.37;soundStep();footprints.push({x:player.x,f:totalTime});if(footprints.length>80)footprints.shift();}
 }
 function damagePlayer(a){if(totalTime-lastDamageTime<0.38)return;lastDamageTime=totalTime;state.health-=a;horror.shake=10;horror.flash=.18;state.sanity=Math.max(0,state.sanity-3.5);if(state.health<=0){state.health=0;scene='death';show('death');document.getElementById('deathText').textContent='The island kept you. This was not the last attempt.';soundScare();}}
+function updateHorrorDirector(dt){
+ if(scene!=='play')return;
+ const inside=!!interior;
+ horrorDirector.intensity=clamp((100-state.sanity)/70+(difficulty-1)*.22+(state.finalChase?.35:0),0,1.9);
+ horrorDirector.timer-=dt; horrorDirector.noise=Math.max(0,horrorDirector.noise-dt*(inside?5:3));
+ if(horrorDirector.lockdown>0){horrorDirector.lockdown-=dt;if(horrorDirector.lockdown<=0){state.alarm=false;showWarning('THE LOCKS RELEASED. FOR NOW.',1);}}
+ if(horrorDirector.doorSlam>0)horrorDirector.doorSlam-=dt;
+ if(horrorDirector.stalker){
+  const q=horrorDirector.stalker;
+  q.life-=dt;
+  const dx=player.x-q.x,dy=(inside?player.y-q.y:0),d=Math.hypot(dx,dy);
+  q.x+=Math.sign(dx)*dt*(inside?72:52);
+  if(inside)q.y+=Math.sign(dy)*dt*48;
+  q.alpha=clamp(1-d/720,.05,.9);
+  if(d<75&&q.life<7){damagePlayer(17);horrorDirector.stalker=null;horrorDirector.timer=14+Math.random()*12;}
+  if(q.life<=0)horrorDirector.stalker=null;
+ }
+ if(horrorDirector.timer>0)return;
+ horrorDirector.timer=(inside?4:7)+Math.random()*9;
+ const I=horrorDirector.intensity;
+ const roll=Math.random();
+ if(roll<.22+I*.10){
+   // A fake safe moment followed by a sudden blackout.
+   horror.blackout=.65+Math.random()*.7;horror.glitch=.35;horror.shake=5;soundFlicker();
+   showWarning(inside?'THE LIGHTS WENT OUT. DO NOT MOVE.':'THE FLOODLIGHTS JUST DIED.',1.8);
+   setTimeout(()=>{if(scene==='play'){horror.blackout=0;horror.glitch=.9;triggerJumpscare('random');}},700+Math.random()*1300);
+ }else if(roll<.43+I*.13){
+   // Spawn a hunter behind the player rather than in front.
+   const side=Math.random()<.5?-1:1;
+   horrorDirector.stalker={x:clamp(player.x+side*(520+Math.random()*280),80,(interior?1340:WORLD[chapter]-80)),y:inside?clamp(player.y+(Math.random()-.5)*280,110,650):GROUND-55,life:5.5+Math.random()*5,alpha:.1};
+   showWarning(Math.random()<.5?'SOMETHING IS WALKING BEHIND YOU.':'DO NOT LOOK BACK.',1.5);soundWhisper();
+ }else if(roll<.62+I*.12){
+   // Noise consequence: an ambush wave materializes from the edges.
+   const n=inside?2+Math.floor(Math.random()*3):2+Math.floor(Math.random()*4);
+   for(let i=0;i<n;i++){
+    const side=Math.random()<.5?-1:1;
+    if(inside)interiorZombies.push({x:side<0?80:1320,y:130+Math.random()*500,hp:95,type:Math.random()<.45?'runner':'stalker',attack:.3,phase:Math.random()*6,dead:false,deathTimer:0,hit:0,alert:1});
+    else zombies.push({x:clamp(player.x+side*(650+i*100),80,WORLD[chapter]-80),type:i%2?'runner':'stalker',hp:i%2?95:110,maxHp:i%2?95:110,dead:false,deathTimer:0,phase:Math.random()*6,attack:0,hit:0,alert:1,flash:0});
+   }
+   horror.shake=8;showWarning('THEY HEARD THAT.',1.5);tone(55,.25,'sawtooth',.12,-45);
+ }else if(roll<.80){
+   // Environmental scare: a door slam / distant movement.
+   horrorDirector.doorSlam=1.2;horror.shake=3;showWarning(Math.random()<.5?'A DOOR SLAMMED SOMEWHERE.':'FOOTSTEPS ABOVE YOU.',1.3);soundWhisper();
+ }else if(I>.65 && !state.finalChase){
+   // Rare lockdown: changes the objective from exploring to surviving.
+   horrorDirector.lockdown=9+Math.random()*7;state.alarm=true;horror.glitch=.8;horror.shake=10;
+   showWarning(inside?'THE BUILDING JUST LOCKED ITSELF.':'THE ISLAND LOCKDOWN HAS BEGUN.',2.2);tone(48,.5,'square',.15,-30);
+   for(let i=0;i<4;i++){
+    if(inside)interiorZombies.push({x:Math.random()<.5?70:1330,y:130+Math.random()*500,hp:130,type:'stalker',attack:.2,phase:i,dead:false,deathTimer:0,hit:0,alert:1});
+   }
+ }
+}
+
+function drawHorrorDirector(){
+ if(scene!=='play')return;
+ const q=horrorDirector.stalker;
+ if(q){const x=q.x-(interior?0:camera),y=q.y;ctx.save();ctx.globalAlpha=.72*q.alpha;px(x-17,y-48,34,62,'#030505');px(x-24,y-68,48,25,'#020303');px(x-14,y-60,7,5,'#d9d2bb');px(x+7,y-60,7,5,'#d9d2bb');ctx.restore();}
+ if(horrorDirector.doorSlam>0){ctx.save();ctx.globalAlpha=horrorDirector.doorSlam*.18;px(0,0,W,3,'#ddd5c0');ctx.restore();}
+}
+
 function updateZombies(dt){
  for(const z of zombies){
   if(z.dead){z.deathTimer=Math.max(0,z.deathTimer-dt);continue;}
@@ -472,9 +551,16 @@ function updateZombies(dt){
    if(d<430 && Math.abs(player.vx)>120)z.alert=Math.min(1,z.alert+dt*.9);
    else z.alert=Math.max(0,z.alert-dt*.25);
    if(d>62){
-    let sp=z.type==='runner'?190:z.type==='brute'?62:z.type==='stalker'?142:94;
-    if(z.alert>.65)sp*=1.22;
-    z.x+=Math.sign(dx)*sp*dt;
+    let sp=z.type==='warden'?108:z.type==='runner'?190:z.type==='brute'?62:z.type==='stalker'?142:94;
+    if(z.type==='warden'){
+      const phase=Math.sin(totalTime*1.7+z.phase);
+      z.x+=Math.sign(dx)*sp*dt + phase*34*dt;
+      if(d<760&&Math.random()<dt*.22){z.alert=1;showWarning('THE WARDEN KNOWS WHERE YOU ARE',.7);}
+      if(d<120&&z.attack<=0){damagePlayer(38);z.attack=.72;horror.glitch=.9;}
+    }else{
+      if(z.alert>.65)sp*=1.22;
+      z.x+=Math.sign(dx)*sp*dt;
+    }
    }else if(z.attack<=0){
     damagePlayer(z.type==='brute'?30:z.type==='stalker'?22:z.type==='runner'?19:14);
     z.attack=z.type==='runner'?.42:z.type==='stalker'?.58:.78;
@@ -494,7 +580,7 @@ function killZombie(z,force=false){
 function shoot(){
  if(scene!=='play')return;
  if(state.ammo<=0){soundReload();setMessage('EMPTY MAGAZINE. R TO RELOAD.',1.1);return;}
- state.ammo--;player.recoil=.2;soundShot();horror.shake=3;
+ state.ammo--;player.recoil=.2;soundShot();horror.shake=3;horrorDirector.noise=100;
  const playerScreen=player.x-camera+19;
  let aimDir=(mouse.x-playerScreen)>=0?1:-1;
  if(Math.abs(mouse.x-playerScreen)<18)aimDir=player.facing||1;
@@ -511,7 +597,8 @@ function shoot(){
  }
  if(hit){
   const damage=selectedCharacter==='Yumi'?58:selectedCharacter==='May'?48:50;
-  hit.hp-=damage;hit.hit=.18;hit.flash=.14;hit.alert=1;spawnBlood(hit.x,GROUND-55);horror.shake=5;
+  if(hit.type==='warden') { hit.hp-=Math.round(damage*.72); } else hit.hp-=damage;
+  hit.hit=.18;hit.flash=.14;hit.alert=1;spawnBlood(hit.x,GROUND-55);horror.shake=5;
   setMessage(hit.hp>0?`HIT — ${Math.max(0,Math.ceil(hit.hp))} HP REMAINING`:'INFECTED DOWN',.45);
   if(hit.hp<=0)killZombie(hit);
  }else{spawnSpark(player.x+aimDir*420,GROUND-54);}
@@ -529,7 +616,7 @@ function melee(){
    if(z.hp<=0)killZombie(z,true);
   }
  }
- horror.shake=struck?7:3;tone(struck?110:85,.08,'square',.12,-30);
+ horror.shake=struck?7:3;tone(struck?110:85,.08,'square',.12,-30);horrorDirector.noise=Math.min(100,horrorDirector.noise+45);
 }
 function reload(){if(state.reserveAmmo<=0||state.ammo>=12)return;const take=Math.min(12-state.ammo,state.reserveAmmo);state.reserveAmmo-=take;state.ammo+=take;soundReload();}
 function updateDifficultyDirector(dt){
@@ -540,7 +627,12 @@ function updateDifficultyDirector(dt){
  threatLevel=clamp((difficulty-1)*100,0,100);
  encounterTimer-=dt;
  if(state.light&&state.battery>0){state.battery=Math.max(0,state.battery-dt*(interior?0.8:0.34));}
- if(state.battery<=0&&state.light){state.light=false;showWarning('FLASHLIGHT BATTERY DEAD',2);soundFlicker();}
+ if(state.battery<=0&&state.light){state.light=false;showWarning('FLASHLIGHT BATTERY DEAD',2);soundFlicker();}if(state.powerRestored&&!wardenSpawned&&!interior&&player.x>11800){
+  wardenSpawned=true;
+  zombies.push({x:clamp(player.x+1100,100,WORLD[chapter]-100),type:'warden',hp:420,maxHp:420,dead:false,deathTimer:0,phase:Math.random()*6.28,attack:2,hit:0,alert:1,flash:0,limb:0});
+  showWarning('THE WARDEN HAS LEFT THE CELLHOUSE',2.4);soundScare();state.sanity=Math.max(0,state.sanity-10);
+}
+
  if(state.health<28&&!lowHealthWarned){lowHealthWarned=true;showWarning('CRITICAL CONDITION — FIND COVER',2.2);}
  if(state.health>45)lowHealthWarned=false;
  if(encounterTimer<=0&&!interior&&!state.boatEscaped){
@@ -592,7 +684,7 @@ function drawDreadPhantom(){
 function updateWorld(dt){
  totalTime+=dt;
  if(scene==='play'){
-  movementStep(dt);updateDifficultyDirector(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateDreadDirector(dt);updateParticles(dt);updateAlcatrazProgression();if(chapter==='ALCATRAZ'&&!interior&&player.x>7000&&state.sanity<80)state.sanity=Math.max(0,state.sanity-dt*.42);if(state.finalChase&&chapter==='ALCATRAZ')state.sanity=Math.max(0,state.sanity-dt*.32);if(interior&&interior.topDown&&scene==='play'&&Math.random()<dt*.025&&state.sanity<60)triggerJumpscare('room');
+  movementStep(dt);updateDifficultyDirector(dt);updateHorrorDirector(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateDreadDirector(dt);updateParticles(dt);updateAlcatrazProgression();if(chapter==='ALCATRAZ'&&!interior&&player.x>7000&&state.sanity<80)state.sanity=Math.max(0,state.sanity-dt*.42);if(state.finalChase&&chapter==='ALCATRAZ')state.sanity=Math.max(0,state.sanity-dt*.32);if(interior&&interior.topDown&&scene==='play'&&Math.random()<dt*.025&&state.sanity<60)triggerJumpscare('room');
  }
  updateMessage(dt);updateIntro(dt);updateFade(dt);renderHUD();
 }
@@ -908,7 +1000,7 @@ function drawSurvivorShadows(){
  for(const s of survivors){if(s.found)continue;const x=s.x-camera;if(x>-120&&x<W+120){ctx.globalAlpha=.18;ctx.beginPath();ctx.ellipse(x,GROUND-3,23,6,0,0,Math.PI*2);ctx.fillStyle='#050707';ctx.fill();ctx.globalAlpha=1;}}
 }
 function drawSurvivors(){if(chapter!=='SAN FRANCISCO')return;for(const s of survivors){if(s.found)continue;const x=s.x-camera;if(x<-100||x>W+100)continue;const phase=totalTime*3+s.x*.01;const sw=Math.sin(phase)*5;px(x-13,GROUND-30,10,30,'#252b2b');px(x+4,GROUND-30,10,30,'#252b2b');px(x-18,GROUND-59,37,31,s.name==='MARA'?'#76594c':s.name==='ELI'?'#536f7c':'#6a6b60');px(x-11,GROUND-80,24,25,'#cda890');px(x-15,GROUND-91,31,13,s.name==='NOAH'?'#403b35':'#2d2826');px(x-23-sw,GROUND-50,8,24,'#5d675f');px(x+17+sw,GROUND-50,8,24,'#5d675f');text(s.name,x,GROUND-105,11,'#f5e4c3','center');if(Math.abs(player.x-s.x)<125)text('E • TALK',x,GROUND-122,10,'#f0d59e','center');}}
-function drawZombies(){for(const z of zombies){if(z.dead)continue;const x=z.x-camera;if(x<-130||x>W+130)continue;const phase=totalTime*(z.type==='runner'?7:z.type==='brute'?2.5:3.7)+z.phase;const a=Math.sin(phase),b=Math.sin(phase+1.5);const bob=Math.sin(phase*.8)*2;const body=z.type==='brute'?'#60474d':z.type==='runner'?'#76524d':'#53615f';const skin='#7b635a';ctx.save();ctx.translate(0,bob);const sc=z.type==='brute'?1.15:1;ctx.scale(sc,1);px(x-16+a*2,GROUND-67,32,50,body);px(x-13,GROUND-94,26,29,skin);px(x-10,GROUND-89,20,20,body);px(x-28-b*5,GROUND-55,9,30,body);px(x+19+a*5,GROUND-55,9,30,body);px(x-15-b*3,GROUND-17,11,17,'#1b1f20');px(x+5+a*3,GROUND-17,11,17,'#1b1f20');px(x-8,GROUND-84,4,4,'#e96a59');px(x+5,GROUND-84,4,4,'#e96a59');px(x-5,GROUND-72,12,3,'#251b1b');if(z.type==='brute'){px(x-24,GROUND-103,48,7,'#394340');px(x-33,GROUND-50,9,14,'#715052');px(x+24,GROUND-50,9,14,'#715052');}ctx.restore();if(Math.abs(player.x-z.x)<95&&Math.abs(player.x-z.x)>45)showWarning('THE INFECTED HEARD YOU',.55);}}
+function drawZombies(){for(const z of zombies){if(z.dead)continue;const x=z.x-camera;if(x<-130||x>W+130)continue;const phase=totalTime*(z.type==='runner'?7:z.type==='brute'?2.5:3.7)+z.phase;const a=Math.sin(phase),b=Math.sin(phase+1.5);const bob=Math.sin(phase*.8)*2;const body=z.type==='warden'?'#171b1d':z.type==='brute'?'#60474d':z.type==='runner'?'#76524d':'#53615f';const skin='#7b635a';ctx.save();ctx.translate(0,bob);const sc=z.type==='warden'?1.48:z.type==='brute'?1.15:1;ctx.scale(sc,1);px(x-16+a*2,GROUND-67,32,50,body);px(x-13,GROUND-94,26,29,skin);px(x-10,GROUND-89,20,20,body);px(x-28-b*5,GROUND-55,9,30,body);px(x+19+a*5,GROUND-55,9,30,body);px(x-15-b*3,GROUND-17,11,17,'#1b1f20');px(x+5+a*3,GROUND-17,11,17,'#1b1f20');px(x-8,GROUND-84,4,4,'#e96a59');px(x+5,GROUND-84,4,4,'#e96a59');px(x-5,GROUND-72,12,3,'#251b1b');if(z.type==='warden'){px(x-24,GROUND-108,48,10,'#252a2c');px(x-31,GROUND-53,12,18,'#111517');px(x+20,GROUND-53,12,18,'#111517');px(x-5,GROUND-91,10,4,'#b83f3f');}if(z.type==='brute'){px(x-24,GROUND-103,48,7,'#394340');px(x-33,GROUND-50,9,14,'#715052');px(x+24,GROUND-50,9,14,'#715052');}ctx.restore();if(Math.abs(player.x-z.x)<95&&Math.abs(player.x-z.x)>45)showWarning('THE INFECTED HEARD YOU',.55);}}
 function drawSmiler(){if(!smiler.active||interior)return;const x=smiler.x-camera;if(x<-250||x>W+250)return;const alpha=clamp(smiler.intensity,0,1);const h=338+Math.sin(totalTime)*8;ctx.save();ctx.globalAlpha=.98*alpha;px(x-30,GROUND-h,60,h,'#020303');px(x-45,GROUND-h-55,90,66,'#010202');px(x-22,GROUND-h-33,12,8,'#f2ead9');px(x+10,GROUND-h-33,12,8,'#f2ead9');px(x-13,GROUND-h-9,26,4,'#f3e8da');for(let i=0;i<8;i++)px(x-16+i*4,GROUND-h+1,3,4,'#cfc6b7');px(x-49,GROUND-h+34,12,160,'#010202');px(x+37,GROUND-h+34,12,160,'#010202');ctx.restore();}
 function drawPlayerShadow(){
  if(interior)return;
@@ -966,7 +1058,7 @@ function drawFlashlightCone(){
  }
  ctx.restore();
 }
-function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawInteriorZombies();drawPlayerInterior();}drawDreadPhantom();drawParticles();drawPixelDetailPass();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
+function drawWorld(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawInteriorZombies();drawPlayerInterior();if(hiding){ctx.save();ctx.globalAlpha=.18;px(0,0,W,H,'#000');ctx.globalAlpha=1;text('HIDDEN',W/2,72,13,'#c8c1a9','center');text('STAY STILL',W/2,92,9,'#8d948c','center');ctx.restore();}}drawDreadPhantom();drawHorrorDirector();drawParticles();drawPixelDetailPass();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
 function drawPlayerInterior(){
  const x=player.x,y=player.y;ctx.save();ctx.translate(x,y);const bob=Math.sin(player.anim*7)*1.5;ctx.translate(0,bob);
  px(-17,14,34,9,'#090b0b');px(-13,-16,26,31,'#293b3b');px(-10,-27,20,14,'#b5a58d');px(-9,-38,18,12,'#252b2a');px(-17,-5,7,20,'#354a49');px(10,-5,7,20,'#354a49');px(-13,25,10,7,'#121817');px(4,25,10,7,'#121817');
@@ -992,7 +1084,7 @@ function renderMapStrip(){
 }
 
 function renderHUD(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}  •  KILLS ${totalKills}  •  BAT ${Math.ceil(state.battery)}%`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?`${interior.name} • FLOOR ${interior.floor||1}/${interior.floors||1}`:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.health<28?'CRITICAL — BLEEDING':state.sanity<35?'YOU ARE LOSING YOUR MIND':threatLevel>72?'THE HORDE IS AWAKE':state.sanity<55?'YOU FEEL WATCHED':state.sanity<75?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
-function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(interior.topDown){if(interior.id==='cellA17'){if(!state.startKey&&Math.hypot(player.x-310,player.y-390)<100)t='E  /  USE  — SEARCH MATTRESS';else if(state.startKey&&Math.hypot(player.x-1240,player.y-390)<115)t='E  /  USE  — UNLOCK CELL DOOR';}if((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)t=`E  /  USE  — STAIRWELL • FLOOR ${interior.floor}/${interior.floors}`;if(player.x<70||player.x>1330)t='E  /  USE  — EXIT STRUCTURE';const c=nearestChest();if(c)t=`E  /  USE  — SEARCH ${c.building}`;}else if(player.x<170||player.x>1010)t='E  /  USE  — EXIT TO STREET';else{const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';}}else if(chapter==='ALCATRAZ'){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(Math.abs(player.x-16040)<260)t=state.dockPass?(state.beacon?'E  /  USE  — BOARD FERRY':'E  /  USE  — LIGHT FERRY BEACON'):'DOCK PASS REQUIRED';}else{let got=false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){t=`E  /  USE  — TALK TO ${s.name}`;got=true;break;}}if(!got){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(state.survivors>=2&&Math.abs(player.x-3200)<420)t='E  /  USE  — ENTER EMERGENCY SHELTER';}}e.textContent=t;}
+function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(interior.topDown){if(interior.id==='cellA17'){if(!state.startKey&&Math.hypot(player.x-310,player.y-390)<100)t='E  /  USE  — SEARCH MATTRESS';else if(state.startKey&&Math.hypot(player.x-1240,player.y-390)<115)t='E  /  USE  — UNLOCK CELL DOOR';}if(nearestHideSpot())t=hiding?'E  /  USE — LEAVE COVER':'E  /  USE — HIDE';if((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)t=`E  /  USE  — STAIRWELL • FLOOR ${interior.floor}/${interior.floors}`;if(player.x<70||player.x>1330)t='E  /  USE  — EXIT STRUCTURE';const c=nearestChest();if(c)t=`E  /  USE  — SEARCH ${c.building}`;}else if(player.x<170||player.x>1010)t='E  /  USE  — EXIT TO STREET';else{const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';}}else if(chapter==='ALCATRAZ'){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(Math.abs(player.x-16040)<260)t=state.dockPass?(state.beacon?'E  /  USE  — BOARD FERRY':'E  /  USE  — LIGHT FERRY BEACON'):'DOCK PASS REQUIRED';}else{let got=false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){t=`E  /  USE  — TALK TO ${s.name}`;got=true;break;}}if(!got){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(state.survivors>=2&&Math.abs(player.x-3200)<420)t='E  /  USE  — ENTER EMERGENCY SHELTER';}}e.textContent=t;}
 
 function updateCamera(){const target=interior?0:clamp(player.x-W*.42,0,WORLD[chapter]-W);camera=lerp(camera,target,1-Math.exp(-7*.016));}
 function tick(now){const dt=Math.min(.032,Math.max(.001,(now-last)/1000));last=now;updateInput();updateWorld(dt);updateCamera();drawWorld();drawPrompt();requestAnimationFrame(tick);}
