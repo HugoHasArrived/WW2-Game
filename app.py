@@ -2570,6 +2570,59 @@ function a3Startup(){
 a3Startup();
 
 boot();
+
+/* ===================== PERFORMANCE / STARTUP HOTFIX ===================== */
+/* The menu must never render the full 52,000 x 28,000 game world. */
+const __originalUpdateWorldFinal = updateWorld;
+updateWorld = function(dt){
+  if(scene !== 'play') return;
+  __originalUpdateWorldFinal(dt);
+};
+
+const __originalDrawWorldFinal = drawWorld;
+drawWorld = function(){
+  if(scene !== 'play'){
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalAlpha=1;
+    ctx.globalCompositeOperation='source-over';
+    ctx.filter='none';
+    ctx.clearRect(0,0,W,H);
+    return;
+  }
+  __originalDrawWorldFinal();
+};
+
+/* Start directly at the playable main menu. The security/device notice is
+   still available from the device panel, but it no longer blocks gameplay. */
+function boot(){
+  try{
+    setupInterface();
+    resetWorld();
+    positionInsideCell();
+    scene='menu';
+    hide('privacyGate');
+    showOnly('mainMenu');
+    requestAnimationFrame(tick);
+  }catch(err){
+    console.error('BOOT ERROR:',err);
+    const e=document.getElementById('warningText');
+    if(e){e.textContent='BOOT ERROR: '+err.message;e.style.opacity='1';}
+    hide('privacyGate');
+    showOnly('mainMenu');
+    scene='menu';
+    requestAnimationFrame(tick);
+  }
+}
+
+/* Enter should always work from the menu, even if focus is on the canvas. */
+window.addEventListener('keydown',function(e){
+  if(scene==='menu' && (e.key==='Enter' || e.key===' ')){
+    e.preventDefault();
+    const b=document.getElementById('playButton');
+    if(b) b.click();
+  }
+},{passive:false});
+
 </script>
 </body>
 </html>'''
