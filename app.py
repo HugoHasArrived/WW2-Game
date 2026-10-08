@@ -7,7 +7,7 @@ GAME_HTML = r'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ESCAPE ALCATRAZ — NIGHTFALL</title>
+<title>CASE 17 — CRIME SCENE</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020304;color:#eee7d7;font-family:Consolas,monospace}
@@ -198,6 +198,12 @@ h1{margin:0;text-align:center;letter-spacing:6px;font-size:40px;color:#efe9db;te
 @media(max-width:760px){.menuContent{padding:24px 20px;max-height:88vh;overflow:auto}.menuLogo{font-size:clamp(30px,10vw,48px)}#app:after{background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.68) 100%)}}
 </style>
 </style>
+
+<style>
+/* CASE 17 crime-noir visual treatment */
+#app:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:11;background:linear-gradient(180deg,rgba(12,20,22,.08),transparent 22%,transparent 78%,rgba(0,0,0,.3)),repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 4px);mix-blend-mode:screen;opacity:.5}
+.menuLogo{letter-spacing:9px}.menuTag{color:#c1a86c}.menuThreat:before{content:"CASE FILE 17  •  MURDER / EXTORTION / MISSING PERSON";display:block;color:#9d4b45;margin-bottom:7px}
+</style>
 </head>
 <body>
 <div id="app">
@@ -217,7 +223,7 @@ h1{margin:0;text-align:center;letter-spacing:6px;font-size:40px;color:#efe9db;te
 <div id="inventoryUi" class="layer screen hidden"><div class="panel"><h1 style="font-size:30px">CHEST INVENTORY</h1><div class="subtitle">TAKE ITEMS • SORT • CLOSE</div><div id="chestSlots" class="privacyGrid"></div><div class="center" style="margin-top:18px"><button id="takeAllButton">TAKE ALL</button><button id="sortButton">SORT</button><button id="chestCloseButton">CLOSE</button></div></div></div>
 <div id="deviceOverlay" class="layer screen hidden"><div class="panel"><h1 style="font-size:26px">NIGHTWATCH DEVICE RECORD</h1><div id="deviceGrid" class="deviceGrid" style="margin-top:18px"></div><div class="center" style="margin-top:18px"><button id="infoClose">CLOSE</button></div></div></div>
 <div id="fade"></div><div id="warningText"></div><div id="scare"><div class="scareFace"><div class="scareMouth"></div></div></div><div class="pixelOverlay"></div>
-<div id="mobileControls" class="hidden"><div class="mobileCluster left"><button data-touch="left">◀</button><button data-touch="right">▶</button><button class="wide" data-touch="run">RUN</button></div><div class="mobileCluster right"><button data-touch="jump">JUMP</button><button data-touch="interact">USE</button><button data-touch="melee">MELEE</button><button data-touch="light">LIGHT</button><button data-touch="inventory">BAG</button><button data-touch="reload">RELOAD</button><button class="wide" data-touch="fire">FIRE</button></div></div>
+<div id="mobileControls" class="hidden"><div class="mobileCluster left"><button data-touch="left">◀</button><button data-touch="right">▶</button><button class="wide" data-touch="run">RUN</button></div><div class="mobileCluster right"><button data-touch="up">▲</button><button data-touch="down">▼</button><button data-touch="jump">JUMP</button><button data-touch="interact">USE</button><button data-touch="melee">MELEE</button><button data-touch="light">LIGHT</button><button data-touch="inventory">BAG</button><button data-touch="reload">RELOAD</button><button class="wide" data-touch="fire">FIRE</button></div></div>
 <div id="privacyGate"><div class="privacyBox"><div class="privacyTitle">NIGHTWATCH SECURITY TERMINAL</div><div class="privacySub">ESCAPE ALCATRAZ • DEVICE & PRIVACY NOTICE</div><div class="privacyGrid"><div class="privacyCard"><b>WHAT MAY BE DISPLAYED</b>Browser and platform information, screen size, language, timezone, online state, network hints, CPU thread count, touch support, battery data when available, and the network address seen by the game server.</div><div class="privacyCard"><b>WHAT IS NOT READ</b>Passwords, personal files, photos, contacts, saved documents, account contents, and arbitrary private files are not read by this game.</div><div class="privacyCard"><b>PERMISSIONS</b>Location, camera, and microphone require separate browser permission. This game does not silently grant those permissions.</div><div class="privacyCard"><b>FICTIONAL SURVEILLANCE</b>CCTV warnings, The Smiler, tracking messages, fourth-wall events, and horror-terminal events are fictional game elements unless the interface specifically labels information as browser or server information.</div></div><div class="privacyNote">The server only sees the network address that reaches it. A proxy, VPN, carrier network, or hosting layer can change the address shown. This game is entertainment, not a security diagnostic.</div><div class="privacyActions"><button id="privacyEnter">ENTER ESCAPE ALCATRAZ</button><button id="privacyDevice">VIEW DEVICE RECORD</button></div></div></div>
 </div>
 <script>
@@ -225,13 +231,16 @@ const canvas=document.getElementById('world');
 const ctx=canvas.getContext('2d');
 ctx.imageSmoothingEnabled=false;
 const W=1400,H=788,GROUND=612;
-const WORLD={ALCATRAZ:22000,SF:11000};
+const WORLD={ALCATRAZ:36000,SF:24000};
+const WORLD_HEIGHT={ALCATRAZ:18000,SF:14000};
 const keys=new Set();
-const touch={left:false,right:false,run:false,jump:false};
+const touch={left:false,right:false,up:false,down:false,run:false,jump:false,interact:false,fire:false,melee:false,light:false,inventory:false,reload:false};
 const mouse={x:W/2,y:H/2,down:false};
 const inputState={left:false,right:false,run:false,jump:false};
 const player={x:0,y:0,w:38,h:76,vx:0,vy:0,facing:1,onGround:true,coyote:0,jumpBuffer:0,jumps:2,anim:0,stepTimer:0,landTimer:0,recoil:0,flashStep:0,lean:0,air:0};
 const state={health:100,maxHealth:100,stamina:100,maxStamina:100,sanity:100,ammo:10,reserveAmmo:36,grenades:2,light:true,battery:100,startKey:false,startEscaped:false,dockPass:false,powerRestored:false,radioSignal:false,beacon:false,boatEscaped:false,survivors:0,alarm:false,finalChase:false,inventory:{bandage:2,food:2,scrap:3,ammo_9mm:48,key:0,dockPass:0,fuse:0,radioPart:0}};
+const crime={heat:0,evidence:0,cash:0,weaponFound:false,radioFound:false,caseSolved:false,policeTimer:0,sceneTimer:0,witness:false,deadBodySeen:false,clueFlash:0,suspect:null};
+
 let scene='menu';
 let chapter='ALCATRAZ';
 let selectedCharacter='Julia';
@@ -239,6 +248,7 @@ let controlMode='laptop';
 let last=performance.now();
 let totalTime=0;
 let camera=0;
+let cameraY=0;
 let interior=null;
 let interiorPhase=0;
 let floorTransitionLock=0;
@@ -279,17 +289,17 @@ let smiler={active:false,x:0,timer:0,cooldown:18,intensity:0};
 let horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};
 let endingTriggered=false;
 const introLines=[
-'ALCATRAZ ISLAND — 11:47 PM',
-'You wake inside Cell A-17. Concrete walls. Rusted bars. Rain beyond the block.',
-'The lock is still closed. Your badge is cold against your coat.',
-'You find a small brass key beneath the mattress.',
-'Outside the cell is a corridor that leads through Cell Block A and down the island.',
-'Your first goal is simple: find the docks. Escape the island.'
+'CASE 17 — 11:47 PM',
+'You wake inside a locked evidence room after a violent prison murder. Rain hits the bars. A body is missing.',
+'Your detective badge is scratched. Your radio is dead. Someone has taken the murder weapon.',
+'Under a stained mattress you find a brass key — and a blood-covered photograph.',
+'Outside is a crime scene sealed by a failed security system. Whoever did this is still inside.',
+'Find the evidence. Identify the killer. Stay alive long enough to get the truth out.'
 ];
 const objectives=[
-{title:'SURVIVE CELL BLOCK A',steps:['Search Cell A-17 for the brass key.','Unlock the cell and enter the corridor.','Cross the Recreation Yard without getting cornered.','Reach the Hospital Wing.']},
-{title:'RESTORE THE ESCAPE ROUTE',steps:['Find the Dock Pass inside the Hospital Wing.','Reach the Power Plant and restore emergency power.','Find the radio room and transmit the evacuation signal.','Reach the Emergency Pier.','Light the ferry beacon and survive the wait.','Board the ferry.']},
-{title:'ESCAPE ALCATRAZ',steps:['Reach the emergency pier.','Use the ferry beacon.','Survive the final attack.','Escape Alcatraz.']}
+{title:'CASE 17 — THE MISSING BODY',steps:['Search Cell A-17 for the brass key and photograph.','Collect the blood trail evidence.','Find the missing murder weapon.','Identify the masked suspect.']},
+{title:'BREAK THE LOCKDOWN',steps:['Search the police evidence room.','Recover the stolen radio.','Reach the communications room.','Transmit the case file before the police lockdown closes.']},
+{title:'THE KILLER IS STILL HERE',steps:['Reach the emergency exit.','Survive the suspect encounter.','Get the evidence off the island.']}
 ];
 const landmarkData=[
 {name:'CELLHOUSE',x:950,w:1180,h:320,type:'cellhouse'},
@@ -309,8 +319,20 @@ const landmarkData=[
 {name:'CITADEL / WEST GATE',x:18300,w:760,h:280,type:'citadel'},
 {name:'ROCKY SHORE',x:19450,w:520,h:170,type:'shore'},
 {name:'LIGHTHOUSE',x:20700,w:260,h:380,type:'lighthouse'},
-{name:'EMERGENCY PIER',x:21700,w:340,h:165,type:'dock'}
+{name:'EMERGENCY PIER',x:21700,w:340,h:165,type:'dock'},
+{name:'NORTH BATTERY',x:23800,w:760,h:300,type:'citadel'},
+{name:'OLD QUARRY',x:25200,w:920,h:210,type:'industry'},
+{name:'SIGNAL STATION',x:26800,w:560,h:260,type:'tower'},
+{name:'EAST BOATHOUSE',x:28300,w:720,h:240,type:'store'},
+{name:'CLIFF TUNNEL',x:30000,w:620,h:200,type:'tunnel'},
+{name:'ABANDONED WARD',x:31800,w:780,h:280,type:'medical'},
+{name:'BLACKWATER DOCK',x:33900,w:520,h:190,type:'dock'}
 ];
+landmarkData.forEach((l,i)=>{
+  const lanes=[2700,5200,7900,10400,12900,15400];
+  l.y=lanes[i%lanes.length]+((i*617)%1500);
+  if(l.y>16600)l.y=16600-(i%4)*260;
+});
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function lerp(a,b,t){return a+(b-a)*t;}
 function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
@@ -327,14 +349,14 @@ function showWarning(t,d=2.3){const e=document.getElementById('warningText');if(
 function resetWorld(){
  dread={eventTimer:4,phantomTimer:0,phantomX:0,phantomY:0,phantomAlpha:0,heartbeat:0,ambushCooldown:0,roomEnteredAt:0};
  horrorDirector={timer:5+Math.random()*5,phase:'quiet',intensity:0,noise:0,lockdown:0,stalker:null,eventId:0,warningTimer:0,doorSlam:0};
- state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=10;state.reserveAmmo=36;state.grenades=2;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.powerRestored=false;state.radioSignal=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.alarm=false;state.finalChase=false;hiding=false;wardenSpawned=false;state.inventory={bandage:1,food:1,scrap:2,ammo_9mm:36,key:0,dockPass:0,fuse:0,radioPart:0};chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;difficulty=1;threatLevel=0;encounterTimer=14;totalKills=0;lastDamageTime=0;lowHealthWarned=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=210;player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
+ state.health=100;state.maxHealth=100;state.stamina=100;state.maxStamina=100;state.sanity=100;state.ammo=10;state.reserveAmmo=36;state.grenades=2;state.light=true;state.battery=100;state.startKey=false;state.startEscaped=false;state.dockPass=false;state.powerRestored=false;state.radioSignal=false;state.beacon=false;state.boatEscaped=false;state.survivors=0;state.alarm=false;state.finalChase=false;hiding=false;wardenSpawned=false;state.inventory={bandage:1,food:1,scrap:2,ammo_9mm:36,key:0,dockPass:0,fuse:0,radioPart:0};Object.assign(crime,{heat:0,evidence:0,cash:0,weaponFound:false,radioFound:false,caseSolved:false,policeTimer:0,sceneTimer:0,witness:false,deadBodySeen:false,clueFlash:0,suspect:null});chapter='ALCATRAZ';camera=0;interior=null;interiorPhase=0;objectiveIndex=0;currentChest=null;endingTriggered=false;difficulty=1;threatLevel=0;encounterTimer=14;totalKills=0;lastDamageTime=0;lowHealthWarned=false;smiler={active:false,x:0,timer:0,cooldown:16,intensity:0};horror={shake:0,flash:0,glitch:0,warning:0,blackout:0};particles=[];footprints=[];zombies=[];survivors=[];buildAlcatrazPopulation();player.x=900;player.y=4200;player.vx=0;player.vy=0;player.onGround=true;player.coyote=.12;player.jumpBuffer=0;player.jumps=2;player.anim=0;player.stepTimer=0;player.landTimer=0;player.recoil=0;player.lean=0;setObjective();
 }
 function buildAlcatrazPopulation(){
  zombies=[];
  for(let i=0;i<68;i++){
   const x=1250+i*392+(i%5)*73;
   const type=i%13===0?'brute':i%7===0?'stalker':i%4===0?'runner':'walker';
-  zombies.push({x,type,hp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,maxHp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,dead:false,deathTimer:0,phase:i*.61,attack:0,hit:0,alert:0,flash:0,limb:Math.random()*6.28});
+  zombies.push({x,type,hp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,maxHp:type==='brute'?230:type==='stalker'?110:type==='runner'?95:70,dead:false,deathTimer:0,phase:i*.61,attack:0,hit:0,alert:0,flash:0,limb:Math.random()*6.28,crimeRole:i%9===0?'detective':i%5===0?'enforcer':i%3===0?'masked':'thug'});
  }
  chestData=[
   {id:'cellKey',world:'ALCATRAZ',inside:true,building:'CELLHOUSE',x:310,y:390,items:[{id:'key',name:'BRASS KEY',count:1}],opened:false},
@@ -362,7 +384,7 @@ function renderObjectives(){const list=document.getElementById('objectiveList');
 function transitionTo(kind,fn){if(fadeBusy)return;fadeBusy=true;transitionKind=kind;const f=document.getElementById('fade');f.style.opacity='1';setTimeout(()=>{fn();setTimeout(()=>{f.style.opacity='0';setTimeout(()=>fadeBusy=false,520);},60)},440);}
 function enterStructure(b){if(fadeBusy)return;transitionTo('enter',()=>{interior={id:b.type+'_'+b.x,name:b.name,type:b.type,building:b,roomWidth:1400,roomHeight:788,floor:1,floors:Math.max(1,b.floors||3),stairCooldown:0,topDown:true};interiorPhase=0;player.x=700;player.y=430;player.vx=0;player.vy=0;player.onGround=true;spawnInteriorThreats();soundDoor();setMessage(`ENTERED ${b.name} — SEARCH EVERY ROOM.`,1.4);});}
 function enterCellCorridor(){if(fadeBusy)return;transitionTo('cellcorridor',()=>{interior={id:'cellCorridor',name:'CELL BLOCK A',type:'cellcorridor',building:{name:'CELLHOUSE',x:370,w:1060,floors:3},roomWidth:1400,roomHeight:788,floor:1,floors:3,stairCooldown:0,topDown:true};interiorPhase=1;player.x=700;player.y=430;player.vx=0;player.vy=0;player.onGround=true;spawnInteriorThreats();soundDoor();setMessage('CELL BLOCK A — SOMETHING IS MOVING ABOVE YOU.',2);setObjective();});}
-function exitStructure(){if(!interior||fadeBusy)return;const b=interior.building;if(interior.topDown){if(interior.id==='cellA17'&&!state.startEscaped){setMessage('The cell is sealed. Search the mattress and find the key.',1.7);return;}if(interior.id==='cellA17'&&player.x>1240){enterCellCorridor();return;}if(player.x<70||player.x>1330){transitionTo('exit',()=>{const side=player.x<70?-1:1;const outside=side<0?b.x-80:b.x+b.w+80;player.x=clamp(outside,80,WORLD[chapter]-80);player.y=GROUND-player.h;player.vx=0;player.vy=0;interior=null;interiorZombies=[];camera=clamp(player.x-W*.4,0,WORLD[chapter]-W);soundDoor();setMessage(`BACK OUTSIDE — ${b.name}.`,1.3);});return;}setMessage('Find an EXIT door or stairwell.',1.0);return;}const side=player.x<200?-1:player.x>980?1:0;if(interior.id==='cellA17'&&!state.startEscaped){setMessage('The cell door is closed. Search the mattress and unlock it.',1.7);return;}if(interior.id==='cellA17'&&side!==0){enterCellCorridor();return;}if(side===0){setMessage('Move closer to the EXIT door.',1.2);return;}transitionTo('exit',()=>{const outside=side<0?b.x-80:b.x+b.w+80;player.x=clamp(outside,80,WORLD[chapter]-80);player.y=GROUND-player.h;player.vx=0;player.vy=0;player.onGround=true;interior=null;camera=clamp(player.x-W*.4,0,WORLD[chapter]-W);soundDoor();setMessage(`BACK OUTSIDE — ${b.name}.`,1.3);});}
+function exitStructure(){if(!interior||fadeBusy)return;const b=interior.building;if(interior.topDown){if(interior.id==='cellA17'&&!state.startEscaped){setMessage('The cell is sealed. Search the mattress and find the key.',1.7);return;}if(interior.id==='cellA17'&&player.x>1240){enterCellCorridor();return;}if(player.x<70||player.x>1330){transitionTo('exit',()=>{const side=player.x<70?-1:1;const outside=side<0?b.x-80:b.x+b.w+80;player.x=clamp(outside,180,WORLD[chapter]-180);player.y=clamp((b.y||4200),900,WORLD_HEIGHT[chapter]-700);player.vx=0;player.vy=0;interior=null;interiorZombies=[];camera=clamp(player.x-W*.4,0,WORLD[chapter]-W);soundDoor();setMessage(`BACK OUTSIDE — ${b.name}.`,1.3);});return;}setMessage('Find an EXIT door or stairwell.',1.0);return;}const side=player.x<200?-1:player.x>980?1:0;if(interior.id==='cellA17'&&!state.startEscaped){setMessage('The cell door is closed. Search the mattress and unlock it.',1.7);return;}if(interior.id==='cellA17'&&side!==0){enterCellCorridor();return;}if(side===0){setMessage('Move closer to the EXIT door.',1.2);return;}transitionTo('exit',()=>{const outside=side<0?b.x-80:b.x+b.w+80;player.x=clamp(outside,180,WORLD[chapter]-180);player.y=clamp((b.y||4200),900,WORLD_HEIGHT[chapter]-700);player.vx=0;player.vy=0;player.onGround=true;interior=null;camera=clamp(player.x-W*.4,0,WORLD[chapter]-W);soundDoor();setMessage(`BACK OUTSIDE — ${b.name}.`,1.3);});}
 function searchStartingCell(){if(state.startKey){setMessage('The mattress is empty.',1);return;}state.startKey=true;state.inventory.key=1;const c=chestData.find(x=>x.id==='cellKey');if(c)c.opened=true;soundChest();setMessage('BRASS KEY FOUND. The lock is within reach.',2);setObjective();}
 function unlockCell(){if(!state.startKey){setMessage('Search under the mattress first.',1.5);return;}if(state.startEscaped){enterCellCorridor();return;}state.startEscaped=true;objectiveIndex=0;soundDoor();soundScare();horror.flash=.28;setObjective();enterCellCorridor();}
 function openChest(c){if(!c)return;currentChest=c;scene='inventory';show('inventoryUi');renderChest();soundChest();}
@@ -388,7 +410,7 @@ function tryUseStairs(){
  if(interior.floor===3&&Math.random()<.65){setTimeout(()=>{if(scene==='play'&&interior){triggerJumpscare('stair');}},500);}
  return true;
 }
-function useInteract(){if(scene!=='play'||fadeBusy)return;if(interior&&interior.topDown&&nearestHideSpot()){toggleHide();return;}if(currentChest){openChest(currentChest);return;}if(interior&&interior.topDown){if(interior.floors>1&&((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)){const nearLeft=player.x<700;const dir=nearLeft?1:-1;const next=clamp(interior.floor+dir,1,interior.floors);if(next===interior.floor){setMessage('NO MORE FLOORS.',1);return;}interior.floor=next;player.x=nearLeft?220:1180;player.y=390;state.sanity=Math.max(0,state.sanity-5);horror.shake=8;setMessage(`STAIRS — FLOOR ${interior.floor}/${interior.floors}`,1.4);if(interior.floor===3&&Math.random()<.8)triggerJumpscare('stair');return;}if(interior.id==='cellA17'&&!state.startKey&&Math.hypot(player.x-310,player.y-390)<110){searchStartingCell();return;}if(interior.id==='cellA17'&&state.startKey&&Math.hypot(player.x-1240,player.y-390)<125){unlockCell();return;}const c=nearestChest();if(c){openChest(c);return;}if(player.x<70||player.x>1330){exitStructure();return;}return;}if(interior&&interior.floors>1&&tryUseStairs())return;if(interactAlcatrazSpecial())return;if(interior){if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(chapter==='ALCATRAZ'){if(!state.startEscaped&&player.x<1050){setMessage('The cell is still locked. Search the mattress.',1.5);return;}const b=nearestBuilding();if(b){enterStructure(b);return;}if(Math.abs(player.x-21700)<330){if(!state.dockPass){setMessage('THE PIER GATE IS LOCKED. YOU NEED THE DOCK PASS.',2);return;}if(!state.powerRestored){setMessage('NO POWER. Restore the emergency generator first.',2);return;}if(!state.radioSignal){setMessage('THE FERRY WILL NOT ANSWER. Transmit the emergency signal.',2);return;}if(!state.beacon){state.beacon=true;advanceObjective(1);setMessage('BEACON LIT. THE FERRY IS COMING. RUN.',2);tone(250,.5,'sine',.13,90);state.finalChase=true;return;}if(!state.boatEscaped){state.boatEscaped=true;transitionTo('ferry',()=>{endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='The ferry reaches the pier through the storm. Behind you, the cellhouse lights turn on one by one. The last camera feed shows a figure standing in your empty cell.';soundScare();});return;}}}else{if(talkSurvivorState())return;const b=nearestBuilding();if(b){enterStructure(b);return;}if(state.survivors>=2&&Math.abs(player.x-3200)<420){endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='Two survivors reached the shelter. Behind the rain, the island lights were still visible. On the final CCTV frame, a tall figure smiled at the empty dock.';soundScare();}}}
+function useInteract(){if(scene!=='play'||fadeBusy)return;if(crimeCollect())return;if(interior&&interior.topDown&&nearestHideSpot()){toggleHide();return;}if(currentChest){openChest(currentChest);return;}if(interior&&interior.topDown){if(interior.floors>1&&((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)){const nearLeft=player.x<700;const dir=nearLeft?1:-1;const next=clamp(interior.floor+dir,1,interior.floors);if(next===interior.floor){setMessage('NO MORE FLOORS.',1);return;}interior.floor=next;player.x=nearLeft?220:1180;player.y=390;state.sanity=Math.max(0,state.sanity-5);horror.shake=8;setMessage(`STAIRS — FLOOR ${interior.floor}/${interior.floors}`,1.4);if(interior.floor===3&&Math.random()<.8)triggerJumpscare('stair');return;}if(interior.id==='cellA17'&&!state.startKey&&Math.hypot(player.x-310,player.y-390)<110){searchStartingCell();return;}if(interior.id==='cellA17'&&state.startKey&&Math.hypot(player.x-1240,player.y-390)<125){unlockCell();return;}const c=nearestChest();if(c){openChest(c);return;}if(player.x<70||player.x>1330){exitStructure();return;}return;}if(interior&&interior.floors>1&&tryUseStairs())return;if(interactAlcatrazSpecial())return;if(interior){if(player.x<170||player.x>1010){exitStructure();return;}const c=nearestChest();if(c){openChest(c);return;}return;}if(chapter==='ALCATRAZ'){if(!state.startEscaped&&player.x<1050){setMessage('The cell is still locked. Search the mattress.',1.5);return;}const b=nearestBuilding();if(b){enterStructure(b);return;}if(Math.abs(player.x-21700)<330){if(!state.dockPass){setMessage('THE PIER GATE IS LOCKED. YOU NEED THE DOCK PASS.',2);return;}if(!state.powerRestored){setMessage('NO POWER. Restore the emergency generator first.',2);return;}if(!state.radioSignal){setMessage('THE FERRY WILL NOT ANSWER. Transmit the emergency signal.',2);return;}if(!state.beacon){state.beacon=true;advanceObjective(1);setMessage('BEACON LIT. THE FERRY IS COMING. RUN.',2);tone(250,.5,'sine',.13,90);state.finalChase=true;return;}if(!state.boatEscaped){state.boatEscaped=true;transitionTo('ferry',()=>{endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='The ferry reaches the pier through the storm. Behind you, the cellhouse lights turn on one by one. The last camera feed shows a figure standing in your empty cell.';soundScare();});return;}}}else{if(talkSurvivorState())return;const b=nearestBuilding();if(b){enterStructure(b);return;}if(state.survivors>=2&&Math.abs(player.x-3200)<420){endingTriggered=true;scene='ending';show('ending');document.getElementById('endingText').textContent='Two survivors reached the shelter. Behind the rain, the island lights were still visible. On the final CCTV frame, a tall figure smiled at the empty dock.';soundScare();}}}
 
 function talkSurvivorState(){if(chapter!=='SAN FRANCISCO')return false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){talkSurvivor();return true;}}return false;}
 function advanceObjective(i){if(i>objectiveIndex)objectiveIndex=Math.min(i,2);setObjective();}
@@ -429,7 +451,7 @@ function interactAlcatrazSpecial(){
  return false;
 }
 
-function nearestBuilding(){let best=null,d=9999;for(const b of landmarkData){if(b.name==='CELLHOUSE'||b.name==='RECREATION YARD'||b.name==='MAIN DOCK')continue;const dd=Math.abs(player.x-b.x);if(dd<d&&dd<180){d=dd;best=b;}}return best;}
+function nearestBuilding(){let best=null,d=99999;for(const b of landmarkData){if(b.name==='CELLHOUSE'||b.name==='RECREATION YARD'||b.name==='MAIN DOCK')continue;const dd=Math.hypot(player.x-b.x,player.y-(b.y||4000));if(dd<d&&dd<430){d=dd;best=b;}}return best;}
 function nearestHideSpot(){
  if(!interior)return null;
  const spots=[{x:105,y:170},{x:1290,y:180},{x:260,y:570},{x:720,y:610},{x:1160,y:520}];
@@ -472,38 +494,31 @@ function movementStep(dt){
  if(scene!=='play'||fadeBusy)return;
  if(interior&&interior.topDown){
   if(hiding){player.vx=0;player.vy=0;state.stamina=Math.min(100,state.stamina+dt*18);updateInteriorZombies(dt);return;}
-  if(interior.stairCooldown>0)interior.stairCooldown=Math.max(0,interior.stairCooldown-dt);
   const dx=(inputState.right?1:0)-(inputState.left?1:0);
-  const dy=(keys.has('s')||keys.has('S')||keys.has('ArrowDown')?1:0)-(keys.has('w')||keys.has('W')||keys.has('ArrowUp')?1:0);
-  const mag=Math.hypot(dx,dy)||1; const base=inputState.run&&state.stamina>5?235:165;
-  player.vx=lerp(player.vx,(dx/mag)*base,1-Math.exp(-14*dt)); player.vy=lerp(player.vy,(dy/mag)*base,1-Math.exp(-14*dt));
-  player.x=clamp(player.x+player.vx*dt,45,1355); player.y=clamp(player.y+player.vy*dt,92,680);
-  if(dx||dy)player.facing=dx<0?-1:dx>0?1:player.facing;
-  if(inputState.run&&(dx||dy))state.stamina=Math.max(0,state.stamina-dt*31);else state.stamina=Math.min(100,state.stamina+dt*13);
-  player.anim+=dt*(Math.hypot(player.vx,player.vy)/70+.4); player.recoil=Math.max(0,player.recoil-dt*8);
+  const dy=((keys.has('s')||keys.has('S')||keys.has('ArrowDown')||touch.down)?1:0)-((keys.has('w')||keys.has('W')||keys.has('ArrowUp')||touch.up)?1:0);
+  const mag=Math.hypot(dx,dy)||1,base=inputState.run&&state.stamina>5?245:175;
+  player.vx=lerp(player.vx,(dx/mag)*base,1-Math.exp(-16*dt));player.vy=lerp(player.vy,(dy/mag)*base,1-Math.exp(-16*dt));
+  player.x=clamp(player.x+player.vx*dt,42,1358);player.y=clamp(player.y+player.vy*dt,88,682);
+  if(dx)player.facing=dx<0?-1:1;if(inputState.run&&(dx||dy))state.stamina=Math.max(0,state.stamina-dt*31);else state.stamina=Math.min(100,state.stamina+dt*14);
+  player.anim+=dt*(Math.hypot(player.vx,player.vy)/70+.4);player.recoil=Math.max(0,player.recoil-dt*8);
   if(Math.hypot(player.vx,player.vy)>55){footstepsTimer-=dt;if(footstepsTimer<=0){footstepsTimer=inputState.run?.22:.34;soundStep();horrorDirector.noise=Math.min(100,horrorDirector.noise+(inputState.run?13:5));}}
-  updateInteriorZombies(dt); return;
+  if((keys.has('ArrowUp')||keys.has('w')||keys.has('W')||touch.up||touch.interact)&&Math.abs(player.x-1240)<145&&interior.id==='cellA17'&&state.startKey&&!state.startEscaped){unlockCell();return;}
+  updateInteriorZombies(dt);return;
  }
- if(interior&&interior.stairCooldown>0)interior.stairCooldown=Math.max(0,interior.stairCooldown-dt);
- const dir=(inputState.right?1:0)-(inputState.left?1:0);
- const base=selectedCharacter==='May'?290:selectedCharacter==='Yumi'?270:255;
- const target=dir*base*(inputState.run&&state.stamina>10?1.5:1);
- const accel=dir?12:16;
- player.vx=lerp(player.vx,target,1-Math.exp(-accel*dt));
- if(inputState.run&&dir&&Math.abs(player.vx)>220)state.stamina=Math.max(0,state.stamina-dt*18);else state.stamina=Math.min(100,state.stamina+dt*12);
- horrorDirector.noise=Math.max(0,horrorDirector.noise-dt*7); if(inputState.run&&dir&&Math.abs(player.vx)>220)horrorDirector.noise=Math.min(100,horrorDirector.noise+dt*22);
- if(dir)player.facing=dir;
- if(inputState.jump&&player.jumpBuffer>0){if(player.onGround||player.coyote>0||player.jumps>0){tryJump();player.jumpBuffer=0;}}
- player.vy+=1750*dt;
- const oldGround=player.onGround;
- player.x+=player.vx*dt;
- player.y+=player.vy*dt;
- const max=chapter==='ALCATRAZ'?WORLD.ALCATRAZ:WORLD.SF;
- if(interior){player.x=clamp(player.x,80,1100);}else player.x=clamp(player.x,20,max-50);
- if(player.y+player.h>=GROUND){player.y=GROUND-player.h;player.vy=0;player.onGround=true;if(!oldGround){player.landTimer=.22;soundLand();spawnDust();}player.coyote=.12;player.jumps=2;}else{player.onGround=false;player.coyote=Math.max(0,player.coyote-dt);}
- player.anim+=dt*(Math.abs(player.vx)/80+.2);player.lean=lerp(player.lean,dir*.035,1-Math.exp(-8*dt));player.recoil=Math.max(0,player.recoil-dt*8);player.landTimer=Math.max(0,player.landTimer-dt);player.air+=dt;
- footstepsTimer-=dt;if(player.onGround&&Math.abs(player.vx)>45&&footstepsTimer<=0){footstepsTimer=inputState.run?.25:.37;soundStep();footprints.push({x:player.x,f:totalTime});if(footprints.length>80)footprints.shift();}
+ // TRUE TOP-DOWN EXTERIOR MOVEMENT: north / south / east / west.
+ const dx=(inputState.right?1:0)-(inputState.left?1:0);
+ const dy=((keys.has('s')||keys.has('S')||keys.has('ArrowDown')||touch.down)?1:0)-((keys.has('w')||keys.has('W')||keys.has('ArrowUp')||touch.up)?1:0);
+ const mag=Math.hypot(dx,dy)||1,base=inputState.run&&state.stamina>5?360:245;
+ player.vx=lerp(player.vx,(dx/mag)*base,1-Math.exp(-14*dt));player.vy=lerp(player.vy,(dy/mag)*base,1-Math.exp(-14*dt));
+ const maxX=WORLD[chapter],maxY=WORLD_HEIGHT[chapter];player.x=clamp(player.x+player.vx*dt,180,maxX-180);player.y=clamp(player.y+player.vy*dt,900,maxY-700);
+ if(dx)player.facing=dx<0?-1:1;const moving=Math.hypot(player.vx,player.vy)>35;
+ if(inputState.run&&moving)state.stamina=Math.max(0,state.stamina-dt*23);else state.stamina=Math.min(100,state.stamina+dt*16);
+ horrorDirector.noise=Math.max(0,horrorDirector.noise-dt*5);if(inputState.run&&moving)horrorDirector.noise=Math.min(100,horrorDirector.noise+dt*16);
+ player.anim+=dt*(Math.hypot(player.vx,player.vy)/80+.25);player.recoil=Math.max(0,player.recoil-dt*8);
+ if(moving){footstepsTimer-=dt;if(footstepsTimer<=0){footstepsTimer=inputState.run?.20:.34;soundStep();footprints.push({x:player.x,y:player.y,f:totalTime});if(footprints.length>140)footprints.shift();}}
+ const near=nearestBuilding();if(near&&(keys.has('ArrowUp')||keys.has('w')||keys.has('W')||touch.up||touch.interact||keys.has('e')||keys.has('E'))){enterStructure(near);return;}
 }
+
 function damagePlayer(a){if(totalTime-lastDamageTime<0.38)return;lastDamageTime=totalTime;state.health-=a;horror.shake=10;horror.flash=.18;state.sanity=Math.max(0,state.sanity-3.5);if(state.health<=0){state.health=0;scene='death';show('death');document.getElementById('deathText').textContent='The island kept you. This was not the last attempt.';soundScare();}}
 function updateHorrorDirector(dt){
  if(scene!=='play')return;
@@ -566,35 +581,12 @@ function drawHorrorDirector(){
 }
 
 function updateZombies(dt){
- for(const z of zombies){
-  if(z.dead){z.deathTimer=Math.max(0,z.deathTimer-dt);continue;}
-  z.attack=Math.max(0,z.attack-dt);z.hit=Math.max(0,z.hit-dt);z.flash=Math.max(0,z.flash-dt);
-  const dx=player.x-z.x,d=Math.abs(dx);
-  const vision=state.light?1350:860;
-  if(d<vision){
-   if(dx)z.facing=dx>0?1:-1;
-   if(d<430 && Math.abs(player.vx)>120)z.alert=Math.min(1,z.alert+dt*.9);
-   else z.alert=Math.max(0,z.alert-dt*.25);
-   if(d>62){
-    let sp=z.type==='warden'?108:z.type==='runner'?190:z.type==='brute'?62:z.type==='stalker'?142:94;
-    if(z.type==='warden'){
-      const phase=Math.sin(totalTime*1.7+z.phase);
-      z.x+=Math.sign(dx)*sp*dt + phase*34*dt;
-      if(d<760&&Math.random()<dt*.22){z.alert=1;showWarning('THE WARDEN KNOWS WHERE YOU ARE',.7);}
-      if(d<120&&z.attack<=0){damagePlayer(38);z.attack=.72;horror.glitch=.9;}
-    }else{
-      if(z.alert>.65)sp*=1.22;
-      z.x+=Math.sign(dx)*sp*dt;
-    }
-   }else if(z.attack<=0){
-    damagePlayer(z.type==='brute'?30:z.type==='stalker'?22:z.type==='runner'?19:14);
-    z.attack=z.type==='runner'?.42:z.type==='stalker'?.58:.78;
-    if(z.type==='stalker'){horror.glitch=.55;showWarning('THE STALKER IS TOO CLOSE',.45);}
-   }
-  }
-  z.x=clamp(z.x,20,WORLD[chapter]-40);
+ for(const z of zombies){if(z.dead){z.deathTimer=Math.max(0,z.deathTimer-dt);continue;}if(z.y==null)z.y=4000+((z.phase*137)%9000);z.attack=Math.max(0,z.attack-dt);z.hit=Math.max(0,z.hit-dt);z.flash=Math.max(0,z.flash-dt);const dx=player.x-z.x,dy=player.y-z.y,d=Math.hypot(dx,dy),vision=state.light?1250:760;
+  if(d<vision){z.facing=dx>=0?1:-1;if(d<500&&Math.hypot(player.vx,player.vy)>160)z.alert=Math.min(1,(z.alert||0)+dt*.9);else z.alert=Math.max(0,(z.alert||0)-dt*.18);if(d>58){let sp=z.type==='warden'?118:z.type==='runner'?205:z.type==='brute'?72:z.type==='stalker'?150:98;if(z.alert>.55)sp*=1.18;z.x+=dx/Math.max(d,1)*sp*dt;z.y+=dy/Math.max(d,1)*sp*dt;}else if(z.attack<=0){damagePlayer(z.type==='brute'?30:z.type==='stalker'?23:z.type==='runner'?19:14);z.attack=z.type==='runner'?.42:z.type==='stalker'?.58:.78;horror.shake=9;}}
+  z.x=clamp(z.x,160,WORLD[chapter]-160);z.y=clamp(z.y,800,WORLD_HEIGHT[chapter]-650);
  }
 }
+
 function killZombie(z,force=false){
  if(!z||z.dead)return;
  z.hp=0;z.dead=true;z.deathTimer=1.8;z.flash=.3;z.vx=0;z.alert=0;
@@ -603,31 +595,12 @@ function killZombie(z,force=false){
  tone(force?95:70,.12,'sawtooth',.16,-35);noiseBurst(.09,.09);
 }
 function shoot(){
- if(scene!=='play')return;
- if(state.ammo<=0){soundReload();setMessage('EMPTY MAGAZINE. R TO RELOAD.',1.1);return;}
- state.ammo--;player.recoil=.2;soundShot();horror.shake=3;horrorDirector.noise=100;
- const playerScreen=player.x-camera+19;
- let aimDir=(mouse.x-playerScreen)>=0?1:-1;
- if(Math.abs(mouse.x-playerScreen)<18)aimDir=player.facing||1;
- player.facing=aimDir;
- const maxRange=920;
- let hit=null,best=Infinity;
- for(const z of zombies){
-  if(z.dead)continue;
-  const dx=(z.x-player.x)*aimDir;
-  if(dx<35||dx>maxRange)continue;
-  const vertical=Math.abs((GROUND-55)-(GROUND-55));
-  if(vertical>95)continue;
-  if(dx<best){best=dx;hit=z;}
- }
- if(hit){
-  const damage=selectedCharacter==='Yumi'?58:selectedCharacter==='May'?48:50;
-  if(hit.type==='warden') { hit.hp-=Math.round(damage*.72); } else hit.hp-=damage;
-  hit.hit=.18;hit.flash=.14;hit.alert=1;spawnBlood(hit.x,GROUND-55);horror.shake=5;
-  setMessage(hit.hp>0?`HIT — ${Math.max(0,Math.ceil(hit.hp))} HP REMAINING`:'INFECTED DOWN',.45);
-  if(hit.hp<=0)killZombie(hit);
- }else{spawnSpark(player.x+aimDir*420,GROUND-54);}
+ if(scene!=='play')return;if(state.ammo<=0){soundReload();setMessage('EMPTY MAGAZINE. R TO RELOAD.',1.1);return;}state.ammo--;player.recoil=.2;soundShot();horror.shake=3;horrorDirector.noise=100;
+ let wx=camera+mouse.x,wy=cameraY+mouse.y,dx=wx-player.x,dy=wy-player.y,len=Math.hypot(dx,dy)||1,ax=dx/len,ay=dy/len;player.facing=ax<0?-1:1;let hit=null,best=920;
+ for(const z of zombies){if(z.dead)continue;const zx=z.x-player.x,zy=z.y-player.y,along=zx*ax+zy*ay,perp=Math.abs(zx*ay-zy*ax);if(along>35&&along<best&&perp<48){best=along;hit=z;}}
+ if(hit){const damage=selectedCharacter==='Yumi'?58:selectedCharacter==='May'?48:50;if(hit.type==='warden')hit.hp-=Math.round(damage*.72);else hit.hp-=damage;hit.hit=.18;hit.flash=.14;hit.alert=1;spawnBlood(hit.x,hit.y);horror.shake=5;setMessage(hit.hp>0?`HIT — ${Math.max(0,Math.ceil(hit.hp))} HP REMAINING`:'TARGET DOWN',.45);if(hit.hp<=0)killZombie(hit);}else spawnSpark(player.x+ax*420,player.y+ay*420);
 }
+
 function melee(){
  if(scene!=='play')return;
  if(interior&&interior.topDown){const struck=damageInteriorZombie();horror.shake=struck?8:3;tone(struck?110:85,.08,'square',.12,-30);return;}
@@ -706,10 +679,62 @@ function drawDreadPhantom(){
  else{const sx=dread.phantomX-camera;px(sx-15,GROUND-103,30,70,'#050706');px(sx-12,GROUND-124,24,23,'#020403');px(sx-8,GROUND-115,4,3,'#b4b19a');px(sx+4,GROUND-115,4,3,'#b4b19a');}
  ctx.restore();
 }
+function crimeEvent(text,heat=0){crime.heat=clamp(crime.heat+heat,0,100);crime.clueFlash=1.4;showWarning(text,1.5);tone(58,.18,'square',.12,-35);}
+function crimeCollect(){
+ if(scene!=='play')return false;
+ const spots=[{x:1260,y:GROUND-22,id:'blood',label:'BLOOD-SOAKED GLOVE'},{x:4930,y:GROUND-22,id:'shells',label:'9MM CASINGS'},{x:7440,y:GROUND-22,id:'photo',label:'DAMAGED SURVEILLANCE PHOTO'},{x:10020,y:GROUND-22,id:'weapon',label:'STOLEN MURDER WEAPON'},{x:14850,y:GROUND-22,id:'radio',label:'STOLEN POLICE RADIO'}];
+ if(interior)return false;
+ for(const q of spots){if(Math.abs(player.x-q.x)<115 && Math.abs(player.y-q.y)<120){
+   if(q.id==='blood'&&!crime.evidence){crime.evidence=1;crime.deadBodySeen=true;crimeCollectMessage('EVIDENCE 01/05 — BLOOD PATTERN PHOTOGRAPHED',6);return true;}
+   if(q.id==='shells'&&crime.evidence>=1){crime.evidence=Math.max(crime.evidence,2);crimeCollectMessage('EVIDENCE 02/05 — BALLISTICS CASINGS BAGGED',8);return true;}
+   if(q.id==='photo'&&crime.evidence>=2){crime.evidence=Math.max(crime.evidence,3);crimeCollectMessage('EVIDENCE 03/05 — FACE MATCH FOUND',10);return true;}
+   if(q.id==='weapon'&&crime.evidence>=3&&!crime.weaponFound){crime.weaponFound=true;crime.evidence=4;crime.heat=clamp(crime.heat+18,0,100);crimeCollectMessage('EVIDENCE 04/05 — MURDER WEAPON RECOVERED',18);return true;}
+   if(q.id==='radio'&&crime.weaponFound&&!crime.radioFound){crime.radioFound=true;crime.evidence=5;crime.caseSolved=true;crime.witness=true;crimeCollectMessage('EVIDENCE 05/05 — RADIO LOG IDENTIFIES THE KILLER',22);return true;}
+ }}
+ return false;
+}
+function crimeCollectMessage(t,heat){crime.heat=clamp(crime.heat+heat*.18,0,100);setMessage(t,2.2);tone(320,.09,'triangle',.12,50);}
+function updateCrime(dt){
+ if(scene!=='play')return;
+ crime.clueFlash=Math.max(0,crime.clueFlash-dt);
+ crime.heat=Math.max(0,crime.heat-dt*.7);
+ if(state.alarm)crime.heat=clamp(crime.heat+dt*2.8,0,100);
+ if(inputState.run&&Math.abs(player.vx)>120)crime.heat=clamp(crime.heat+dt*.9,0,100);
+ if(crime.heat>35)crime.policeTimer-=dt;
+ if(crime.heat>35&&crime.policeTimer<=0&&!interior){
+   crime.policeTimer=9+Math.random()*8;
+   const side=Math.random()<.5?-1:1;const x=clamp(player.x+side*(600+Math.random()*450),120,WORLD[chapter]-120);
+   const z={x,type:'runner',hp:135,maxHp:135,dead:false,deathTimer:0,phase:Math.random()*6,attack:0,hit:0,alert:1,flash:0,limb:0,crimeRole:'police'};zombies.push(z);
+   crimeEvent('POLICE RESPONSE — DO NOT GET SPOTTED',4);
+ }
+ if(crime.caseSolved&&!crime.suspect){crime.suspect={x:clamp(player.x+Math.random()*800+500,200,WORLD[chapter]-200),hp:260,maxHp:260,phase:Math.random()*6};crimeEvent('THE SUSPECT KNOWS YOU HAVE THE EVIDENCE',15);}
+ if(crime.suspect){const q=crime.suspect;const dx=player.x-q.x;if(Math.abs(dx)>65)q.x+=Math.sign(dx)*105*dt;if(Math.abs(dx)<105&&Math.random()<dt*.65){damagePlayer(27);horror.shake=9;crime.heat=100;showWarning('THE KILLER FOUND YOU.',.8);}if(q.hp<=0){crime.suspect=null;crime.heat=clamp(crime.heat-30,0,100);crimeEvent('SUSPECT DOWN — GET TO THE EXTRACTION POINT',0);}}
+}
+function drawCrimePixelLayer(){
+ if(scene!=='play')return;
+ ctx.save();
+ if(!interior){
+   const marks=[{x:1260,c:'#7b2c2c',n:'01'},{x:4930,c:'#b8a25e',n:'02'},{x:7440,c:'#657f91',n:'03'},{x:10020,c:'#8a3d36',n:'04'},{x:14850,c:'#6f8291',n:'05'}];
+   for(const m of marks){const x=m.x-camera;if(x<-80||x>W+80)continue;for(let i=0;i<9;i++){px(x-22+i*6,GROUND-15-(i%3)*3,4,3,m.c);}text('E'+m.n,x,GROUND-31,8,'#d5cdb6','center');}
+   // crime-scene tape
+   const tapeY=GROUND-116;for(let i=-2;i<7;i++){const x=(((i*110-camera*.9)%W)+W)%W;line(x,tapeY,x+75,tapeY-18,'#a68f52',4);line(x,tapeY-3,x+75,tapeY-21,'#111515',2);}
+   // pixel cars / police lights
+   for(let i=0;i<6;i++){const x=((i*430-camera*.55)%W+W)%W,y=GROUND-48;px(x,y,92,30,'#151b1c');px(x+8,y-12,58,16,'#273233');px(x+15,y+25,18,8,'#090c0d');px(x+61,y+25,18,8,'#090c0d');if(i%3===0){px(x+32,y-18,8,4,'#a84646');px(x+41,y-18,8,4,'#58768b');}}
+ }
+ // high-density pixel grain gives the world a deliberate 16-bit/32-bit texture
+ ctx.globalAlpha=.12;for(let i=0;i<180;i++){const x=(i*83+Math.floor(totalTime*12))%W,y=(i*47)%H;px(x,y,1+(i%3),1+(i%2),i%4?'#c8c2ad':'#6e7773');}ctx.globalAlpha=1;
+ if(crime.clueFlash>0){ctx.globalAlpha=crime.clueFlash/1.4*.25;px(0,0,W,H,'#c5a55c');ctx.globalAlpha=1;}
+ ctx.restore();
+}
+function drawCrimeHUD(){
+ if(scene!=='play')return;
+ const x=18,y=92;px(x,y,235,78,'rgba(4,6,6,.78)');strokeRect(x,y,235,78,'#4b514d');text('CASE 17 // CRIME SCENE',x+12,y+17,10,'#d9cba9');text(`EVIDENCE  ${crime.evidence}/5`,x+12,y+37,11,'#eee4cc');text(`HEAT      ${Math.round(crime.heat)}%`,x+12,y+55,11,crime.heat>60?'#d26b5d':'#a9b2aa');text(crime.caseSolved?'CASE FILE: SOLVED':'CASE FILE: ACTIVE',x+12,y+70,8,crime.caseSolved?'#d2b86d':'#8e9791');
+ if(crime.heat>70){ctx.globalAlpha=.12+.08*Math.sin(totalTime*10);px(0,0,W,H,'#8d2525');ctx.globalAlpha=1;}
+}
 function updateWorldBase(dt){
  totalTime+=dt;
  if(scene==='play'){
-  movementStep(dt);updateDifficultyDirector(dt);updateHorrorDirector(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateDreadDirector(dt);updateParticles(dt);updateAlcatrazProgression();if(chapter==='ALCATRAZ'&&!interior&&player.x>7000&&state.sanity<80)state.sanity=Math.max(0,state.sanity-dt*.42);if(state.finalChase&&chapter==='ALCATRAZ')state.sanity=Math.max(0,state.sanity-dt*.32);if(interior&&interior.topDown&&scene==='play'&&Math.random()<dt*.025&&state.sanity<60)triggerJumpscare('room');
+  movementStep(dt);updateDifficultyDirector(dt);updateCrime(dt);updateHorrorDirector(dt);updateZombies(dt);updateHorror(dt);updateSmiler(dt);updateDreadDirector(dt);updateParticles(dt);updateAlcatrazProgression();if(chapter==='ALCATRAZ'&&!interior&&player.x>7000&&state.sanity<80)state.sanity=Math.max(0,state.sanity-dt*.42);if(state.finalChase&&chapter==='ALCATRAZ')state.sanity=Math.max(0,state.sanity-dt*.32);if(interior&&interior.topDown&&scene==='play'&&Math.random()<dt*.025&&state.sanity<60)triggerJumpscare('room');
  }
  updateMessage(dt);updateIntro(dt);updateFade(dt);renderHUD();
 }
@@ -1083,7 +1108,24 @@ function drawFlashlightCone(){
  }
  ctx.restore();
 }
-function drawWorldBase(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);drawSky();drawDistantTerrain();drawOcean();drawGround();drawTerrainTexture();if(chapter==='ALCATRAZ'){drawIslandRoad();drawLandmarks();drawAlcatrazDetails();drawAlcatrazInfrastructure();drawStreetProps();drawSigns();drawDock();}else{drawCityRoads();drawBuildings();drawCityDetails();drawStreetProps();drawSigns();}if(!interior){drawFootprints();drawSurvivorShadows();drawSurvivors();drawZombies();drawSmiler();drawPlayerShadow();drawPlayer();drawRain();}else{drawInterior();drawInteriorDecor();drawInteriorZombies();drawPlayerInterior();if(hiding){ctx.save();ctx.globalAlpha=.18;px(0,0,W,H,'#000');ctx.globalAlpha=1;text('HIDDEN',W/2,72,13,'#c8c1a9','center');text('STAY STILL',W/2,92,9,'#8d948c','center');ctx.restore();}}drawDreadPhantom();drawHorrorDirector();drawParticles();drawPixelDetailPass();extraAnimationPass();enhanceHorrorAtmosphere();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
+function drawWorldBase(){
+ ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);
+ if(!interior){drawTopDownExterior();drawTopDownThreats();drawTopDownPlayer();drawRainTopDown();}else{drawInterior();drawInteriorDecor();drawInteriorZombies();drawPlayerInterior();if(hiding){ctx.save();ctx.globalAlpha=.18;px(0,0,W,H,'#000');ctx.globalAlpha=1;text('HIDDEN',W/2,72,13,'#c8c1a9','center');text('STAY STILL',W/2,92,9,'#8d948c','center');ctx.restore();}}
+ drawDreadPhantom();drawHorrorDirector();drawParticles();drawPixelDetailPass();extraAnimationPass();enhanceHorrorAtmosphere();if(interior)drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();
+}
+function drawTopDownExterior(){
+ ctx.fillStyle='#0b2025';ctx.fillRect(0,0,W,H);const maxX=WORLD[chapter];ctx.save();ctx.translate(-camera,-cameraY);
+ ctx.fillStyle='#263a32';ctx.beginPath();ctx.moveTo(300,1300);ctx.lineTo(7200,950);ctx.lineTo(14400,1250);ctx.lineTo(21400,900);ctx.lineTo(30000,1500);ctx.lineTo(35500,3100);ctx.lineTo(35200,13200);ctx.lineTo(32000,16400);ctx.lineTo(24000,17100);ctx.lineTo(15000,16600);ctx.lineTo(6800,17000);ctx.lineTo(1100,15400);ctx.closePath();ctx.fill();
+ for(let y=2600;y<16500;y+=2700){ctx.fillStyle='#4a4d43';ctx.fillRect(500,y,maxX-1000,125);ctx.fillStyle='#716f5d';for(let x=700;x<maxX-700;x+=240)ctx.fillRect(x,y+58,110,7);}for(let x=3300;x<maxX;x+=4300){ctx.fillStyle='#41473f';ctx.fillRect(x,1100,150,15000);ctx.fillStyle='#686856';for(let y=1300;y<16000;y+=220)ctx.fillRect(x+72,y,7,95);}
+ ctx.strokeStyle='#71806b';ctx.lineWidth=55;ctx.strokeRect(550,1200,maxX-1250,15100);const sectors=[['CELL DISTRICT',2600,2300],['INDUSTRIAL DISTRICT',10300,5000],['CLIFF DISTRICT',18400,7200],['NORTH BATTERY',24200,3500],['BLACKWATER',32000,10400]];for(const q of sectors)text(q[0],q[1],q[2],16,'rgba(231,223,197,.38)');drawTopDownLandmarks();drawTopDownProps();ctx.restore();
+ px(18,90,122,92,'rgba(5,9,9,.75)');strokeRect(18,90,122,92,'#65716a',1);text('N',79,108,12,'#e7dfc8','center');text('S',79,171,12,'#8e958c','center');text('W',30,140,11,'#8e958c','center');text('E',128,140,11,'#8e958c','center');line(79,116,79,156,'#d7cda9',2);line(61,137,97,137,'#d7cda9',2);
+}
+function drawTopDownLandmarks(){for(const l of landmarkData){const x=l.x,y=l.y||4000;if(x<camera-700||x>camera+W+700||y<cameraY-500||y>cameraY+H+500)continue;const bw=clamp(l.w*.48,220,620),bh=clamp(l.h*.52,150,360),bx=x-bw/2,by=y-bh/2;ctx.fillStyle='#182522';ctx.fillRect(bx+14,by+18,bw,bh);ctx.fillStyle=l.type==='cellhouse'?'#596762':l.type==='medical'?'#647773':l.type==='power'?'#515f5b':l.type==='tower'?'#4d5d59':'#52635e';ctx.fillRect(bx,by,bw,bh);ctx.fillStyle='#737e75';ctx.fillRect(bx,by,bw,9);ctx.fillStyle='#252f2d';ctx.fillRect(x-30,by+bh-36,60,36);const cols=Math.max(3,Math.floor(bw/62));for(let j=0;j<cols;j++){const wx=bx+18+j*62,lit=(j+Math.floor(y/100))%5===0;ctx.fillStyle=lit?'#b99d5f':'#202b29';ctx.fillRect(wx,by+24,38,30);if(lit)glow(wx+19,by+39,42,'rgba(226,193,115,.10)','rgba(0,0,0,0)');}ctx.strokeStyle='#95a095';ctx.lineWidth=2;ctx.strokeRect(bx,by,bw,bh);text(l.name,x,by-12,10,'#eee4cc','center');}}
+function drawTopDownProps(){for(let i=0;i<180;i++){const x=800+((i*941)%34000),y=1500+((i*617)%14500);if(x<camera-80||x>camera+W+80||y<cameraY-80||y>cameraY+H+80)continue;ctx.fillStyle=i%5===0?'#4d5c49':'#34473c';ctx.beginPath();ctx.arc(x,y,8+(i%5)*2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#26352e';ctx.fillRect(x-2,y+5,4,13);}for(let i=0;i<55;i++){const x=900+((i*1377)%33500),y=1800+((i*877)%14000);if(x<camera-100||x>camera+W+100||y<cameraY-100||y>cameraY+H+100)continue;ctx.fillStyle='#39433f';ctx.fillRect(x-18,y-8,36,16);ctx.fillStyle='#73766a';ctx.fillRect(x-8,y-5,16,10);}}
+function drawTopDownThreats(){for(const z of zombies){if(z.dead)continue;const x=z.x-camera,y=z.y-cameraY;if(x<-80||x>W+80||y<-80||y>H+80)continue;const s=z.type==='warden'?1.45:z.type==='brute'?1.25:1,body=z.type==='warden'?'#171b1d':z.type==='brute'?'#624d51':z.type==='runner'?'#754f4b':z.type==='stalker'?'#303838':'#53625f';ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(player.y-z.y,player.x-z.x)+Math.PI/2);ctx.fillStyle='#090b0b';ctx.beginPath();ctx.ellipse(0,18,24*s,10*s,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=body;ctx.fillRect(-16*s,-24*s,32*s,43*s);ctx.fillStyle='#80675d';ctx.beginPath();ctx.arc(0,-31*s,14*s,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d55a4f';ctx.fillRect(-7*s,-34*s,4*s,4*s);ctx.fillRect(3*s,-34*s,4*s,4*s);ctx.fillStyle='#202726';ctx.fillRect(-24*s,-8*s,8*s,25*s);ctx.fillRect(16*s,-8*s,8*s,25*s);ctx.restore();}}
+function drawTopDownPlayer(){const x=player.x-camera,y=player.y-cameraY;ctx.save();ctx.translate(x,y);ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(0,22,24,10,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#263f45';ctx.fillRect(-17,-25,34,48);ctx.fillStyle='#b8a58f';ctx.beginPath();ctx.arc(0,-35,14,0,Math.PI*2);ctx.fill();ctx.fillStyle='#242b2a';ctx.fillRect(-13,-47,26,10);ctx.fillStyle='#546c70';ctx.fillRect(-25,-18,8,25);ctx.fillRect(17,-18,8,25);ctx.fillStyle='#151919';ctx.fillRect(-13,23,10,11);ctx.fillRect(3,23,10,11);if(state.light){ctx.globalAlpha=.11;ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(260,-120);ctx.lineTo(260,120);ctx.closePath();ctx.fillStyle='#f1e4bd';ctx.fill();ctx.globalAlpha=1;}ctx.restore();}
+function drawRainTopDown(){ctx.save();ctx.globalAlpha=.23;for(let i=0;i<150;i++){const x=(i*83+totalTime*430)%W,y=(i*47+totalTime*600)%H;line(x,y,x-7,y+17,'#91aeb4',1);}ctx.restore();}
+
 function drawPlayerInterior(){
  const x=player.x,y=player.y;ctx.save();ctx.translate(x,y);const bob=Math.sin(player.anim*7)*1.5;ctx.translate(0,bob);
  px(-17,14,34,9,'#090b0b');px(-13,-16,26,31,'#293b3b');px(-10,-27,20,14,'#b5a58d');px(-9,-38,18,12,'#252b2a');px(-17,-5,7,20,'#354a49');px(10,-5,7,20,'#354a49');px(-13,25,10,7,'#121817');px(4,25,10,7,'#121817');
@@ -1091,8 +1133,7 @@ function drawPlayerInterior(){
  if(state.light){ctx.globalAlpha=.08;ctx.beginPath();ctx.moveTo(player.facing*5,-15);ctx.lineTo(player.facing*230,-95);ctx.lineTo(player.facing*230,95);ctx.closePath();ctx.fillStyle='#e8dfc0';ctx.fill();ctx.globalAlpha=1;}
  ctx.restore();
 }
-function drawHudWorld(){if(chapter==='ALCATRAZ'&&scene==='play'&&!interior){const near=landmarkData.reduce((a,b)=>Math.abs(b.x-player.x)<Math.abs(a.x-player.x)?b:a,landmarkData[0]);const d=Math.max(10,Math.round(Math.abs(near.x-player.x)/10)*10);const dir=near.x>=player.x?'→':'←';px(460,744,480,26,'rgba(4,7,7,.72)');text(`${dir} ${near.name} • ${d} m`,700,763,10,'#e8dfc9','center');}}
-
+function drawHudWorld(){if(scene==='play'&&!interior){const near=landmarkData.reduce((a,b)=>Math.hypot(b.x-player.x,(b.y||4000)-player.y)<Math.hypot(a.x-player.x,(a.y||4000)-player.y)?b:a,landmarkData[0]);const d=Math.max(10,Math.round(Math.hypot(near.x-player.x,(near.y||4000)-player.y)/10)*10);const ang=Math.atan2((near.y||4000)-player.y,near.x-player.x);const dirs=['→','↘','↓','↙','←','↖','↑','↗'];const di=((Math.round(ang/(Math.PI/4))+8)%8);px(430,744,540,28,'rgba(4,7,7,.78)');text(`${dirs[di]} ${near.name} • ${d} m`,700,764,10,'#e8dfc9','center');}}
 function renderMapStrip(){
  const strip=document.getElementById('mapStrip'),p=document.getElementById('mapPlayer'),pts=document.getElementById('mapPoints');
  if(!strip||!p||!pts)return;
@@ -1108,10 +1149,10 @@ function renderMapStrip(){
  });
 }
 
-function renderHUDBase(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}  •  KILLS ${totalKills}  •  BAT ${Math.ceil(state.battery)}%`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?`${interior.name} • FLOOR ${interior.floor||1}/${interior.floors||1}`:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=smiler.active?'THE SMILER IS HERE':state.health<28?'CRITICAL — BLEEDING':state.sanity<35?'YOU ARE LOSING YOUR MIND':threatLevel>72?'THE HORDE IS AWAKE':state.sanity<55?'YOU FEEL WATCHED':state.sanity<75?'SOMETHING IS WRONG':'THE PRISON IS QUIET';}
+function renderHUDBase(){renderMapStrip();const hp=document.getElementById('healthFill'),st=document.getElementById('staminaFill'),sa=document.getElementById('sanityFill');if(hp)hp.style.width=`${clamp(state.health/state.maxHealth*100,0,100)}%`;if(st)st.style.width=`${state.stamina}%`;if(sa)sa.style.width=`${state.sanity}%`;const hv=document.getElementById('healthValue'),sv=document.getElementById('staminaValue'),sav=document.getElementById('sanityValue'),am=document.getElementById('ammoText'),loc=document.getElementById('locationText'),th=document.getElementById('threatText');if(hv)hv.textContent=`${Math.ceil(state.health)}/${state.maxHealth}`;if(sv)sv.textContent=`${Math.ceil(state.stamina)}/100`;if(sav)sav.textContent=`${Math.ceil(state.sanity)}/100`;if(am)am.textContent=`AMMO ${state.ammo} / ${state.reserveAmmo}  •  EVIDENCE ${crime.evidence}/5  •  BAT ${Math.ceil(state.battery)}%`;if(loc)loc.textContent=chapter==='ALCATRAZ'?(interior?`${interior.name} • FLOOR ${interior.floor||1}/${interior.floors||1}`:'ALCATRAZ ISLAND'):'SAN FRANCISCO';if(th)th.textContent=crime.heat>75?'POLICE + KILLER ARE HUNTING YOU':crime.caseSolved?'CASE SOLVED — EXTRACT NOW':crime.heat>45?'WANTED — DO NOT GET SPOTTED':state.health<28?'CRITICAL — BLEEDING':state.sanity<35?'YOU ARE LOSING YOUR MIND':state.sanity<55?'SOMEONE IS WATCHING':'CRIME SCENE ACTIVE';}
 function drawPrompt(){const e=document.getElementById('prompt');if(!e)return;if(scene!=='play'){e.textContent='';return;}let t='';if(interior){if(interior.topDown){if(interior.id==='cellA17'){if(!state.startKey&&Math.hypot(player.x-310,player.y-390)<100)t='E  /  USE  — SEARCH MATTRESS';else if(state.startKey&&Math.hypot(player.x-1240,player.y-390)<115)t='E  /  USE  — UNLOCK CELL DOOR';}if(nearestHideSpot())t=hiding?'E  /  USE — LEAVE COVER':'E  /  USE — HIDE';if((Math.abs(player.x-145)<100||Math.abs(player.x-1245)<100)&&player.y>250&&player.y<520)t=`E  /  USE  — STAIRWELL • FLOOR ${interior.floor}/${interior.floors}`;if(player.x<70||player.x>1330)t='E  /  USE  — EXIT STRUCTURE';const c=nearestChest();if(c)t=`E  /  USE  — SEARCH ${c.building}`;}else if(player.x<170||player.x>1010)t='E  /  USE  — EXIT TO STREET';else{const c=nearestChest();if(c)t='E  /  USE  — OPEN CHEST';}}else if(chapter==='ALCATRAZ'){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(Math.abs(player.x-16040)<260)t=state.dockPass?(state.beacon?'E  /  USE  — BOARD FERRY':'E  /  USE  — LIGHT FERRY BEACON'):'DOCK PASS REQUIRED';}else{let got=false;for(const s of survivors){if(!s.found&&Math.abs(player.x-s.x)<125){t=`E  /  USE  — TALK TO ${s.name}`;got=true;break;}}if(!got){const b=nearestBuilding();if(b)t=`E  /  USE  — ENTER ${b.name}`;else if(state.survivors>=2&&Math.abs(player.x-3200)<420)t='E  /  USE  — ENTER EMERGENCY SHELTER';}}e.textContent=t;}
 
-function updateCamera(){const target=interior?0:clamp(player.x-W*.42,0,WORLD[chapter]-W);camera=lerp(camera,target,1-Math.exp(-7*.016));}
+function updateCamera(){if(interior){camera=0;cameraY=0;return;}const maxX=Math.max(0,WORLD[chapter]-W),maxY=Math.max(0,WORLD_HEIGHT[chapter]-H);const tx=clamp(player.x-W*.5,0,maxX),ty=clamp(player.y-H*.5,0,maxY);camera=lerp(camera,tx,1-Math.exp(-7*.016));cameraY=lerp(cameraY,ty,1-Math.exp(-7*.016));}
 function tick(now){const dt=Math.min(.032,Math.max(.001,(now-last)/1000));last=now;updateInput();updateWorld(dt);updateCamera();drawWorld();drawPrompt();requestAnimationFrame(tick);}
 function keyDown(e){const k=e.key;if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','A','d','D','w','W','Shift','e','E','q','Q','f','F','r','R','i','I','Tab','Escape','Enter'].includes(k))e.preventDefault();keys.add(k);if(scene==='intro'&&(k==='Enter'||k===' '||k==='ArrowRight')){advanceIntro();return;}if(scene==='menu'&&(k==='Enter'||k===' ')){showOnly('characterMenu');scene='character';return;}if(scene==='play'){if(k==='e'||k==='E')useInteract();else if(k==='q'||k==='Q')melee();else if(k==='f'||k==='F'){state.light=!state.light;soundFlicker();}else if(k==='r'||k==='R')reload();else if(k==='i'||k==='I'){scene='inventory';show('inventoryUi');}else if(k==='Escape')togglePause();else if(k==='Tab'){objectivePanelOpen=!objectivePanelOpen;document.getElementById('objectivePanel').classList.toggle('open',objectivePanelOpen);}else if(k==='p'||k==='P'){show('deviceOverlay');renderDeviceInfo();}else if(k==='g'||k==='G'){if(state.grenades>0){state.grenades--;tone(75,.18,'square',.16);setMessage('GRENADE THROWN.',.8);horror.shake=5;}}}}
 function keyUp(e){keys.delete(e.key);if(e.key===' ')touch.jump=false;}
@@ -1245,7 +1286,7 @@ function cinBuilding(x,w,h,name,type){const left=x-w/2,top=GROUND-h;const body=c
  ctx.fillStyle='#12191a';ctx.fillRect(x-36,GROUND-86,72,86);ctx.fillStyle='#425051';ctx.fillRect(x-29,GROUND-79,58,72);ctx.fillStyle='#b6a36e';ctx.beginPath();ctx.arc(x+21,GROUND-42,3,0,Math.PI*2);ctx.fill();
  ctx.font='600 11px Consolas';ctx.textAlign='center';ctx.fillStyle='#d7d2c0';ctx.fillText(name,x,top-13);}
 function cinWorldLandmarks(){
- if(chapter==='ALCATRAZ'){const ls=[{x:1200,w:820,h:250,n:'CELLHOUSE',t:'cell'},{x:3800,w:600,h:190,n:'RECREATION YARD',t:'yard'},{x:6200,w:650,h:210,n:'DINING HALL',t:'hall'},{x:8500,w:560,h:225,n:'HOSPITAL WING',t:'medical'},{x:10800,w:620,h:250,n:'MODEL INDUSTRIES',t:'industry'},{x:13200,w:520,h:290,n:'POWER PLANT',t:'power'},{x:15800,w:440,h:340,n:'WATER TOWER',t:'tower'},{x:18100,w:520,h:250,n:'WARDEN HOUSE',t:'house'}];for(const b of ls){const x=b.x-camera;if(x>-b.w&&x<W+b.w)cinBuilding(x,b.w,b.h,b.n,b.t);}
+ if(chapter==='ALCATRAZ'){const ls=[{x:1200,w:820,h:250,n:'CELLHOUSE',t:'cell'},{x:3800,w:600,h:190,n:'RECREATION YARD',t:'yard'},{x:6200,w:650,h:210,n:'DINING HALL',t:'hall'},{x:8500,w:560,h:225,n:'HOSPITAL WING',t:'medical'},{x:10800,w:620,h:250,n:'MODEL INDUSTRIES',t:'industry'},{x:13200,w:520,h:290,n:'POWER PLANT',t:'power'},{x:15800,w:440,h:340,n:'WATER TOWER',t:'tower'},{x:18100,w:520,h:250,n:'WARDEN HOUSE',t:'house'},{x:23800,w:760,h:300,n:'NORTH BATTERY',t:'citadel'},{x:25200,w:920,h:210,n:'OLD QUARRY',t:'industry'},{x:26800,w:560,h:260,n:'SIGNAL STATION',t:'tower'},{x:28300,w:720,h:240,n:'EAST BOATHOUSE',t:'store'},{x:30000,w:620,h:200,n:'CLIFF TUNNEL',t:'tunnel'},{x:31800,w:780,h:280,n:'ABANDONED WARD',t:'medical'},{x:33900,w:520,h:190,n:'BLACKWATER DOCK',t:'dock' }];for(const b of ls){const x=b.x-camera;if(x>-b.w&&x<W+b.w)cinBuilding(x,b.w,b.h,b.n,b.t);}
   const dx=21700-camera;ctx.fillStyle='#354242';ctx.fillRect(dx-180,GROUND-20,360,20);ctx.fillStyle='#68746f';for(let i=0;i<7;i++)ctx.fillRect(dx-150+i*48,GROUND-27,30,7);ctx.fillStyle='#263333';ctx.fillRect(dx-38,GROUND-160,76,140);ctx.fillStyle='#73786f';ctx.fillRect(dx-48,GROUND-173,96,13);ctx.fillStyle=state.beacon?'#e8c879':'#65583f';ctx.beginPath();ctx.arc(dx,GROUND-194,15,0,Math.PI*2);ctx.fill();glow(dx,GROUND-194,110,state.beacon?'rgba(236,205,121,.22)':'rgba(0,0,0,0)','rgba(0,0,0,0)');
  } else {const ls=[{x:850,w:580,h:250,n:'OLD POLICE STATION',t:'police'},{x:2700,w:520,h:280,n:'HOSPITAL',t:'medical'},{x:4700,w:510,h:240,n:'FUNERAL HOME',t:'funeral'},{x:6500,w:620,h:330,n:'OLD HOTEL',t:'hotel'},{x:8600,w:580,h:260,n:'EMERGENCY SHELTER',t:'shelter'},{x:9900,w:620,h:310,n:'RESEARCH ANNEX',t:'research'}];for(const b of ls){const x=b.x-camera;if(x>-b.w&&x<W+b.w)cinBuilding(x,b.w,b.h,b.n,b.t);}}
 }
@@ -1264,7 +1305,7 @@ function cinInterior(){
  if(state.light){const lx=player.x+player.facing*15,ly=player.y-25;const beam=ctx.createRadialGradient(lx,ly,10,lx+player.facing*240,ly,270);beam.addColorStop(0,'rgba(241,232,195,.18)');beam.addColorStop(.45,'rgba(226,219,184,.06)');beam.addColorStop(1,'rgba(226,219,184,0)');ctx.fillStyle=beam;ctx.fillRect(0,0,W,H);}
 }
 function drawCinematicWorldBase(){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);if(horror.shake>0)ctx.translate((Math.random()-.5)*horror.shake,(Math.random()-.5)*horror.shake);if(interior){cinInterior();}else{cinSky();cinGround();cinWorldLandmarks();for(const z of zombies){if(!z.dead)cinZombie(z);}cinPlayer();if(chapter==='ALCATRAZ'){const fog=ctx.createLinearGradient(0,380,0,520);fog.addColorStop(0,'rgba(170,190,184,0)');fog.addColorStop(1,'rgba(170,190,184,.10)');ctx.fillStyle=fog;ctx.fillRect(0,360,W,180);}}
-drawDreadPhantom();drawHorrorDirector();drawParticles();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
+drawDreadPhantom();drawHorrorDirector();drawParticles();drawCrimePixelLayer();drawCrimeHUD();drawDynamicWeather();drawLighting();drawFlashlightCone();drawHorror();drawHudWorld();ctx.restore();}
 function drawWorld(){drawCinematicWorldBase();nfDrawDepth();nfDrawCrosshair();nfDrawVignette();}
 function updateWorld(dt){updateWorldBase(dt);nfUpdateEvent(dt);if(scene==='play'){NF.cameraBob=lerp(NF.cameraBob,Math.sin(totalTime*8)*Math.min(2.2,Math.abs(player.vx)/110),1-Math.exp(-9*dt));if(!interior)camera+=NF.cameraBob*.08;}renderHUD();}
 function renderHUD(){renderHUDBase();const h=document.getElementById('hud');if(!h)return;let el=document.getElementById('nfEventHud');if(!el){el=document.createElement('div');el.id='nfEventHud';el.style.cssText='position:absolute;left:50%;top:88px;transform:translateX(-50%);padding:7px 12px;border:1px solid rgba(190,181,145,.25);background:rgba(3,6,7,.58);backdrop-filter:blur(5px);font:10px Consolas,monospace;letter-spacing:1.5px;color:#bdb8a1;opacity:.0;transition:opacity .2s;pointer-events:none;z-index:22';h.appendChild(el);}if(NF.event){el.textContent=`ACTIVE EVENT  //  ${NF.event}  //  ${Math.ceil(Math.max(0,NF.eventTimer))}s`;el.style.opacity='1';}else{el.style.opacity='0';}}
